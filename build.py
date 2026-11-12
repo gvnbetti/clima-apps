@@ -8,7 +8,7 @@ B.mkdir(exist_ok=True)
 
 shell = (S / 'shell.html').read_text()
 wx = (S / 'wxdata.line').read_text()
-core = (S / 'core.js').read_text()
+core = (S / 'register.js').read_text() + '\n' + (S / 'core.js').read_text()
 page = (S / 'page.html').read_text()
 
 # fonts: IBM Plex (SIL Open Font License 1.1), Latin subset, as data URLs

@@ -983,13 +983,13 @@
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.SweepZone = api;
 })(this);
 
-/* Evaluations for the sweep app, spec revision 2:
-   EN 16798-1 adaptive (I, II, III), ASHRAE 55 adaptive (80, 90), German annex DIN EN 16798-1/NA
-   fixed range of Table NA.3 (I to IV), DIN 4108-2 overheating degree-hours (regions A, B, C).
-   Fans (0.9 m/s) raise the upper limit of the two adaptive models by 1.8 K when the operative
-   temperature is 25 C or more. Scores count the hours given by the occupancy mask. */
+/* Comfort evaluations (v16): EN 16798-1 adaptive (I, II, III), ASHRAE 55 adaptive (80, 90), German annex
+   DIN EN 16798-1/NA on the hourly mean outdoor temperature (I, II, III), DIN 4108-2 overheating degree-hours
+   (regions A, B, C). Fans raise the upper limit by the register's credit in the hours in which they run.
+   All constants come from the register. Scores count the hours given by the occupancy mask. */
 (function (root) {
   "use strict";
+  const RG = root.Register || require("./register.js"), RV = RG.val;
   function dailyMeans(t) {
     const d = new Float64Array(365);
     for (let k = 0; k < 365; k++) { let s = 0; for (let h = 0; h < 24; h++) s += t[k * 24 + h]; d[k] = s / 24; }
@@ -1007,56 +1007,58 @@
     return out;
   }
   const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
-  const EN_BAND = { I: [2, 3], II: [3, 4], III: [4, 5] };
-  const ASH_BAND = { 80: 3.5, 90: 2.5 };
-  // German national annex (DIN EN 16798-1/NA, from DIN EN 15251/NA): comfort temperature 22 C up to a running mean of
-  // 16 C, then 18 + 0.25 rm up to 32 C, 26 C above; band +-1 K (I), +-2 K (II), +-3 K (III)
-  const NA_BAND = { I: 1, II: 2, III: 3 };
-  const naComfort = (rm) => rm <= 16 ? 22 : rm >= 32 ? 26 : 18 + 0.25 * rm;
-  const DIN_REF = { A: 25, B: 26, C: 27 };
-  const FAN_DT = 1.8;
+  const ENB = RV("en.band"), ASB = RV("ash.band"), NAB = RV("na.band");
+  const EN_BAND = { I: [ENB.up.I, ENB.dn.I], II: [ENB.up.II, ENB.dn.II], III: [ENB.up.III, ENB.dn.III] };
+  const ASH_BAND = { 80: ASB.half[80], 90: ASB.half[90] };
+  // German national annex: comfort temperature against the HOURLY mean outdoor air temperature (v16; v15 used the
+  // running mean, which roughly doubled the degree-hours above the band)
+  const NA_BAND = Object.assign({}, NAB.tol);
+  const naComfort = (te) => te <= NAB.below ? NAB.low : te >= NAB.above ? NAB.high : NAB.low - NAB.slope * NAB.below + NAB.slope * te;
+  const DIN_REF = Object.assign({}, RV("din.ref"));
+  const FAN_DT = RV("run.fan.credit");
 
   // hourly limits for every model and category, computed once per weather file
   function bands(t, opt) {
     opt = opt || {};
-    const dm = dailyMeans(t), rmEN = runningMeanEN(dm, 0.8), rmA = prevailingMean(dm, opt.ashraeDays || 7);
+    const dm = dailyMeans(t), rmEN = runningMeanEN(dm, ENB.alpha), rmA = prevailingMean(dm, opt.ashraeDays || ASB.days);
     const B = {}, oorEN = new Uint8Array(8760), oorA = new Uint8Array(8760);
     for (const c of Object.keys(EN_BAND)) { const [up, dn] = EN_BAND[c], lo = new Float32Array(8760), hi = new Float32Array(8760);
-      for (let i = 0; i < 8760; i++) { const r = rmEN[(i / 24) | 0]; hi[i] = 0.33 * clamp(r, 10, 30) + 18.8 + up; lo[i] = 0.33 * clamp(r, 15, 30) + 18.8 - dn; }
+      for (let i = 0; i < 8760; i++) { const r = rmEN[(i / 24) | 0]; hi[i] = ENB.a * clamp(r, 10, 30) + ENB.b + up; lo[i] = ENB.a * clamp(r, 15, 30) + ENB.b - dn; }
       B["en_" + c] = { lo, hi, fans: true }; }
     for (const c of Object.keys(ASH_BAND)) { const b = ASH_BAND[c], lo = new Float32Array(8760), hi = new Float32Array(8760);
-      for (let i = 0; i < 8760; i++) { const cm = 0.31 * clamp(rmA[(i / 24) | 0], 10, 33.5) + 17.8; hi[i] = cm + b; lo[i] = cm - b; }
+      for (let i = 0; i < 8760; i++) { const cm = ASB.a * clamp(rmA[(i / 24) | 0], 10, 33.5) + ASB.b; hi[i] = cm + b; lo[i] = cm - b; }
       B["ash_" + c] = { lo, hi, fans: true }; }
     for (const c of Object.keys(NA_BAND)) { const b = NA_BAND[c], lo = new Float32Array(8760), hi = new Float32Array(8760);
-      for (let i = 0; i < 8760; i++) { const cm = naComfort(rmEN[(i / 24) | 0]); hi[i] = cm + b; lo[i] = cm - b; }
+      for (let i = 0; i < 8760; i++) { const cm = naComfort(t[i]); hi[i] = cm + b; lo[i] = cm - b; }
       B["na_" + c] = { lo, hi, fans: true }; } // v11: the fan variant is computed; the page applies it only when chosen
     for (let i = 0; i < 8760; i++) { const r = rmEN[(i / 24) | 0], a = rmA[(i / 24) | 0]; oorEN[i] = r < 10 || r > 30 ? 2 : r < 15 ? 1 : 0; oorA[i] = a < 10 || a > 33.5 ? 2 : 0; }
     return { B, rmEN, rmA, oorEN, oorA };
   }
-  // one band: [degree-hours above, degree-hours below, hours in band, hours above]
+  // one band: [degree-hours above, degree-hours below, hours in band, hours above]. fan: hourly mask of the hours in
+  // which the fans ran (v16; v15 credited every hour at 25 °C or more, also hours in which no fan ran)
   function scoreBand(top, occ, lo, hi, fan) {
     let a = 0, b = 0, n = 0, na = 0;
     for (let i = 0; i < 8760; i++) {
       if (!occ[i]) continue;
-      const x = top[i], h = fan && x >= 25 ? hi[i] + FAN_DT : hi[i];
+      const x = top[i], h = fan && fan[i] ? hi[i] + FAN_DT : hi[i];
       if (x > h) { a += x - h; na++; } else if (x < lo[i]) b += lo[i] - x; else n++;
     }
     return [Math.round(a * 10) / 10, Math.round(b * 10) / 10, n, na];
   }
   // all evaluations for one simulated year
-  function scoreAll(top, occ, dinMask, BN) {
+  function scoreAll(top, occ, dinMask, BN, fanMask) {
     const out = {};
     for (const k of Object.keys(BN.B)) {
       const b = BN.B[k];
-      out[k] = scoreBand(top, occ, b.lo, b.hi, false);
-      if (b.fans) out[k + "_fan"] = scoreBand(top, occ, b.lo, b.hi, true);
+      out[k] = scoreBand(top, occ, b.lo, b.hi, null);
+      if (b.fans) out[k + "_fan"] = fanMask ? scoreBand(top, occ, b.lo, b.hi, fanMask) : out[k];
     }
     for (const r of Object.keys(DIN_REF)) { let s = 0, nh = 0; const ref = DIN_REF[r]; for (let i = 0; i < 8760; i++) if (dinMask[i] && top[i] > ref) { s += top[i] - ref; nh++; } out["din_" + r] = Math.round(s * 10) / 10; out["dinh_" + r] = nh; }
     return out;
   }
-  function dinLimit(useKey) { return useKey === "dwelling" ? 1200 : 500; }
-  // DIN 4108-2 summer climate region from the highest monthly mean outdoor temperature: A up to 16.5 C, B up to 18 C,
-  // C above (to verify against the standard's map basis)
+  function dinLimit(useKey) { const L = RV("din.limit"); return useKey === "dwelling" ? L.res : L.nonres; }
+  // Outside Germany only: a summer region estimated from the warmest monthly mean (A up to 16.5 C, B up to 18 C, C
+  // above), for reference. In Germany the region is chosen from figure 1 of DIN 4108-2.
   function dinRegion(t) {
     const md = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; let i = 0, mx = -99;
     for (const n of md) { let s = 0; for (let k = 0; k < n * 24; k++) s += t[i + k]; i += n * 24; mx = Math.max(mx, s / (n * 24)); }
@@ -1066,22 +1068,27 @@
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Comfort = api;
 })(this);
 
-/* Sweep driver, spec revision 2: DIN 4108-2 boundary conditions as baseline.
-   simulate(ctx, combo, mode) runs one year; runCombo scores free-running and heating-on runs
-   under every evaluation. Works in Node, in the page and in web workers. */
+/* Sweep driver (v16): DIN 4108-2 boundary conditions for schedules, gains, base air and heating, from the register.
+   simulate(ctx, combo, mode) runs one year; mode "free" | "heat" | { cool } | "din" (the summer protection check with
+   the conditions of DIN 4108-2, 8.4.2, only). Works in Node, in the page and in web workers. */
 (function (root) {
   "use strict";
   const G = root.Geo || require("./engine_geo2.js"), Z = root.SweepZone || require("./zone2.js"), C = root.Comfort || require("./comfort2.js");
+  const RG = root.Register || require("./register.js"), RV = RG.val;
 
-  // DIN 4108-2 baseline presets (spec section 1); moisture from Climate Brief
+  // DIN 4108-2 presets (8.4.2 b, e, f, g, h); room sizes and moisture gains from the spec of 23 October 2026.
+  // achOcc of non-residential uses follows eq. (5), n = 4 A_G / V = 4 / H, and is recomputed from the room height.
+  const SN = RV("din.schedule.nonres"), PR = RV("din.presence.res"), TH = RV("din.tHeat");
+  const G_RES = RV("din.gain.res") / 24, G_NONRES = RV("din.gain.nonres") / (SN[1] - SN[0]);
   const USE = {
-    dwelling: { label: "Dwelling", dims: [4.0, 5.0, 2.6], occ: [0, 24], weekdays: false, pres: [6, 23], gainOcc: 100 / 24, gainUnocc: 100 / 24,
-      achOcc: 0.5, achUnocc: 0.5, tHeat: 20, moist: 1.5, din: "residential" },
-    office: { label: "Office", dims: [4.05, 5.0, 3.0], occ: [7, 18], weekdays: true, pres: [7, 18], gainOcc: 144 / 11, gainUnocc: 0,
-      achOcc: 4 / 3.0, achUnocc: 0.24, tHeat: 21, moist: 4.5, din: "non-residential" },
-    school: { label: "School", dims: [8.0, 7.5, 3.2], occ: [7, 18], weekdays: true, pres: [7, 18], gainOcc: 144 / 11, gainUnocc: 0,
-      achOcc: 4 / 3.2, achUnocc: 0.24, tHeat: 21, moist: 12, din: "non-residential" },
+    dwelling: { label: "Dwelling", dims: [4.0, 5.0, 2.6], occ: RV("din.schedule.res"), weekdays: false, pres: PR, gainOcc: G_RES, gainUnocc: G_RES,
+      achOcc: RV("din.air.res"), achUnocc: RV("din.air.res"), tHeat: TH.res, moist: 1.5, din: "residential" },
+    office: { label: "Office", dims: [4.05, 5.0, 3.0], occ: SN, weekdays: true, pres: SN, gainOcc: G_NONRES, gainUnocc: 0,
+      achOcc: RV("din.air.nonres.use") / 3.0, achUnocc: RV("din.air.nonres.off"), tHeat: TH.nonres, moist: 4.5, din: "non-residential" },
+    school: { label: "School", dims: [8.0, 7.5, 3.2], occ: SN, weekdays: true, pres: SN, gainOcc: G_NONRES, gainUnocc: 0,
+      achOcc: RV("din.air.nonres.use") / 3.2, achUnocc: RV("din.air.nonres.off"), tHeat: TH.nonres, moist: 12, din: "non-residential" },
   };
+  const achOccOf = (u, H) => u.din === "residential" ? u.achOcc : RV("din.air.nonres.use") / H;
   // opaque envelope (wall and roof U, W/m²K) and window (Uw incl. frame; total solar energy transmittance g) as
   // separate measures (decision of 24 October 2026). Unrenovated is not simulated.
   const OPAQUE = {
@@ -1090,13 +1097,14 @@
     u10: { label: "Passive house", uWall: 0.10, uRoof: 0.08 },
   };
   const panes = (u) => u >= 1 ? "double" : "triple";
-  const colOf = (u, g) => g <= 0.35 ? "sc" : panes(u);
-  // F_c by glass column (double / triple / solar control), DIN 4108-2 Table 7 (2013 values, to confirm)
+  const colOf = (u, g) => g <= RV("din.fc.scGlass") ? "sc" : panes(u);
+  // F_C by glass column (solar control / double / triple), DIN 4108-2 Table 7 rows 3.2.1, 3.1.1 and 2.1 (register)
+  const FC = RV("din.fc");
   const SHADES = {
     none: { label: "No shading", fc: { double: 1, triple: 1, sc: 1 }, dR: 0 },
-    shutter: { label: "Exterior roller shutter", fc: { double: 0.30, triple: 0.30, sc: 0.35 }, dR: 0.10, provisional: true },
-    venetian: { label: "Exterior venetian blind", fc: { double: 0.25, triple: 0.25, sc: 0.30 }, dR: 0.10 },
-    interior: { label: "Interior blind", fc: { double: 0.70, triple: 0.65, sc: 0.65 }, dR: 0 },
+    shutter: { label: "Exterior roller shutter, three quarters closed", fc: FC.shutter, dR: 0.10 },
+    venetian: { label: "Exterior venetian blind", fc: FC.venetian, dR: 0.10 },
+    interior: { label: "Interior blind, white", fc: FC.interior, dR: 0 },
   };
   // fixed outdoor shading on the outer face of the wall (glass 10 cm behind the inner face); overhang at the window head, fins at the jambs
   const FIXED = {
@@ -1110,11 +1118,11 @@
   const WALL = { depth: 0.35, glass: 0.25 }; // default; glass 10 cm behind the inner face. Override per run with ctx.wall
   const SHADE_LEVELS = { dwelling: ["none", "shutter", "venetian"], office: ["none", "interior", "venetian"], school: ["none", "interior", "venetian"] };
   const W_COIL = 0.0093; // kg/kg: saturation at 13 °C, the coil leaving temperature of the cooling air
-  const FAN_W = 1.5; // W/m² floor: DC ceiling fans at about 0.9 m/s (v12 default; editable through ctx.fanW)
+  const FAN_W = RV("run.fan.power"); // W/m² floor while running (register; editable through ctx.fanW)
   const T_WATER = 16; // °C: lowest mean water temperature of a chilled ceiling (rating point)
   const W_DEHUM = 0.012; // kg/kg: humidity ratio above which the cooled room is dehumidified in occupied hours (as the humid-hours limit)
-  const BLIND_WARM = 23; // °C room air above which blinds may come down (decision of 24 October 2026)
-  const SHADE_IRR = { dwelling: [200, 300], office: [150, 200], school: [150, 200] }; // [north, other], W/m2
+  const BLIND_WARM = RV("run.blind.warm"); // °C room air above which blinds may come down in the design runs
+  const BI = RV("din.blind.irr"), SHADE_IRR = { dwelling: BI.res, office: BI.nonres, school: BI.nonres }; // [north, other], W/m2
   const PARAMS = {
     azimuth: [0, 45, 90, 135, 180, 225, 270, 315],
     wwr: [0.2, 0.35, 0.5, 0.65, 0.8],
@@ -1124,8 +1132,8 @@
     mass: ["light", "medium", "heavy", "vheavy"], // v10: heavy recalibrated, very heavy = former heavy
     fixed: ["none", "oh05", "oh10", "fin05", "box05"],
     shading: [0, 1, 2], // index into SHADE_LEVELS[use]
-    dayAch: [0, 3, 6],
-    nightAch: [0, 2, 5],
+    dayAch: RV("run.day.levels").slice(), // v16: DIN 4108-2 allows at most 3 1/h by day
+    nightAch: RV("run.night.levels").slice(), // 5 1/h only across storeys or by a system (off by default in the page)
     fans: [0, 1], // v11: ceiling fans, 0.9 m/s, on in occupied hours when the room is at 25 °C or more
     supply: ["outdoor"], // earth-tempered and evaporative supply set aside until their models are checked (24 October 2026)
     roof: ["standard", "cool"],
@@ -1139,7 +1147,8 @@
   };
   const ROOF = { standard: { label: "Standard roof", aSol: 0.6 }, cool: { label: "Cool roof", aSol: 0.25 } };
   const SCENARIOS = ["cellular", "corner", "corner_top"];
-  const NIGHT_MIN = 23; // night ventilation only above 23 C room air (assumption; DIN 4108-2 conditions to confirm)
+  const VR = { dayT: RV("run.day.tAir"), dayM: RV("run.day.margin"), dayOut: RV("run.day.tOutMin"), nightM: RV("run.night.margin"), floor: RV("run.vent.floor"),
+    dinDayT: RV("din.day.tAir"), dinDay: RV("din.day.ach"), gtot: RV("din.night.gtot"), peak: RV("run.peak"), fanT: RV("run.fan.start"), arm: RV("run.night.arm") };
   const isNorth = (az) => { const a = ((az % 360) + 360) % 360; return a >= 315 || a <= 45; };
   // the facade that gets little direct sun (lower blind threshold of DIN 4108-2): north above the Tropic of Cancer,
   // south below the Tropic of Capricorn, none in between, where the sun reaches every facade in some months
@@ -1148,7 +1157,7 @@
   function schedules(u) {
     const occ = new Uint8Array(8760), pres = new Uint8Array(8760);
     for (let i = 0; i < 8760; i++) {
-      const hr = (i % 24) + 0.5, d = (i / 24) | 0, wd = ((6 + d) % 7) < 5; // 1 January a Sunday, as in Climate Brief
+      const hr = (i % 24) + 0.5, d = (i / 24) | 0, wd = (d % 7) < 5; // 1 January a Monday (DIN 4108-2, 8.4.2 d)
       const day = u.weekdays ? wd : true;
       occ[i] = day && hr > u.occ[0] && hr < u.occ[1] ? 1 : 0;
       pres[i] = day && hr > u.pres[0] && hr < u.pres[1] ? 1 : 0;
@@ -1170,9 +1179,10 @@
     const dinMask = useKey === "dwelling" ? new Uint8Array(8760).fill(1) : s.occ;
     if (!wx._supply) wx._supply = supplyAir(wx);
     const wall = opt.wallDepth != null ? { depth: opt.wallDepth, glass: Math.max(0, opt.wallDepth - 0.1) } : WALL;
-    return { wx, use: u, useKey, occ: s.occ, pres: s.pres, rho, dinMask, BN: wx._bands, wall, dims: opt.dims || null, coolSet: opt.coolSet || 26, coolHi: opt.coolHi ? Float32Array.from(opt.coolHi) : null, coolHiFan: opt.coolHiFan ? Float32Array.from(opt.coolHiFan) : null, fanW: opt.fanW != null ? opt.fanW : null, gOcc: opt.gainOcc != null ? opt.gainOcc : null };
+    return { wx, use: u, useKey, occ: s.occ, pres: s.pres, rho, dinMask, BN: wx._bands, wall, dims: opt.dims || null, coolSet: opt.coolSet || 26, coolHi: opt.coolHi ? Float32Array.from(opt.coolHi) : null, coolHiFan: opt.coolHiFan ? Float32Array.from(opt.coolHiFan) : null, fanW: opt.fanW != null ? opt.fanW : null, gOcc: opt.gainOcc != null ? opt.gainOcc : null, blindCtl: opt.blindCtl || "auto" };
   }
-  // ground temperature at about 2 m: annual mean plus a damped, delayed 30-day mean (simple model, to be checked)
+  // ground temperature at about 2 m: annual mean plus a damped, delayed 30-day mean (used only by the earth-tempered
+  // supply, which is set aside; not part of any run)
   function supplyAir(wx) {
     const n = 8760, t = wx.t, mean = t.reduce((a, b) => a + b, 0) / n, m30 = new Float32Array(n);
     let acc = 0; for (let i = n - 720; i < n; i++) acc += t[i];
@@ -1207,18 +1217,27 @@
     for (let i = 0; i < 8760; i++) out[i] = I[i] > lim ? 1 : 0;
     return out;
   }
-  // mode: "free" | "heat" | { cool: Float32Array upper limit }
+  // percentile of a list of values (q = 0.99: the value exceeded in 1 % of the entries); the largest when fewer than 100
+  function pctl(a, q) { if (!a.length) return 0; const s = Float64Array.from(a).sort(); return s.length < 100 ? s[s.length - 1] : s[Math.min(s.length - 1, Math.floor(q * s.length))]; }
+  // mode: "free" | "heat" | { cool: Float32Array upper limit } | "din" (DIN 4108-2 check: the standard's controls only)
   function simulate(ctx, c, mode, keepHourly) {
-    const { wx, use: u, occ, pres, rho } = ctx;
+    const { wx, use: u, occ, pres, rho } = ctx, din = mode === "din";
     const zone = Z.buildZone(zoneParams(ctx, c)), shd = shadeOf(ctx, c);
     const eng = G.Iso52016(zone, wx, Object.assign({ wind: { terrain: "station" }, fw: "angle", shade: shd.fc < 1 ? { tau: 0, rho: 0, ratio: shd.fc, dR: shd.dR } : null }, ENGINE, ctx.engineOpt || {}));
     const wins = eng.windows(), thr = SHADE_IRR[ctx.useKey];
     const irr = wins.map((w) => G.irradiance(wx, 90, w.azimuth).tot), wthr = wins.map((w) => (shadeSide(wx.lat, w.azimuth) ? thr[0] : thr[1]));
     const V = zone.volume, Af = zone.floorArea, heat = mode !== "free", coolHi = mode && mode.cool ? (c.fans && mode.coolFan ? mode.coolFan : mode.cool) : null;
-    let fanH = 0, topPrev = 20; const fanW = ctx.fanW != null ? ctx.fanW : FAN_W, fanT = ctx.fanT != null ? ctx.fanT : 25; // ceiling fans: hours on, power, start temperature
+    let fanH = 0, topPrev = 20; const fanW = ctx.fanW != null ? ctx.fanW : FAN_W, fanT = ctx.fanT != null ? ctx.fanT : VR.fanT; // ceiling fans: hours on, power, start temperature
+    const fanMask = c.fans && !din ? new Uint8Array(8760) : null; // hours in which the fans ran (the comfort credit applies only there)
+    const achOcc = achOccOf(u, zone.height || zone.volume / zone.floorArea), nonres = u.din !== "residential";
+    const hand = ctx.blindCtl === "hand" && nonres; // DIN 4108-2, 8.4.2 j: blinds operated by hand are not used at weekends
+    const gtotOk = (c.gglass || 1) * shd.fc <= VR.gtot + 1e-9; // DIN 4108-2, 8.4.2 i: night ventilation counts only with g_tot <= 0.4
+    const vFloor = u.tHeat + (ctx.ventFloor != null ? ctx.ventFloor : VR.floor); // design runs: window air is reduced so that the room stays above this operative temperature
+    const cL = [], eL = [], eLA = [];
+    const arm = ctx.nightArm != null ? ctx.nightArm : VR.arm; let curMax = -99, lastMax = -99, wasPres = 0; // night ventilation armed after a warm day
     const top = new Float32Array(8760), tair = new Float32Array(8760), gOcc = ctx.gOcc != null ? ctx.gOcc : u.gainOcc;
     const eHist = coolHi ? new Int16Array(CBINS) : null, eHistA = coolHi ? new Int16Array(CBINS) : null; let ePeak = 0, ePeakA = 0, cPeakVent = 0; // ceiling: load at its rating (10 K), fresh-air share at the peak
-    let qHsum = 0, qCsum = 0, qLsum = 0, humid = 0, tmax = -99, cPeak = 0, latH = 0;
+    let qHsum = 0, qCsum = 0, qLsum = 0, humid = 0, tmax = -99, cPeak = 0, latH = 0, cMax = 0, vHours = 0, ventHeat = 0;
     const cHist = coolHi ? new Int16Array(CBINS) : null; // hours of sensible cooling by load, CBIN W/m² floor per bin
     const p = { hVe: 0, thSup: 0, qInt: 0, phiHC: 0, shadeMask: 0 };
     let tAir = 20, dayOpen = 0, nightOpen = 0;
@@ -1226,30 +1245,52 @@
     const run = (i, rec) => {
       const te = wx.t[i], cp = rho[i] * 1006 / 3600;
       let mask = 0;
-      // blinds down when the sun on the facade is above the threshold of the use (DIN 4108-2) and, unless the plain DIN rule is
-      // chosen, the room is already warm (air above 23 °C, as for day ventilation): in winter they stay up and let the sun in
-      if (shd.fc < 1 && (ctx.blindRule === "din" || tAir > BLIND_WARM)) for (let w = 0; w < wins.length; w++) if (irr[w][i] > wthr[w]) mask |= wins[w].bit;
-      const base = occ[i] ? u.achOcc : u.achUnocc;
-      let ach = base;
-      /* v12, mixed mode: in the cooled run windows stay shut while cooling runs. By day they open only when the outdoor air
-         is at least 2 K below the cooling limit and not humid (at most W_DEHUM); at night only when the outdoor air is not humid.
-         The run without cooling keeps the plain rule. */
-      const dryOut = !coolHi || wx.w[i] <= W_DEHUM, coolOk = !coolHi || !occ[i] || te <= coolHi[i] - 2;
-      if (pres[i]) { if (c.dayAch > 0 && tAir > 23 && tAir > te && dryOut && coolOk) { ach = Math.max(base, c.dayAch); if (rec) dayOpen++; } }
-      else if (c.nightAch > 0 && tAir > te && tAir > NIGHT_MIN && dryOut) { ach = Math.max(base, c.nightAch); if (rec) nightOpen++; }
+      const weekend = (((i / 24) | 0) % 7) >= 5; // 1 January a Monday
+      /* blinds down when the sun on the facade is above the DIN 4108-2 threshold of the use. Design runs add the room-warm
+         condition (air above 23 °C), so winter sun is kept; the DIN check uses the irradiance alone. Blinds operated by hand
+         stay up at weekends in non-residential use (8.4.2 j). */
+      if (shd.fc < 1 && !(hand && weekend) && (din || ctx.blindRule === "din" || tAir > BLIND_WARM)) for (let w = 0; w < wins.length; w++) if (irr[w][i] > wthr[w]) mask |= wins[w].bit;
+      const base = occ[i] ? achOcc : u.achUnocc;
+      let want = base, isDay = false;
+      /* window ventilation. DIN check (8.4.2 h, i): by day up to 3 1/h when the room air is above 23 °C and above the outdoor
+         air; at night the design's level (2 or 5 1/h) when the room air is above the heating setpoint and above the outdoor
+         air, and only with g_tot of 0.4 or less. Design runs (v16): by day when the room air is above 23 °C, the outdoor air
+         at least 1 K cooler and at least 12 °C; at night when the room air is above the heating setpoint and at least 2 K
+         warmer than outside; in both cases the air flow is reduced so that the room does not fall below the heating setpoint
+         + 1 K. In the cooled run windows stay shut while cooling runs (v12): by day they open only when the outdoor air is at
+         least 2 K below the cooling limit and not humid; at night only when the outdoor air is not humid. */
+      if (din) {
+        if (pres[i]) { if (c.dayAch > 0 && tAir > VR.dinDayT && tAir > te) { want = Math.max(base, VR.dinDay); isDay = true; } }
+        else if (c.nightAch > 0 && gtotOk && tAir > u.tHeat && tAir > te) want = Math.max(base, c.nightAch);
+      } else {
+        const dryOut = !coolHi || wx.w[i] <= W_DEHUM, coolOk = !coolHi || !occ[i] || te <= coolHi[i] - 2;
+        if (pres[i]) { if (c.dayAch > 0 && tAir > VR.dayT && te <= tAir - VR.dayM && te >= VR.dayOut && dryOut && coolOk) { want = Math.max(base, c.dayAch); isDay = true; } }
+        else if (c.nightAch > 0 && lastMax > arm && tAir > u.tHeat && te <= tAir - VR.nightM && dryOut) want = Math.max(base, c.nightAch);
+      }
       const sup = c.supply || "outdoor", tb = sup === "earth" ? SA.earth[i] : sup === "evap" ? SA.evap[i] : te;
-      p.hVe = cp * V * ach; p.thSup = (base * tb + (ach - base) * te) / ach; const fanOn = c.fans && occ[i] && topPrev >= fanT; p.qInt = (occ[i] ? gOcc : u.gainUnocc) * Af + (fanOn ? fanW * Af : 0); p.phiHC = 0; p.shadeMask = mask;
+      const fanOn = c.fans && !din && occ[i] && topPrev >= fanT; p.qInt = (occ[i] ? gOcc : u.gainUnocc) * Af + (fanOn ? fanW * Af : 0); p.phiHC = 0; p.shadeMask = mask;
+      const setAir = (a) => { p.hVe = cp * V * a; p.thSup = (base * tb + (a - base) * te) / a; };
+      let ach = want; setAir(ach);
       let r = eng.trial(i, p), q = 0;
+      if (!din && want > base && r.thOp < vFloor) { // reduce the window air flow so that the room stays at vFloor
+        setAir(base); const r0 = eng.trial(i, p);
+        if (r0.thOp <= vFloor) { ach = base; r = r0; }
+        else { let lo = base, hi = want, tLo = r0.thOp, tHi = r.thOp; // secant on the air change, two steps
+          for (let k = 0; k < 2; k++) { const a = lo + (hi - lo) * (tLo - vFloor) / Math.max(1e-9, tLo - tHi); setAir(a); const ra = eng.trial(i, p); if (ra.thOp >= vFloor) { lo = a; tLo = ra.thOp; r = ra; ach = a; } else { hi = a; tHi = ra.thOp; } }
+          if (ach === want) { setAir(lo); r = eng.trial(i, p); ach = lo; } }
+      }
+      if (rec && ach > base + 1e-6) { if (isDay) dayOpen++; else nightOpen++; vHours++; }
       if (heat) {
         const tC = coolHi && occ[i] ? coolHi[i] : Infinity;
         const tg = r.thOp < u.tHeat ? u.tHeat : r.thOp > tC ? tC : null;
         if (tg !== null) { p.phiHC = 1000; const r1 = eng.trial(i, p); q = 1000 * (tg - r.thOp) / (r1.thOp - r.thOp); p.phiHC = q; r = eng.trial(i, p); }
       }
-      eng.commit(r); tAir = r.thAir; topPrev = r.thOp; if (rec && fanOn) fanH++;
+      eng.commit(r); tAir = r.thAir; topPrev = r.thOp; if (rec && fanOn) { fanH++; fanMask[i] = 1; }
+      if (pres[i]) { if (!wasPres) curMax = -99; if (r.thOp > curMax) curMax = r.thOp; } else if (wasPres) lastMax = curMax; wasPres = pres[i];
       if (rec) {
         top[i] = r.thOp; tair[i] = r.thAir; if (r.thOp > tmax) tmax = r.thOp;
-        if (q > 0) qHsum += q; else qCsum -= q;
-        if (cHist && q < 0) { const wm = -q / Af; if (wm > cPeak) { cPeak = wm; cPeakVent = Math.max(0, p.hVe * (p.thSup - r.thAir) / Af); } cHist[Math.min(CBINS - 1, Math.floor(wm / CBIN))]++;
+        if (q > 0) { qHsum += q; if (ach > base + 1e-6 && !din) ventHeat++; } else qCsum -= q;
+        if (cHist && q < 0) { const wm = -q / Af; cL.push([wm, Math.max(0, p.hVe * (p.thSup - r.thAir) / Af)]); if (wm > cMax) cMax = wm; cHist[Math.min(CBINS - 1, Math.floor(wm / CBIN))]++;
           /* chilled ceiling: output q = cap10 * (dT / 10)^1.1, dT = room operative temperature (taken as the rating's room temperature, to confirm against EN 14240) minus mean water temperature; the water may not run
              below 16 °C (rating point: room 26 °C, 10 K) nor below the room dew point + 1 K. Room humidity: what ventilation and
              moisture gains give, held at most at W_DEHUM by dehumidified supply air where needed. The equivalent load at the
@@ -1258,8 +1299,8 @@
             const eqOf = (wr) => { const pv = wr * wx.p[i] / (0.622 + wr), al = Math.log(Math.max(1, pv) / 611.2), tdp = 243.12 * al / (17.62 - al);
               const dT = r.thOp - Math.max(T_WATER, tdp + 1); return wm / (dT > 0.5 ? Math.pow(dT / 10, 1.1) : 0.05); };
             const eq = eqOf(Math.min(W_DEHUM, w0)), eqA = eqOf(w0); // with dehumidified supply air where needed; ceiling alone
-            if (eq > ePeak) ePeak = eq; eHist[Math.min(CBINS - 1, Math.floor(eq / CBIN))]++;
-            if (eqA > ePeakA) ePeakA = eqA; eHistA[Math.min(CBINS - 1, Math.floor(eqA / CBIN))]++; } }
+            eL.push(eq); eHist[Math.min(CBINS - 1, Math.floor(eq / CBIN))]++;
+            eLA.push(eqA); eHistA[Math.min(CBINS - 1, Math.floor(eqA / CBIN))]++; } }
         if (occ[i]) { const m = rho[i] * V * ach, wSup = wx.w[i] + (c.supply === "evap" ? SA.dw[i] * base / ach : 0), wi = (m * wSup + u.moist * Af / 1000) / m; if (wi > wLim) humid++;
           /* cooled run, occupied hours: moisture removed (latent cooling). The cooling air leaves the coil at 13 °C and can
              carry at most W_COIL, so sensible cooling dries the room as a side effect; the room humidity settles where
@@ -1274,7 +1315,10 @@
     };
     for (let i = 8760 - 672; i < 8760; i++) run(i, false); // four weeks of December as run-up
     for (let i = 0; i < 8760; i++) run(i, true);
-    return { top, tair: keepHourly ? tair : null, heat: qHsum / 1000 / Af, cool: qCsum / 1000 / Af, fanH, fanE: fanH * fanW / 1000, coolLat: qLsum / 1000 / Af, cHist, cPeak, latH, eHist, ePeak, eHistA, ePeakA, cPeakVent, humid, tmax, zone, shade: shd, dayOpen, nightOpen };
+    // design peaks (v16): the 99th percentile of the occupied cooling hours, so that a Monday restart does not set the size
+    if (cL.length) { cL.sort((a, b) => a[0] - b[0]); const k = cL.length < 100 ? cL.length - 1 : Math.min(cL.length - 1, Math.floor(VR.peak * cL.length)); cPeak = cL[k][0]; cPeakVent = cL[k][1]; }
+    ePeak = pctl(eL, VR.peak); ePeakA = pctl(eLA, VR.peak);
+    return { top, tair: keepHourly ? tair : null, heat: qHsum / 1000 / Af, cool: qCsum / 1000 / Af, fanH, fanE: fanH * fanW / 1000, fanMask, coolLat: qLsum / 1000 / Af, cHist, cPeak, cMax, latH, eHist, ePeak, ePeakMax: eL.length ? Math.max.apply(null, eL) : 0, eHistA, ePeakA, cPeakVent, humid, tmax, zone, shade: shd, dayOpen, nightOpen, gtotOk, ventHeat, vHours };
   }
   // free-running and heating-on, scored under every evaluation
   // ideal cooling in occupied hours to an hourly upper limit set by the page from the comfort model (ctx.coolHi; v6, 27 October
@@ -1283,9 +1327,9 @@
   const CBIN = 5, CBINS = 40; // load bins for the cooling-load histogram: 5 W/m² floor wide, the last one open
   const coolArr = (ctx) => ctx.coolHi || ctx._coolArr || (ctx._coolArr = new Float32Array(8760).fill(ctx.coolSet || 26));
   function summary(ctx, x, energy) {
-    const o = Object.assign(C.scoreAll(x.top, ctx.occ, ctx.dinMask, ctx.BN), { humid: x.humid, tmax: Math.round(x.tmax * 10) / 10, dayOpen: x.dayOpen, nightOpen: x.nightOpen });
+    const o = Object.assign(C.scoreAll(x.top, ctx.occ, ctx.dinMask, ctx.BN, x.fanMask), { humid: x.humid, tmax: Math.round(x.tmax * 10) / 10, dayOpen: x.dayOpen, nightOpen: x.nightOpen, ventHeat: x.ventHeat });
     if (energy) { o.qh = Math.round(x.heat * 10) / 10; o.fanE = Math.round(x.fanE * 100) / 100; o.fanH = x.fanH; o.qcs = Math.round(x.cool * 10) / 10; o.ql = Math.round(x.coolLat * 10) / 10; o.qc = Math.round((x.cool + x.coolLat) * 10) / 10;
-      if (x.cHist) { o.cHist = Array.from(x.cHist); o.cPeak = Math.round(x.cPeak * 10) / 10; o.latH = x.latH; o.eHist = Array.from(x.eHist); o.ePeak = Math.round(x.ePeak * 10) / 10; o.eHistA = Array.from(x.eHistA); o.ePeakA = Math.round(x.ePeakA * 10) / 10; o.cPeakVent = Math.round(x.cPeakVent * 10) / 10; } } // qc: sensible + latent; cHist: hours of sensible cooling by load
+      if (x.cHist) { o.cHist = Array.from(x.cHist); o.cPeak = Math.round(x.cPeak * 10) / 10; o.latH = x.latH; o.eHist = Array.from(x.eHist); o.ePeak = Math.round(x.ePeak * 10) / 10; o.eHistA = Array.from(x.eHistA); o.ePeakA = Math.round(x.ePeakA * 10) / 10; o.cPeakVent = Math.round(x.cPeakVent * 10) / 10; o.cMax = Math.round(x.cMax * 10) / 10; } } // qc: sensible + latent; cHist: hours of sensible cooling by load
     return o;
   }
   // free-running, heating without cooling, heating and ideal cooling; scored under every evaluation
@@ -1296,9 +1340,13 @@
     if (!only || only === "cool") out.cool = summary(ctx, simulate(ctx, c, { cool: coolArr(ctx), coolFan: ctx.coolHiFan }), true);
     return out;
   }
-  // DIN 4108-2 check with the standard's internal gains (the search may use representative gains): heated, no cooling
+  /* DIN 4108-2 summer protection check (v16), with the conditions of clause 8.4.2 only: the standard's gains (100 %
+     convective), schedules, base air, heating setpoint, day ventilation up to 3 1/h, night ventilation as designed (2 or
+     5 1/h) only with g_tot <= 0.4, blinds by irradiance alone, no fans, no cooling. On the project's weather file the
+     result is an indication: the proof uses the 2011 test reference year of the region (8.4.2 c). */
   function runDin(ctx, c) {
-    const x = simulate(Object.assign({}, ctx, { gOcc: null }), Object.assign({}, c, { fans: 0 }), "heat"), o = {}, sc = C.scoreAll(x.top, ctx.occ, ctx.dinMask, ctx.BN);
+    const dctx = Object.assign({}, ctx, { gOcc: null, engineOpt: Object.assign({}, ctx.engineOpt || {}, { fIntC: RV("din.gain.convective") }) });
+    const x = simulate(dctx, Object.assign({}, c, { fans: 0 }), "din"), o = { nightCounted: !!(c.nightAch > 0 && x.gtotOk) }, sc = C.scoreAll(x.top, ctx.occ, ctx.dinMask, ctx.BN);
     Object.keys(sc).forEach((k) => { if (k.startsWith("din")) o[k] = sc[k]; }); return o;
   }
   // balanced random designs: each level of each parameter appears about equally often
@@ -1310,7 +1358,7 @@
     const out = []; for (let i = 0; i < k; i++) { const d = {}; keys.forEach((key) => { d[key] = cols[key][i]; }); out.push(d); }
     return out;
   }
-  const api = { CBIN, CBINS, USE, OPAQUE, panes, colOf, FIXED, WALL, SUPPLY, ROOF, supplyAir, blindsDown, SHADES, SHADE_LEVELS, SHADE_IRR, PARAMS, SCENARIOS, schedules, context, simulate, runCombo, runDin, T_WATER, FAN_W, designs, shadeOf, zoneParams, humidityRatio, isNorth, shadeSide };
+  const api = { CBIN, CBINS, USE, OPAQUE, panes, colOf, FIXED, WALL, SUPPLY, ROOF, supplyAir, blindsDown, SHADES, SHADE_LEVELS, SHADE_IRR, PARAMS, SCENARIOS, schedules, context, simulate, runCombo, runDin, T_WATER, FAN_W, designs, shadeOf, zoneParams, humidityRatio, isNorth, shadeSide, achOccOf, pctl, VR };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Sweep = api;
 })(this);
 

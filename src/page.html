@@ -1,6 +1,6 @@
 <script>(function () {
   "use strict";
-  const S = window.Sweep, C = window.Comfort, G = window.Geo, DS = window.DaySweep, SC = window.Score, FS = window.FacadeSearch;
+  const S = window.Sweep, C = window.Comfort, G = window.Geo, DS = window.DaySweep, SC = window.Score, FS = window.FacadeSearch, Register = window.Register;
   const DUMMY = {};
   const $ = (id) => document.getElementById(id) || DUMMY[id] || (DUMMY[id] = document.createElement(id === "pc" || id === "adapt" || id === "carpet" ? "canvas" : "div"));
   const WXDATA = JSON.parse($("wxdata").textContent);
@@ -13,7 +13,7 @@
     return v;
   }
   function fromRecord(r) {
-    return { name: r.name, cc: r.cc, koppen: r.koppen, source: r.source, region: r.region, lat: r.lat, lon: r.lon, tz: r.tz, elev: r.elev,
+    return { name: r.name, cc: r.cc, koppen: r.koppen, source: r.source, region: r.region, regionGiven: ["DEU", "DE"].includes(String(r.cc).toUpperCase()) ? r.region : null, gaps: null, lat: r.lat, lon: r.lon, tz: r.tz, elev: r.elev,
       t: dec(r.t, 10, 0), td: dec(r.td, 10, 0), p: dec(r.p, 0.5, -60000), ir: dec(r.ir, 1, 0), dni: dec(r.dni, 1, 0), dhi: dec(r.dhi, 1, 0), ws: dec(r.ws, 10, 0), albedo: 0.2 };
   }
   function parseEPW(text, fname) {
@@ -23,12 +23,33 @@
     if (rows.length === 8784) rows = rows.filter((r) => !(+r[1] === 2 && +r[2] === 29));
     if (rows.length < 8760) throw new Error("The file has " + rows.length + " hourly rows; a full year of 8,760 is needed.");
     rows = rows.slice(0, 8760);
-    const col = (j, miss, fb) => Float64Array.from(rows.map((r) => { const x = +r[j]; return !isFinite(x) || x >= miss ? fb : x; }));
-    const t = col(6, 99.9, 15), elev = +h[9] || 0;
-    const td = Float64Array.from(rows.map((r, i) => { const x = +r[7]; return !isFinite(x) || x >= 99.9 ? t[i] - 5 : x; }));
-    const p0 = 101325 * Math.pow(1 - 2.25577e-5 * elev, 5.2559);
-    return { name: h[1] || fname, cc: h[3] || "", koppen: "", source: "Uploaded: " + fname, region: h[3] === "DEU" ? "B" : "C",
-      lat: +h[6], lon: +h[7], tz: +h[8], elev, t, td, p: col(9, 999999, p0), ir: col(12, 9999, 0), dni: col(14, 9999, 0), dhi: col(15, 9999, 0), ws: col(21, 999, 0), albedo: 0.2 };
+    /* v16: missing values are no longer replaced by constants. Gaps are filled by linear interpolation in time (wrapping
+       the year) and listed; a file with more than the register's share of hours missing in a core variable is refused.
+       Missing long-wave sky radiation is computed from air temperature, dew point and opaque sky cover (Clark and Allen,
+       as EnergyPlus does). */
+    const raw = (j, miss) => rows.map((r) => { const x = +r[j]; return r[j] === undefined || r[j] === "" || !isFinite(x) || x >= miss ? NaN : x; });
+    const gaps = {}, maxGap = Register.val("wx.maxGap");
+    const fill = (a, key, label) => {
+      const n = a.length, out = new Float64Array(n), ok = []; a.forEach((x, i) => { if (!isNaN(x)) ok.push(i); });
+      const miss = n - ok.length; if (miss) gaps[key] = { label, hours: miss };
+      if (miss / n > maxGap) throw new Error(`${label}: ${miss} of 8,760 hours missing (more than ${Math.round(maxGap * 100)} %). Use a complete file.`);
+      if (!ok.length) return out;
+      for (let k = 0; k < ok.length; k++) { const i0 = ok[k], i1 = ok[(k + 1) % ok.length], span = ((i1 - i0 + n) % n) || n; out[i0] = a[i0];
+        for (let d = 1; d < span; d++) out[(i0 + d) % n] = a[i0] + (a[i1] - a[i0]) * d / span; }
+      return out;
+    };
+    const elev = +h[9] || 0, p0 = 101325 * Math.pow(1 - 2.25577e-5 * elev, 5.2559);
+    const t = fill(raw(6, 99.9), "t", "Air temperature"), td = fill(raw(7, 99.9), "td", "Dew point");
+    const dni = fill(raw(14, 9999), "dni", "Direct normal radiation"), dhi = fill(raw(15, 9999), "dhi", "Diffuse horizontal radiation");
+    const pr = raw(9, 999999), p = Float64Array.from(pr.map((x) => isNaN(x) ? p0 : x)), ws = Float64Array.from(raw(21, 999).map((x) => isNaN(x) ? 0 : x));
+    if (pr.some(isNaN)) gaps.p = { label: "Pressure (set from elevation)", hours: pr.filter(isNaN).length };
+    const irr = raw(12, 9999), sky = raw(23, 99), nIr = irr.filter(isNaN).length;
+    const ir = Float64Array.from(irr.map((x, i) => { if (!isNaN(x)) return x; const N = isNaN(sky[i]) ? 5 : sky[i], Tk = t[i] + 273.15, Td = td[i] + 273.15;
+      const eps = (0.787 + 0.764 * Math.log(Td / 273)) * (1 + 0.0224 * N - 0.0035 * N * N + 0.00028 * N * N * N); return eps * 5.6697e-8 * Tk ** 4; }));
+    if (nIr) gaps.ir = { label: "Long-wave sky radiation (computed from dew point and sky cover)", hours: nIr };
+    const cc = h[3] || "";
+    return { name: h[1] || fname, cc, koppen: "", source: "Uploaded: " + fname, region: null, regionGiven: null, gaps,
+      lat: +h[6], lon: +h[7], tz: +h[8], elev, t, td, p, ir, dni, dhi, ws, albedo: 0.2 };
   }
   const forEngine = (w) => ({ name: w.name, lat: w.lat, lon: w.lon, tz: w.tz, t: w.t, td: w.td, p: w.p, ir: w.ir, dni: w.dni, dhi: w.dhi, ws: w.ws, albedo: 0.2 });
 
@@ -40,9 +61,9 @@
   const st = {
     wxList: WXDATA.map(fromRecord), wxIdx: 0, wx: null, use: "office", region: "C",
     model: "na", cat: { en: "II", ash: "80", na: "II" }, fans: false,
-    dims: S.USE.office.dims.slice(), wall: 0.35, coolSet: 26, gains: { dwelling: 100 / 24, office: 25, school: 30 }, fanW: 1.5, dinC: {}, copH: 3, copC: 3.5,
+    dims: S.USE.office.dims.slice(), wall: 0.35, coolSet: 26, fanW: Register.val("run.fan.power"), blindCtl: "auto", dinC: {}, copH: 3, copC: 3.5,
     limit: null, target: null, upper: null, autoT: null, autoU: null, w: [1 / 3, 1 / 3, 1 / 3],
-    scen: "corner", fa: 4, yAx: "E", allow: { mass: ["light", "medium", "heavy"] }, ori: [0, 2, 4, 6], types: ["cellular", "corner"], showTen: false, mode: "cool", dlm: "S", floor: "en", zoom: {}, fac: null, dl: null, running: false, sel: null, ctx: null, gen: 0,
+    scen: "corner", fa: 4, yAx: "E", allow: { mass: ["light", "medium", "heavy"], nightAch: [0, 2] }, ori: [0, 2, 4, 6], types: ["cellular", "corner"], showTen: false, mode: "cool", dlm: "S", floor: "en", zoom: {}, fac: null, dl: null, running: false, sel: null, ctx: null, gen: 0,
     brush: {}, excl: {}, rate: null, build: {}, dlDone: 0, dlTotal: 0, evals: 0,
   };
   st.wx = st.wxList[0];
@@ -52,7 +73,7 @@
 let ctx=null;
 const two=(c)=>({heat:Sweep.runCombo(ctx,c,'heat').heat,cool:Sweep.runCombo(ctx,c,'cool').cool});
 self.onmessage=(e)=>{const m=e.data;
- if(m.type==='init'){const wx=m.wx;Object.assign(wx,Geo.solarPosition(wx.lat,wx.lon,wx.tz));ctx=Sweep.context(wx,m.use,{dims:m.dims,wallDepth:m.wall,coolSet:m.coolSet,coolHi:m.coolHi,coolHiFan:m.coolHiFan,gainOcc:m.gainOcc,fanW:m.fanW});postMessage({type:'ready'});}
+ if(m.type==='init'){const wx=m.wx;Object.assign(wx,Geo.solarPosition(wx.lat,wx.lon,wx.tz));ctx=Sweep.context(wx,m.use,{dims:m.dims,wallDepth:m.wall,coolSet:m.coolSet,coolHi:m.coolHi,coolHiFan:m.coolHiFan,gainOcc:m.gainOcc,fanW:m.fanW,blindCtl:m.blindCtl});postMessage({type:'ready'});}
  else if(m.type==='run'){const out=m.tasks.map(t=>{let r;
    if(t.kind==='dl') r=DaySweep.job(ctx,t.job);
    else if(t.kind==='fac') r=FacadeSearch.search(ctx,Object.assign(t.o,{onProgress:(n)=>postMessage({type:'prog',id:t.id,n})}));
@@ -97,7 +118,7 @@ self.onmessage=(e)=>{const m=e.data;
     st.coolClimate = null; if (st.wAuto) { st.w = EQW.slice(); st.wAuto = false; } st.zoom = {}; st.wwrFine = []; st.wwrBy = {}; st.refine = null; st.runDl = runKey4(); st.topping = null; st.wi = null; st.balCache = {}; st.fmap = {}; fmPending.clear(); st.evals = 0; st.dlDone = 0; st.running = true; st.sel = null; st.rate = null; st.autoT = st.autoU = null; st.cache = {};
     const eng = forEngine(st.wx);
     st.ctxWx = Object.assign({}, eng, G.solarPosition(eng.lat, eng.lon, eng.tz));
-    st.ctx = S.context(st.ctxWx, st.use, { dims: st.dims, wallDepth: st.wall, coolSet: st.coolSet, gainOcc: gainNow(), fanW: st.fanW }); st.gainRun = gainNow(); st.fanWRun = st.fanW; st.dinC = {}; dinPending.clear(); st.ctx.coolHi = coolHiNow(st.ctx); st.ctx.coolHiFan = coolHiFanNow(st.ctx, st.ctx.coolHi); st.coolKeyRun = coolKeyNow();
+    st.ctx = S.context(st.ctxWx, st.use, { dims: st.dims, wallDepth: st.wall, coolSet: st.coolSet, gainOcc: gainNow(), fanW: st.fanW, blindCtl: st.blindCtl }); st.gainRun = gainNow(); st.fanWRun = st.fanW; st.blindCtlRun = st.blindCtl; st.dinC = {}; dinPending.clear(); st.ctx.coolHi = coolHiNow(st.ctx); st.ctx.coolHiFan = coolHiFanNow(st.ctx, st.ctx.coolHi); st.coolKeyRun = coolKeyNow();
     for (const sc of DLSC) for (const w of S.PARAMS.wwr) for (const f of S.PARAMS.fixed) queue.push({ kind: "dl", id: [sc, w + "|" + f], job: { scenario: sc, wwr: w, fixed: f } });
     st.dlTotal = queue.length; st.facQueued = false;
     for (let k = 0; k < (st.wmode === "inline" ? 1 : NW); k++) {
@@ -122,7 +143,7 @@ self.onmessage=(e)=>{const m=e.data;
         feed(w);
       };
       w.onerror = (e) => { if (!w.ready && st.wmode === "file") { st.wmode = "inline"; startRun(); return; } setStatus("A calculation failed: " + e.message); };
-      w.postMessage({ type: "init", wx: eng, use: st.use, dims: st.dims, wall: st.wall, coolSet: st.coolSet, coolHi: Array.from(st.ctx.coolHi), coolHiFan: st.ctx.coolHiFan ? Array.from(st.ctx.coolHiFan) : null, gainOcc: st.gainRun, fanW: st.fanWRun });
+      w.postMessage({ type: "init", wx: eng, use: st.use, dims: st.dims, wall: st.wall, coolSet: st.coolSet, coolHi: Array.from(st.ctx.coolHi), coolHiFan: st.ctx.coolHiFan ? Array.from(st.ctx.coolHiFan) : null, gainOcc: st.gainRun, fanW: st.fanWRun, blindCtl: st.blindCtlRun });
       workers.push(w);
     }
     t0 = performance.now(); scheduleRender(true);
@@ -255,13 +276,13 @@ self.onmessage=(e)=>{const m=e.data;
   /* v6: the cooled run holds the upper limit of the chosen comfort model in occupied hours. German annex: the upper edge of
      the band (it applies with and without cooling, as read here). EN 16798-1 and ASHRAE 55: their adaptive models are for rooms
      without mechanical cooling, so a cooled room is held at a fixed limit (EN category I 25.5, II 26, III 27 °C; ASHRAE 55
-     taken as 26 °C for 80 % and 25.5 °C for 90 % acceptability, to confirm). DIN 4108-2: the reference temperature of the region. */
-  /* v7: representative internal gains in occupied hours, W/m² floor (people about 7.5, equipment about 12, LED lighting about
-     4 for an office; about 2.5 m² per pupil for a school; the DIN value for dwellings). The DIN 4108-2 check keeps the standard's
-     own gains (office and school 144 Wh/m²d over 11 h, about 13 W/m²). */
-  const gainNow = () => st.gains[st.use];
-  const DIN_GAIN = { dwelling: 100 / 24, office: 144 / 11, school: 144 / 11 };
-  const EN_FIX = { I: 25.5, II: 26, III: 27 }, ASH_FIX = { 80: 26, 90: 25.5 };
+     26 °C for 80 % and 25.5 °C for 90 % acceptability; register cool.fix.*). DIN 4108-2: the reference temperature of the region. */
+  /* v16 (decision of 11 November 2026): every run uses the internal gains and schedules of DIN 4108-2, 8.4.2 b and e
+     (100 Wh/m²d over all hours for dwellings, 144 Wh/m²d over 7 to 18 h on weekdays otherwise). Energy runs will take the
+     DIN V 18599-10 profiles once they are added; until then they use the same. */
+  const DIN_GAIN = { dwelling: S.USE.dwelling.gainOcc, office: S.USE.office.gainOcc, school: S.USE.school.gainOcc };
+  const gainNow = () => DIN_GAIN[st.use];
+  const EN_FIX = Register.val("cool.fix.en"), ASH_FIX = Register.val("cool.fix.ash");
   const coolKeyNow = () => (st.model === "din" ? "din_" + st.region : st.model + "_" + st.cat[st.model]) + (fanOkNow() ? "|fan" : "");
   function coolHiNow(ctx) {
     if (st.model === "na") return Float32Array.from(ctx.BN.B["na_" + st.cat.na].hi);
@@ -345,7 +366,7 @@ self.onmessage=(e)=>{const m=e.data;
   const SCPL = { cellular: "Cellular rooms", corner: "Corner rooms", corner_top: "Corner rooms on the top floor" };
   const SCDESC = { cellular: "One facade", corner: "Two facades", corner_top: "Two facades and roof" };
   const PNAME = { wwr: "Window", fixed: "Outdoor shading", uglass: "Window U", gglass: "Glass g", opaque: "Wall U", mass: "Mass", shading: "Blinds", dayAch: "Day air", nightAch: "Night air", fans: "Fans", roof: "Roof",
-    D: "Score", S: "Daylight", C: "Overheating", E: "Energy", din: "DIN 4108-2 at the representative gains", hum: "Humid hours" };
+    D: "Score", S: "Daylight", C: "Overheating", E: "Energy", din: "DIN 4108-2, design run (estimate)", hum: "Humid hours" };
   function lvWord(p, v) {
     switch (p) {
       case "wwr": return Math.round(v * 100) + "% window";
@@ -1205,7 +1226,7 @@ self.onmessage=(e)=>{const m=e.data;
   const AI = { mode: null, sample: null, tools: false, key: "", model: "claude-sonnet-5-5", runKey: null, review: null, chat: [], ctl: null, scope: "shown" };
   const MW = { fans: "ceiling fans at 0.9 m/s, on in occupied hours when the room is at 25 °C or more; electricity and heat as set in the inputs (see model_notes, default 1.5 W/m² floor); raise the upper comfort limit by 1.8 K under EN 16798-1 and ASHRAE 55 (German annex only if chosen; never in the DIN 4108-2 check) and the cooling limit likewise", wwr: "window-to-wall ratio of facade A (and B for corner rooms)", fixed: "fixed outdoor shading", shading: "movable blinds", dayAch: "windows opened in occupied hours when the room is above 23 °C and warmer than outside (air changes per hour)", nightAch: "night ventilation outside presence hours when the room is above the night minimum and warmer than outside (air changes per hour)", mass: "thermal mass", opaque: "opaque envelope U value (walls; roof on the top floor)", uglass: "window U value incl. frame (double 1.3 or triple 0.8 W/m²K)", gglass: "glass total solar energy transmittance g", roof: "roof finish (top floor only)" };
   const r1 = (x) => x == null || !isFinite(x) ? null : Math.round(x * 10) / 10;
-  function optView(r) { return { measures: Object.fromEntries(MEASURES(r.sc).map((p) => [p, lvWord(p, r.dz[p])])), daylight: pts(r.m.S), daylight_minimum_met: r.m.A1, overheating_Kh: r1(r.m.C), energy_kWh_m2a: r1(r.m.E), score: pts(r.D), comfort_limit_met: bandMode() ? "no limit for the band in Germany; see din_4108_2" : !r.short, din_4108_2: (() => { const c = dinComply(r.sc, r.a, r, false); return { complies: c.ok, Kh_per_year: r1(c.kh), checked_with: c.exact ? "the gains of the standard" : "the representative gains (stricter)" }; })() }; }
+  function optView(r) { return { measures: Object.fromEntries(MEASURES(r.sc).map((p) => [p, lvWord(p, r.dz[p])])), daylight: pts(r.m.S), daylight_minimum_met: r.m.A1, overheating_Kh: r1(r.m.C), energy_kWh_m2a: r1(r.m.E), score: pts(r.D), comfort_limit_met: bandMode() ? "no limit for the band in Germany; see din_4108_2" : !r.short, din_4108_2: (() => { const c = dinComply(r.sc, r.a, r, false); return { complies: c.ok, Kh_per_year: r1(c.kh), checked_with: c.exact ? "the conditions of DIN 4108-2, 8.4.2, on this weather file (an indication; the proof uses the test reference year)" : "the design run (estimate: the app's controls, not the standard's)" }; })() }; }
   // every single change of a design that has been simulated: the modelled effect of each measure, like for like
   function effectsOf(sc, a, base) {
     const F = st.fac[sc][a], out = [];
@@ -1249,7 +1270,7 @@ self.onmessage=(e)=>{const m=e.data;
     });
     return {
       app: {
-        name: "Room Design Guide",
+        name: "Room Clima",
         purpose: "Early-design study of typical rooms of one building. For each room type and each facade orientation, it searches combinations of design measures and recommends a set for the building.",
         how_the_search_works: "Each facade of each room type is searched on its own: 60 random designs, then 4 rounds of 30 variations around the options on the Pareto front (no other option better in daylight, comfort and energy), then every single change of every design on the front is simulated until the front stops changing (Pareto local search). Checked against brute force (every combination) at 7 facades in 3 climates: the whole front and the best option for every weighting were found in all cases. Each option is simulated twice: heated with no cooling (gives overheating) and heated and cooled (gives energy). The facades are then combined into one building option from the options found: measures marked shared (opaque U value, glazing U and g, thermal mass, roof finish) must be the same at every facade of a room type; the others may differ by facade. Single-change effects compare the building option with the same option where only one measure is changed, simulated exactly. Day and night ventilation, and blinds and fixed shading, are also tested with both removed, because they can stand in for each other.",
         scope_of_this_review: list.length === 1 ? `only the ${SCLAB[list[0]].toLowerCase()}, the room type shown on the page; other room types tested: ${st.types.filter((x) => x !== list[0]).map((x) => SCLAB[x].toLowerCase()).join(", ") || "none"}` : "all room types tested",
@@ -1274,7 +1295,7 @@ self.onmessage=(e)=>{const m=e.data;
         "Energy in humid climates: moisture removal by the coil depends on outdoor humidity and ventilation, hardly on the facade measures; facade measures act on the sensible cooling.",
         "Blinds come down when the sun on the facade exceeds the DIN 4108-2 threshold and the room air is above 23 °C. The lower threshold of DIN 4108-2 applies only to the north facade above 23.44° N and the south facade below 23.44° S; between the tropics every facade uses the higher threshold. Daylight results are for the room without blinds.",
         "Window ventilation. Run without cooling: by day in presence hours when the room air is above 23 °C and warmer than outside; at night outside presence hours when the room is warmer than outside and above 23 °C (the night rule is an assumption still to be confirmed against DIN 4108-2). Cooled run (mixed mode): windows stay shut while cooling runs; by day they open only when the outdoor air is at least 2 K below the cooling limit and at most 12 g/kg; at night only when the outdoor air is at most 12 g/kg. The free opening area these air changes need is estimated single-sided without wind (CIBSE AM10): about 1 to 2 m² for a cellular office at 5 to 6 1/h.",
-        `Internal gains: comfort, energy and cooling loads use ${fmt(st.gainRun)} W/m² in occupied hours (representative); only the DIN 4108-2 check uses the gains of the standard (${fmt(Math.round(DIN_GAIN[st.use] * 100) / 100)} W/m²).`,
+        `Internal gains: every run uses the gains and schedules of DIN 4108-2 (${fmt(Math.round(DIN_GAIN[st.use] * 100) / 100)} W/m² in occupied hours). The DIN 4108-2 check also uses the standard's controls; the design runs use the app's.`,
         `Ceiling fans (a design measure): ${fmt(st.fanWRun)} W/m² floor while on (occupied hours at 25 °C or more), counted as electricity in delivered energy and as heat; they raise the upper comfort limit by 1.8 K under EN 16798-1 and ASHRAE 55 (German annex only if chosen) and the cooling limit likewise; never in the DIN 4108-2 check.`,
         "The designs labelled priority_daylight_first and priority_energy_first are the building options of the priority buttons (weights 4:1:1), the same as on the page.",
         "Daylight: climate-based model in the page, validated against Radiance (sDA within about 1 point); fewer rays in the search (sDA within about 3 points). Light transmittance of the glazing types are typical values, not product data.",
@@ -1442,6 +1463,8 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     AI.ctl = null; $("aistop").hidden = true; renderChat(); aiConn(); scheduleRender(false);
   }
   function bindAI() {
+    // v16: the Claude review is for debugging only; it shows when the page address carries #debug or ?debug
+    const DEBUG = /[?#&]debug\b/.test(String(location.href)); $("askbtn").hidden = !DEBUG; if (!DEBUG) { $("aibox").hidden = true; }
     $("aigo").onclick = () => runReview();
     $("askbtn").onclick = () => { const b = $("aibox"); b.hidden = !b.hidden; if (!b.hidden) b.scrollIntoView({ behavior: "smooth", block: "start" }); };
     $("aiscope").onchange = (e) => { AI.scope = e.target.value; renderReview(); };
@@ -1460,7 +1483,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     $("model").innerHTML = Object.keys(MODELS).map((k) => `<option value="${k}">${MODELS[k].label}</option>`).join("");
     $("model").value = st.model; fillCat(); fillRoom(); if ($("strat") && typeof fillStrategies === "function") try { fillStrategies(); } catch (e) { } if ($("modelloc") && $("dlSeg")) try { syncReading(); } catch (e) { }
   }
-  function fillRoom() { $("rw").value = st.dims[0]; $("rd").value = st.dims[1]; $("rh").value = st.dims[2]; $("wall").value = String(st.wall); $("cool").value = st.coolSet; $("gain").value = Math.round(gainNow() * 10) / 10; $("fanw").value = st.fanW; $("gainnote").textContent = st.use === "dwelling" ? "As DIN 4108-2 (100 Wh/m² a day, all hours)." : `Representative ${st.use === "office" ? "office: people about 7.5, equipment about 12, LED lighting about 4 W/m²" : "classroom: about 2.5 m² per pupil"}. The DIN 4108-2 check uses the standard's ${fmt(Math.round(DIN_GAIN[st.use] * 10) / 10)} W/m².`; fillLimit(); fillAnchors(); }
+  function fillRoom() { $("rw").value = st.dims[0]; $("rd").value = st.dims[1]; $("rh").value = st.dims[2]; $("wall").value = String(st.wall); $("cool").value = st.coolSet; $("fanw").value = st.fanW; $("gainnote").textContent = st.use === "dwelling" ? "Internal gains as DIN 4108-2: 100 Wh/m² a day over all hours (about 4.2 W/m²)." : `Internal gains as DIN 4108-2: 144 Wh/m² a day over 7 to 18 h on weekdays (about ${fmt(Math.round(DIN_GAIN[st.use] * 10) / 10)} W/m²), no holidays. Energy figures use the same until the DIN V 18599-10 profiles are added.`; fillLimit(); fillAnchors(); }
   function fillLimit() { $("limit").value = limitNow(); $("coph").value = st.copH; $("copc").value = st.copC; $("limu").textContent = st.model === "din" ? "K·h/a" : "K·h/a above the band"; }
   function fillAnchors() {
     $("tgt").value = targetNow(); $("upp").value = upperNow();
@@ -1471,7 +1494,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   // strategies to test (inputs): the levels of each measure that are feasible on this site
   const STRAT = ["wwr", "fixed", "shading", "dayAch", "nightAch", "fans", "mass", "opaque", "uglass", "gglass", "roof"];
   const SLAB = { wwr: "Window ratio", fixed: "Outdoor shading", shading: "Blinds", dayAch: "Windows opened by day", nightAch: "Night ventilation", fans: "Ceiling fans", mass: "Thermal mass", opaque: "Wall U, W/m²K", uglass: "Window U, W/m²K", gglass: "Glass g", roof: "Roof finish (top floor)" };
-  const stratLabel = (p, lv) => levelLabel(p, lv).replace("Overh.", "Overhang").replace("Venetian", "Exterior venetian").replace("Shutter", "Exterior shutter").replace("Interior", "Interior blind").replace(/^U |^g /, "");
+  const stratLabel = (p, lv) => (p === "nightAch" && lv === 5 ? "5 1/h, only with air across storeys (atrium, stair) or a fan system" : p === "nightAch" && lv === 2 ? "2 1/h, windows open at night" : levelLabel(p, lv)).replace("Overh.", "Overhang").replace("Venetian", "Exterior venetian").replace("Shutter", "Exterior shutter").replace("Interior", "Interior blind").replace(/^U |^g /, "");
   const levVal = (p, v) => S.PARAMS[p].find((x) => String(x) === v);
   function fillStrategies() {
     $("strat").innerHTML = STRAT.map((p) => `<div class="sg"><span class="sgl">${SLAB[p]}${p === "fans" && !fanOkNow() ? ` <span class="small">(not tested: ${MODELS[st.model].label} gives fans no credit${st.model === "na" ? "; tick the EN 16798-1 allowance under the standard to test them" : ""})</span>` : ""}</span><div class="sgo">${S.PARAMS[p].map((lv) => `<label class="chk"><input type="checkbox" data-p="${p}" value="${lv}"${LVa(p).includes(lv) ? " checked" : ""}> ${stratLabel(p, lv)}</label>`).join("")}</div></div>`).join("");
@@ -1485,7 +1508,11 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     if (m.cats.length) $("cat").value = st.cat[st.model];
     $("fanrow").hidden = st.model !== "na"; $("nafan").checked = !!st.naFan;
   }
-  function wxInfo() { const w = st.wx; $("wxinfo").textContent = `${w.source}${w.cc ? ", " + w.cc : ""}; ${w.lat.toFixed(2)}°, ${w.lon.toFixed(2)}°; mean ${(w.t.reduce((s, x) => s + x, 0) / 8760).toFixed(1)} °C`; }
+  function wxInfo() {
+    const w = st.wx, g = w.gaps ? Object.values(w.gaps) : [];
+    $("wxinfo").textContent = `${w.source}${w.cc ? ", " + w.cc : ""}; ${w.lat.toFixed(2)}°, ${w.lon.toFixed(2)}°; mean ${(w.t.reduce((s, x) => s + x, 0) / 8760).toFixed(1)} °C`
+      + (g.length ? `. Filled gaps: ${g.map((x) => `${x.label.toLowerCase()} ${x.hours} h`).join("; ")}.` : "");
+  }
   function segs(id, key, after) {
     document.querySelectorAll(`#${id} button`).forEach((b) => { b.setAttribute("aria-pressed", b.dataset.v === String(st[key])); b.onclick = () => { st[key] = b.dataset.v; segs(id, key, after); after(); }; });
   }
@@ -1495,12 +1522,37 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     $("roomerr").textContent = ""; st.dims = [w, d, h]; st.wall = +$("wall").value; setStale(true);
   }
   const reread = () => { if (st.fac) renderAll(); };
+  // v16: parameter register and version notes, written into Method and limits from the register itself
+  const CHANGES = [
+    ["v16, phase 1", "12 Nov 2026", "Renamed Room Clima. One parameter register for engine and page. DIN 4108-2 check rewritten from clause 8.4.2 (controls, Monday start, convective gains, g_tot rule, weekend rule for blinds by hand); region chosen from figure 1. All runs on the DIN 4108-2 gains. German annex band on the hourly outdoor temperature. Day ventilation at most 3 1/h; 5 1/h at night only when ticked. Windows never open while heating runs; night ventilation after warm days. Fan credit only in hours the fans run. Cooling loads on the 99th percentile. Weather gaps interpolated and listed. Fonts and zip reader bundled. Claude review in the debug build only."],
+    ["v15", "31 Oct 2026", "In Germany, DIN 4108-2 compliance shown first per facade and per option; band degree-hours rank designs without the 500 K·h/a limit."],
+    ["v14", "31 Oct 2026", "Cooling need by DIN 4108-2 in Germany and by the comfort standard elsewhere; fans only where credited."],
+    ["v13", "31 Oct 2026", "Building-wide measures across all room types; cooling as no cooling, chilled ceiling or air conditioning."],
+    ["v12", "30 Oct 2026", "Mixed-mode cooled run; fan power 1.5 W/m²; energy scale from the trade-off front; opening areas for window ventilation."],
+    ["v11", "27 Oct 2026", "Ceiling fans as a design measure, credited per comfort standard."],
+    ["v10", "27 Oct 2026", "Thermal mass levels recalibrated to DIN V 18599; very heavy as an option."],
+    ["v9", "27 Oct 2026", "Window size refined in 5% steps; window ranges."],
+    ["v8", "27 Oct 2026", "Cooling answer in sentences per facade; comfort standard in the inputs."],
+    ["v7", "27 Oct 2026", "DIN 4108-2 check with the standard's gains; chilled ceiling sized on the peak with humidity limit."],
+    ["v5", "27 Oct 2026", "Cooling estimate with a radiant ceiling check; SVG and PNG exports."],
+    ["v4", "25 Oct 2026", "Priorities, 3D rooms per facade with daylight, what-if switches."],
+    ["v3", "25 Oct 2026", "Pareto local search per facade, checked against brute force."],
+  ];
+  function fillRegister() {
+    const esc2 = (x) => String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const v2s = (v) => typeof v === "object" ? JSON.stringify(v).replace(/[{}"]/g, "").replace(/,/g, ", ").replace(/:/g, ": ") : String(v);
+    $("regtable").innerHTML = "<thead><tr><th>Entry</th><th>Value</th><th>Meaning</th><th>Status</th><th>Source</th></tr></thead><tbody>" + Object.entries(Register.REG).map(([k, r]) =>
+      `<tr><td><code>${esc2(k)}</code></td><td>${esc2(v2s(r.v))}${r.unit ? " " + esc2(r.unit) : ""}</td><td>${esc2(r.text)}</td><td class="st ${r.status}">${r.status}</td><td>${esc2(r.src)}</td></tr>`).join("") + "</tbody>";
+    $("changelog").innerHTML = "<thead><tr><th>Version</th><th>Date</th><th>Changes</th></tr></thead><tbody>" + CHANGES.map(([v, d, t]) => `<tr><td>${v}</td><td style="white-space:nowrap">${d}</td><td>${esc2(t)}</td></tr>`).join("") + "</tbody>";
+  }
   function init() {
+    fillRegister();
     st.wxList.forEach((w) => { w.region = regionFor(w); }); st.region = st.wx.region; locDefaults();
     fillControls(); wxInfo(); regionInfo();
     $("wx").onchange = () => { selectBuiltin(+$("wx").value); };
     $("region").value = st.region;
-    $("region").onchange = () => { st.region = $("region").value; fillLimit(); if (coolStale()) setStale(true); reread(); };
+    $("region").onchange = () => { st.region = $("region").value; if (inGermany(st.wx)) st.wx.regionGiven = st.region; regionInfo(); fillLimit(); if (coolStale()) setStale(true); reread(); };
+    $("blindctl").value = st.blindCtl; $("blindctl").onchange = () => { st.blindCtl = $("blindctl").value; setStale(true); };
     $("model").onchange = () => { st.model = $("model").value; st.modelManual = true; fillStrategies(); fillCat(); fillLimit(); delete st.brush.C; if (coolStale()) setStale(true); reread(); };
     $("cat").onchange = () => { st.cat[st.model] = $("cat").value; delete st.brush.C; if (coolStale()) setStale(true); reread(); };
     $("nafan").onchange = () => { st.naFan = $("nafan").checked; fillStrategies(); delete st.brush.C; if (coolStale()) setStale(true); reread(); };
@@ -1518,7 +1570,6 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     $("copc").onchange = () => { const v = +$("copc").value; if (v > 0) { st.copC = v; reread(); } };
     $("refwin").onchange = () => { st.refineWin = $("refwin").checked; if (st.refineWin && st.fac && !st.running && !st.refine && facCount() >= facTotal()) startRefine(); };
     $("fanw").onchange = () => { const v = +$("fanw").value; if (v >= 0 && v <= 10) { st.fanW = v; setStale(true); } };
-    $("gain").onchange = () => { const v = +$("gain").value; if (v >= 0 && v <= 80) { st.gains[st.use] = v; setStale(true); } };
     $("cool").onchange = () => { const v = +$("cool").value; if (v >= 20 && v <= 32) { st.coolSet = v; fillAnchors(); setStale(true); } };
     $("weq").onclick = () => { st.w = [1 / 3, 1 / 3, 1 / 3]; reRank(); };
     $("pcreset").onclick = () => { st.brush = {}; st.excl = {}; renderAll(); };
@@ -1554,8 +1605,10 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     st.stale = on && !!st.fac; $("run").classList.toggle("stale", on); $("run").textContent = on && st.fac ? "Run with the new inputs" : "Run";
     if (on && st.fac) setStatus("Inputs changed. The results shown are for the previous inputs.");
   }
-  // DIN 4108-2 region from the file: the highest monthly mean outdoor temperature (A up to 16.5, B up to 18, C above; to verify)
-  function regionFor(w) { return C.dinRegion(w.t).region; }
+  /* DIN 4108-2 summer climate region (v16): in Germany chosen from figure 1 of the standard (8.1); the bundled German
+     file carries its region; an uploaded German file is set to B until the user chooses. Outside Germany the standard
+     does not apply: a region is estimated from the warmest monthly mean, for reference only. */
+  function regionFor(w) { return inGermany(w) ? (w.regionGiven || "B") : C.dinRegion(w.t).region; }
   /* Defaults by location (decision of 25 October 2026): Germany: German annex and DIN 4108-2 regions; elsewhere in
      Europe: EN 16798-1 adaptive, category II; outside Europe: ASHRAE 55 adaptive, 80%. A model chosen by the user stays. */
   const EUROPE = new Set("AUT BEL BGR HRV CYP CZE DNK EST FIN FRA DEU GRC HUN IRL ITA LVA LTU LUX MLT NLD POL PRT ROU SVK SVN ESP SWE GBR NOR CHE ISL LIE ALB BIH MNE MKD SRB MDA UKR BLR AND MCO SMR XKX AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE GB UK NO CH IS LI AL BA ME MK RS MD UA BY AD MC SM XK".split(" "));
@@ -1566,7 +1619,14 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     if (st.modelManual) return;
     if (inGermany(w)) st.model = "na"; else if (EUROPE.has(cc)) { st.model = "en"; st.cat.en = "II"; } else { st.model = "ash"; st.cat.ash = "80"; }
   }
-  function regionInfo() { const r = C.dinRegion(st.wx.t); $("reginfo").textContent = `Set from the weather file: warmest month ${r.maxMonth.toFixed(1)} °C (A up to 16.5, B up to 18, C above). Override if the site's region differs.`; }
+  function regionInfo() {
+    const w = st.wx, r = C.dinRegion(w.t), ref = Register.val("din.weather")[st.region];
+    $("reginfo").textContent = inGermany(w)
+      ? (w.regionGiven ? `Region ${w.regionGiven} for this site, from figure 1 of DIN 4108-2. ` : "Choose the region of the site from figure 1 of DIN 4108-2 (between two regions, the warmer one). Set to B until you choose. ")
+        + `The proof uses the ${ref}; on this weather file the check is an indication.`
+      : `DIN 4108-2 applies in Germany only. Region estimated from the warmest month of the file (${r.maxMonth.toFixed(1)} °C), for reference.`;
+    $("regionask").hidden = !(inGermany(w) && !w.regionGiven);
+  }
   function useText(text, fname, err) {
     try {
       const w = parseEPW(text, fname); w.region = regionFor(w);
@@ -1687,9 +1747,9 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     let din = "";
     if (dinRule()) { const cs = B.A.map((a, i) => ({ a, c: dinComply(sc, a, rows[i], true) })), done = cs.every((x) => x.c.exact), fail = cs.filter((x) => x.c.exact && !x.c.ok), khs = cs.filter((x) => x.c.exact).map((x) => x.c.kh);
       const val = !done ? "checking…" : fail.length ? `fails at ${listJoin(fail.map((x) => orientLabel(sc, x.a)))}` : `complies at ${listJoin(B.A.map((a) => orientLabel(sc, a)))}`;
-      din = t(fail.length ? "oh" : "ok", "Summer protection, DIN 4108-2", val, khs.length ? `${rng2(khs)} of ${fmt(dinLim())} K·h/a above ${C.DIN_REF[st.region]} °C` : "", `Without cooling, with the gains of the standard (${fmt(Math.round(DIN_GAIN[st.use] * 10) / 10)} W/m²), region ${st.region}.`); }
+      din = t(fail.length ? "oh" : "ok", "Summer protection, DIN 4108-2", val, khs.length ? `${rng2(khs)} of ${fmt(dinLim())} K·h/a above ${C.DIN_REF[st.region]} °C` : "", `Without cooling, with the conditions of DIN 4108-2 (gains ${fmt(Math.round(DIN_GAIN[st.use] * 10) / 10)} W/m²), region ${st.region}. On this weather file an indication: the proof uses the ${Register.val("din.weather")[st.region]}.`); }
     return din + t("dl", "Daylight", rng((r) => r.m.S, dlVal), DLU[st.dlm], `Range across the ${n} facades. Minimum: ${FLOORNAME[st.floor]}.`)
-      + (bandMode() ? t("oh", "Warm hours above the comfort band", rng((r) => r.m.C, (v) => fmt(Math.round(v))), "K·h/a without cooling, with the representative gains", `Range across the ${n} facades. Ranks the designs; no limit applies here (DIN 4108-2 decides compliance). Scored relative to this run.`)
+      + (bandMode() ? t("oh", "Warm hours above the comfort band", rng((r) => r.m.C, (v) => fmt(Math.round(v))), "K·h/a without cooling, with the gains of DIN 4108-2", `Range across the ${n} facades. Ranks the designs; no limit applies here (DIN 4108-2 decides compliance). Scored relative to this run.`)
         : t("oh", "Overheating", rng((r) => r.m.C, (v) => fmt(Math.round(v))), st.coolClimate ? "K·h/a above the comfort band if the cooling fails (resilience)" : "K·h/a above the comfort band, without cooling", `Range across the ${n} facades. ${shortTxt}${rel}`))
       + t("en", "Delivered energy", rng((r) => r.m.E, (v) => fmt(v)), st.mode === "cool" ? `${UE}, heating and cooling to ${coolTxt()}` : `${UE}, heating`, `Range across the ${n} facades. Target ${fmt(targetNow())}, upper value ${fmt(upperNow())} ${UE}${st.target == null ? ", proposed from this run" : ""}.`);
   }
@@ -1862,7 +1922,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
      71 W/m² of ceiling at 10 K between room and mean water temperature (analogous to EN 14240); BEKA plaster ceiling 76 W/m²
      (EN 14240). In operation the difference is smaller (mean water about 17 to 19 °C, room 26 °C) and part of the ceiling
      stays inactive (lights, edges), hence 50 W/m² of floor as the default. Editable. */
-  st.ceilCap = st.ceilCap || 50;
+  st.ceilCap = st.ceilCap || Register.val("ceil.cap");
   function covered(h, cap) { // share of cooling hours whose sensible load is at or below cap, from the 5 W/m² bins
     const B = S.CBIN; let n = 0, c = 0; h.forEach((k, i) => { n += k; const lo = i * B, hi = (i + 1) * B; c += cap >= hi ? k : cap > lo ? k * (cap - lo) / B : 0; }); return n ? c / n : 1;
   }
@@ -1870,10 +1930,10 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
      1. Summer protection (DIN 4108-2): K·h/a above the reference temperature of the summer climate region, room heated in
         winter and not cooled; limit 500 K·h/a (non-residential) or 1,200 K·h/a (residential). Independent of the comfort model.
      2. Time outside the comfort band of the chosen model: occupied hours above the upper edge, room not cooled; at most
-        st.maxOut % of occupied hours (default 5 %, after the informative figure of EN 15251, to confirm for EN 16798-1).
+        st.maxOut % of occupied hours (default from the register, comfort.maxOut: an assumption after the informative figure of EN 15251).
      Passing both: no cooling needed. Otherwise a cooled ceiling is enough when the hours it cannot cover (from the ideal
      loads of the cooled run) stay within the same share of occupied hours; else a cooling system is needed. */
-  st.maxOut = st.maxOut || 5;
+  st.maxOut = st.maxOut || Register.val("comfort.maxOut");
   const nOccNow = () => st.ctx.occ.reduce((s0, x) => s0 + x, 0);
   /* v7: the ceiling is sized on the peak. eHist / ePeak: the hourly sensible load expressed at the ceiling's rating (10 K between
      room and mean water), with the water kept above 16 °C and above the room dew point + 1 K; "A" for the ceiling alone (room
@@ -1890,14 +1950,14 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   /* v15: in Germany with a comfort band, the band degree-hours rank the designs and carry no limit: the 500 K·h/a of
      DIN 4108-2 belongs to the summer protection check (degree-hours above the region's reference), not to the band. */
   const bandMode = () => dinRule() && st.model !== "din";
-  // compliance with DIN 4108-2 of one design: exact (the standard's gains) where run, else the check at the representative
-  // gains, which is stricter: complying there implies complying with the standard's gains
+  // compliance with DIN 4108-2 of one design: the check with the standard's conditions where run (exact), else an estimate
+  // from the design run (same gains, the app's controls)
   function dinComply(sc, a, row, req) {
     const d = req ? dinOf(sc, a, row.dz) : st.dinC[[sc, a, FS.keyOf(row.dz)].join("|")], lim = dinLim();
     if (d) return { exact: true, kh: d["din_" + st.region], ok: d["din_" + st.region] <= lim };
-    const k = row.r.heat["din_" + st.region]; return { exact: false, kh: k, ok: k <= lim ? true : null };
+    const k = row.r.heat["din_" + st.region]; return { exact: false, kh: k, ok: k <= lim };
   }
-  const CEIL_MAX = 75;
+  const CEIL_MAX = Register.val("ceil.max");
   const VLAB = { wait: "Checking", none: "No cooling needed", ceil: "A chilled ceiling is enough, without air conditioning", sys: "Air conditioning needed" };
   const VSHORT = { wait: "Checking…", none: "No cooling", ceil: "Chilled ceiling", sys: "Air conditioning" };
   const overCap = (H, cap) => { const B = S.CBIN; let n = 0; (H || []).forEach((k, i) => { const lo = i * B, hi = (i + 1) * B; n += cap <= lo ? k : cap < hi ? k * (hi - cap) / B : 0; }); return Math.round(n); };
@@ -1933,7 +1993,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     if (x.v === "wait") return "Checking against DIN 4108-2 with the standard's gains…";
     if (x.v === "none") return x.useDin ? `No cooling needed: the room passes summer protection without cooling (DIN 4108-2: ${fmt(Math.round(x.dkh))} of ${fmt(dinLim())} K·h/a). It is above the comfort band in ${pct(x.share)} of occupied hours${x.pass2 ? "." : ", so occupants may still ask for cooling."}`
       : `No cooling needed: without cooling the room is above the comfort band in ${pct(x.share)} of occupied hours, within the ${fmt(st.maxOut)}% allowed.`;
-    const f = failWords(x), pk = `The peak cooling load is ${fmt(x.peak)} W/m²`;
+    const f = failWords(x), pk = `The design cooling load (exceeded in 1% of the occupied cooling hours) is ${fmt(x.peak)} W/m²`;
     if (x.v === "ceil") return `${f} ${pk}; ${x.peakOk ? `a chilled ceiling of ${fmt(cap)} W/m² covers it with dew-point control (${fmt(x.ePkD)} W/m² needed at 10 K)` : `a chilled ceiling covers it with dew-point control if rated at about ${fmt(Math.ceil(x.ePkD))} W/m² of floor at 10 K, more than the ${fmt(cap)} W/m² set: nearly the whole ceiling active, or a product with a higher rating`}, without air conditioning.${x.unc ? ` In ${fmt(x.unc)} humid hours (${pct(100 * x.unc / x.nOcc)} of occupied hours) its water must run warmer and the room drifts a little above the limit.` : ""}`;
     const why = [];
     if (!x.feasible) why.push(`the peak needs ${x.ePkD >= BIGQ ? "more than " + BIGQ : fmt(x.ePkD)} W/m² of ceiling at 10 K, ${x.ePkD >= 1.5 * cap ? `about ${fmt(Math.round(x.ePkD / cap * 10) / 10)} times` : "more than"} the ${fmt(cap)} W/m² set, beyond what ceilings reach (about ${CEIL_MAX} W/m²)`);
@@ -1999,7 +2059,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const u = URL.createObjectURL(blob), a = document.createElement("a"); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
   }
   const safeName = (t) => t.replace(/[^A-Za-z0-9 +._-]/g, "").replace(/\s+/g, "_").replace(/\+/g, "").replace(/_+/g, "_").slice(0, 120);
-  const srcLine = () => `Room Design Guide v5 · ${st.wx.name} · ${S.USE[st.use] ? st.use : ""} · ${new Date().toISOString().slice(0, 10)}`;
+  const srcLine = () => `Room Clima v16 · ${st.wx.name} · ${S.USE[st.use] ? st.use : ""} · ${new Date().toISOString().slice(0, 10)}`;
   // a standalone SVG: computed styles inlined, white background, title and source line
   function standaloneSvg(svg, title, outW) {
     const vb = (svg.getAttribute("viewBox") || `0 0 ${svg.clientWidth} ${svg.clientHeight}`).split(/\s+/).map(Number), [vx, vy, vw, vh] = vb;
@@ -2028,14 +2088,14 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const fa = facade(sc, a); if (!fa) return "";
     const M = MEASURES(sc), q = (v) => /[",;\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
     const head = ["room type", "facade"].concat(M.map((p) => NAME4[p]), [`daylight (${DLU[st.dlm]})`, "overheating without cooling, K·h/a", `delivered energy, ${UE}`, "heating, kWh/m²a delivered", "sensible cooling, kWh/m²a delivered", "moisture removal, kWh/m²a delivered", "peak sensible cooling load, W/m²", `DIN 4108-2, K·h/a above ${C.DIN_REF[st.region]} °C with the standard's gains (designs shown only)`, "hours above the comfort band without cooling, % of occupied hours", "cooling result", "complies with DIN 4108-2", "meets daylight minimum", "on the Pareto front", "score, 0 to 100"]);
-    const lines = fa.rows.map((r) => [SCLAB[sc], orientLabel(sc, a)].concat(M.map((p) => choice4(p, r.dz[p])), [dlVal(r.m.S), Math.round(r.m.C), r1(r.m.E), r1(r.r.cool.qh / st.copH), r1((r.r.cool.qcs != null ? r.r.cool.qcs : r.r.cool.qc) / st.copC), r1((r.r.cool.ql || 0) / st.copC), r.r.cool.cPeak != null ? r.r.cool.cPeak : "", ...(() => { const x = coolVerdict(r, sc, a, true); return [x.dkh == null ? "" : Math.round(x.dkh), x.share == null ? "" : r1(x.share), x.v === "wait" ? "" : VSHORT[x.v], (() => { const c = dinComply(sc, a, r, false); return c.ok === true ? (c.exact ? "yes" : "yes (checked at the representative gains)") : c.ok === false ? "no" : "not checked"; })()]; })(), r.m.A1 ? "yes" : "no", fa.front.has(r) ? "yes" : "no", pts(r.D)]));
+    const lines = fa.rows.map((r) => [SCLAB[sc], orientLabel(sc, a)].concat(M.map((p) => choice4(p, r.dz[p])), [dlVal(r.m.S), Math.round(r.m.C), r1(r.m.E), r1(r.r.cool.qh / st.copH), r1((r.r.cool.qcs != null ? r.r.cool.qcs : r.r.cool.qc) / st.copC), r1((r.r.cool.ql || 0) / st.copC), r.r.cool.cPeak != null ? r.r.cool.cPeak : "", ...(() => { const x = coolVerdict(r, sc, a, true); return [x.dkh == null ? "" : Math.round(x.dkh), x.share == null ? "" : r1(x.share), x.v === "wait" ? "" : VSHORT[x.v], (() => { const c = dinComply(sc, a, r, false); return c.ok === true ? (c.exact ? "yes" : "yes (estimate from the design run)") : c.ok === false ? "no" : "not checked"; })()]; })(), r.m.A1 ? "yes" : "no", fa.front.has(r) ? "yes" : "no", pts(r.D)]));
     return [head].concat(lines).map((l) => l.map(q).join(",")).join("\n");
   }
   async function doExport(kind, fmt0) {
     const sc = st.scen, a = st.fa, base = `${st.wx.name}_${SCLAB[sc]}_${orientLabel(sc, a)}`;
     try {
       if (kind === "csv") { await saveFile(safeName(`${st.wx.name}_${SCLAB[sc]}_${orientLabel(sc, a)}_options`) + ".csv", new Blob(["﻿" + csvOptions(sc, a)], { type: "text/csv" })); return; }
-      if (kind === "guide") { const t = `<!doctype html><meta charset="utf-8"><title>Room Design Guide, ${esc(st.wx.name)}</title><body style="font-family:Helvetica,Arial,sans-serif;max-width:800px;margin:24px auto;line-height:1.45">${st.types.map((t) => `<h1>${SCLAB[t]}</h1>${briefHtml(t)}`).join("")}<p style="color:#666;font-size:12px">${esc(srcLine())}</p></body>`;
+      if (kind === "guide") { const t = `<!doctype html><meta charset="utf-8"><title>Room Clima, ${esc(st.wx.name)}</title><body style="font-family:Helvetica,Arial,sans-serif;max-width:800px;margin:24px auto;line-height:1.45">${st.types.map((t) => `<h1>${SCLAB[t]}</h1>${briefHtml(t)}`).join("")}<p style="color:#666;font-size:12px">${esc(srcLine())}</p></body>`;
         await saveFile(safeName(`${st.wx.name}_written_guide`) + ".html", new Blob([t], { type: "text/html" })); return; }
       if (kind === "pc") { const b = await canvasPng($("pc"), `All options, ${SCLAB[sc].toLowerCase()}, ${orientLabel(sc, a)}`); await saveFile(safeName(base + "_all_options") + ".png", b); return; }
       if (kind.startsWith("cv:")) { const id = kind.slice(3), b = await canvasPng($(id), $(id).getAttribute("aria-label") || id); await saveFile(safeName(base + "_" + id) + ".png", b); return; }

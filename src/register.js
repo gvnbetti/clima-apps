@@ -55,6 +55,14 @@
     "ash.band": { v: { a: 0.31, b: 17.8, half: { 80: 3.5, 90: 2.5 }, days: 7 }, unit: "°C", status: "secondary", src: "ASHRAE 55-2020, adaptive model, as in pythermalcomfort", text: "ASHRAE 55 adaptive: t_cmf = 0.31 t_pma + 17.8 on the mean of the previous 7 days" },
     "comfort.maxOut": { v: 5, unit: "% of occupied hours", status: "assumption", src: "Informative figure of EN 15251", text: "Share of occupied hours above the band that is accepted without cooling" },
 
+    // ---------------------------------------------------------------- cooling verdict and daylight inputs
+    "cool.fix.en": { v: { I: 25.5, II: 26, III: 27 }, unit: "°C operative", status: "secondary", src: "EN 16798-1:2019, design values for cooled buildings (summer), as quoted in pythermalcomfort and REHVA guidebooks", text: "Cooling limit for a cooled room under EN 16798-1, by category" },
+    "cool.fix.ash": { v: { 80: 26, 90: 25.5 }, unit: "°C operative", status: "assumption", src: "Decision of 27 October 2026", text: "Cooling limit for a cooled room under ASHRAE 55, by acceptability" },
+    "ceil.cap": { v: 50, unit: "W/m² of floor at 10 K", status: "assumption", src: "Product data for capillary-tube ceilings: argillatherm clay ceiling 71 W/m², BEKA plaster ceiling 76 W/m² of ceiling at 10 K (EN 14240), less the inactive parts", text: "Default rated capacity of a chilled ceiling (editable)" },
+    "ceil.max": { v: 75, unit: "W/m² of floor at 10 K", status: "assumption", src: "Same product data, nearly the whole ceiling active", text: "Largest capacity accepted for a chilled ceiling" },
+    "ceil.model": { v: { exp: 1.1, tWater: 16, dewMargin: 1 }, status: "assumption", src: "EN 14240 rating form q = q10 (ΔT/10)^n, n about 1.1 for radiant ceilings; ΔT from the room operative temperature", text: "Ceiling output q10 (ΔT / 10)^1.1, mean water at least 16 °C and at least 1 K above the room dew point" },
+    "dl.tv": { v: { d60: 0.80, d45: 0.70, d30: 0.55, t60: 0.74, t45: 0.66, t30: 0.50 }, unit: "τ_v", status: "assumption", src: "Typical product values for double (d) and triple (t) glazing at g 0.60, 0.45, 0.30", text: "Light transmittance of the glazing by type and g value" },
+
     // ---------------------------------------------------------------- weather import
     "wx.maxGap": { v: 0.02, unit: "share of hours", status: "decision", src: "Decision of 12 November 2026", text: "A weather file with more than 2 % of hours missing in air temperature, dew point or radiation is refused; shorter gaps are filled by linear interpolation in time and listed" },
   };

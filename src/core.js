@@ -1119,7 +1119,7 @@
   const SHADE_LEVELS = { dwelling: ["none", "shutter", "venetian"], office: ["none", "interior", "venetian"], school: ["none", "interior", "venetian"] };
   const W_COIL = 0.0093; // kg/kg: saturation at 13 °C, the coil leaving temperature of the cooling air
   const FAN_W = RV("run.fan.power"); // W/m² floor while running (register; editable through ctx.fanW)
-  const T_WATER = 16; // °C: lowest mean water temperature of a chilled ceiling (rating point)
+  const CM = RV("ceil.model"), T_WATER = CM.tWater; // °C: lowest mean water temperature of a chilled ceiling (rating point)
   const W_DEHUM = 0.012; // kg/kg: humidity ratio above which the cooled room is dehumidified in occupied hours (as the humid-hours limit)
   const BLIND_WARM = RV("run.blind.warm"); // °C room air above which blinds may come down in the design runs
   const BI = RV("din.blind.irr"), SHADE_IRR = { dwelling: BI.res, office: BI.nonres, school: BI.nonres }; // [north, other], W/m2
@@ -1291,13 +1291,13 @@
         top[i] = r.thOp; tair[i] = r.thAir; if (r.thOp > tmax) tmax = r.thOp;
         if (q > 0) { qHsum += q; if (ach > base + 1e-6 && !din) ventHeat++; } else qCsum -= q;
         if (cHist && q < 0) { const wm = -q / Af; cL.push([wm, Math.max(0, p.hVe * (p.thSup - r.thAir) / Af)]); if (wm > cMax) cMax = wm; cHist[Math.min(CBINS - 1, Math.floor(wm / CBIN))]++;
-          /* chilled ceiling: output q = cap10 * (dT / 10)^1.1, dT = room operative temperature (taken as the rating's room temperature, to confirm against EN 14240) minus mean water temperature; the water may not run
+          /* chilled ceiling (register ceil.model): output q = cap10 * (dT / 10)^1.1, dT = room operative temperature minus mean water temperature; the water may not run
              below 16 °C (rating point: room 26 °C, 10 K) nor below the room dew point + 1 K. Room humidity: what ventilation and
              moisture gains give, held at most at W_DEHUM by dehumidified supply air where needed. The equivalent load at the
              rating, wm / f, is what the ceiling must deliver at 10 K. */
           if (occ[i]) { const m = rho[i] * V * ach, wSup = wx.w[i] + (c.supply === "evap" ? SA.dw[i] * base / ach : 0), w0 = (m * wSup + u.moist * Af / 1000) / m;
             const eqOf = (wr) => { const pv = wr * wx.p[i] / (0.622 + wr), al = Math.log(Math.max(1, pv) / 611.2), tdp = 243.12 * al / (17.62 - al);
-              const dT = r.thOp - Math.max(T_WATER, tdp + 1); return wm / (dT > 0.5 ? Math.pow(dT / 10, 1.1) : 0.05); };
+              const dT = r.thOp - Math.max(T_WATER, tdp + CM.dewMargin); return wm / (dT > 0.5 ? Math.pow(dT / 10, CM.exp) : 0.05); };
             const eq = eqOf(Math.min(W_DEHUM, w0)), eqA = eqOf(w0); // with dehumidified supply air where needed; ceiling alone
             eL.push(eq); eHist[Math.min(CBINS - 1, Math.floor(eq / CBIN))]++;
             eLA.push(eqA); eHistA[Math.min(CBINS - 1, Math.floor(eqA / CBIN))]++; } }
@@ -1376,8 +1376,8 @@
   "use strict";
   const DL = root.Daylight || require("./daylight.js"), Z = root.SweepZone || require("./zone2.js"), S = root.Sweep || require("./sweep2.js");
   const TAU0 = 0.70;
-  // visible transmittance by window U (double or triple glazing) and g value (typical values, to confirm)
-  const TV = { d60: 0.80, d45: 0.70, d30: 0.55, t60: 0.74, t45: 0.66, t30: 0.50 };
+  // visible transmittance by window U (double or triple glazing) and g value (register dl.tv)
+  const TV = Object.assign({}, (root.Register || require("./register.js")).val("dl.tv"));
   const tvKey = (u, g) => (u >= 1 ? "d" : "t") + Math.round(g * 100);
   const REFL = { floor: 0.2, wall: 0.5, ceiling: 0.7, ext: 0.3, revealIn: 0.5 };
   const FAST = { raysSensor: 32, raysPatch: 16, patchSize: 0.4 };

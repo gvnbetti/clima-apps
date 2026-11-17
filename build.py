@@ -37,7 +37,8 @@ m = re.search(r'const WTAIL = `(.*?)`;', page, re.S)
 assert m, 'worker tail not found'
 wtail = m.group(1)
 
-html = '\n'.join([shell, wx, '<script>/* JSZip 3.10.1, MIT or GPLv3 */\n' + jszip + '\n</script>',
+mods = '\n'.join('<script>' + (S / f).read_text().replace('</script', '<\\/script') + '</script>' for f in ('data/future.js', 'data/regions.js', 'climamods.js'))
+html = '\n'.join([shell, wx, '<script>/* JSZip 3.10.1, MIT or GPLv3 */\n' + jszip + '\n</script>', mods,
                   '<script id="core">' + core + '</script>', page])
 for bad in ('fonts.googleapis', 'fonts.gstatic', 'cdnjs.cloudflare'):
     assert bad not in html, bad

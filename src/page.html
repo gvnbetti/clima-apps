@@ -1,6 +1,6 @@
 <script>(function () {
   "use strict";
-  const S = window.Sweep, C = window.Comfort, G = window.Geo, DS = window.DaySweep, SC = window.Score, FS = window.FacadeSearch, Register = window.Register;
+  const S = window.Sweep, C = window.Comfort, G = window.Geo, DS = window.DaySweep, SC = window.Score, FS = window.FacadeSearch, Register = window.Register, CM = window.ClimaMods;
   const DUMMY = {};
   const $ = (id) => document.getElementById(id) || DUMMY[id] || (DUMMY[id] = document.createElement(id === "pc" || id === "adapt" || id === "carpet" ? "canvas" : "div"));
   const WXDATA = JSON.parse($("wxdata").textContent);
@@ -47,11 +47,30 @@
     const ir = Float64Array.from(irr.map((x, i) => { if (!isNaN(x)) return x; const N = isNaN(sky[i]) ? 5 : sky[i], Tk = t[i] + 273.15, Td = td[i] + 273.15;
       const eps = (0.787 + 0.764 * Math.log(Td / 273)) * (1 + 0.0224 * N - 0.0035 * N * N + 0.00028 * N * N * N); return eps * 5.6697e-8 * Tk ** 4; }));
     if (nIr) gaps.ir = { label: "Long-wave sky radiation (computed from dew point and sky cover)", hours: nIr };
-    const cc = h[3] || "";
-    return { name: h[1] || fname, cc, koppen: "", source: "Uploaded: " + fname, region: null, regionGiven: null, gaps,
+    const cc = h[3] || "", rhr = raw(8, 999), comments = L.slice(0, 8).filter((l) => /^COMMENTS/i.test(l));
+    const rh = Float64Array.from(rhr.map((x, i) => isNaN(x) ? 100 * CM.pws(Math.min(td[i], t[i])) / CM.pws(t[i]) : x));
+    return { name: h[1] || fname, cc, koppen: "", source: "Uploaded: " + fname, file: fname, comments, rh, region: null, regionGiven: null, gaps,
       lat: +h[6], lon: +h[7], tz: +h[8], elev, t, td, p, ir, dni, dhi, ws, albedo: 0.2 };
   }
-  const forEngine = (w) => ({ name: w.name, lat: w.lat, lon: w.lon, tz: w.tz, t: w.t, td: w.td, p: w.p, ir: w.ir, dni: w.dni, dhi: w.dhi, ws: w.ws, albedo: 0.2 });
+  /* v16: weather modifiers shared with Macro Clima and Micro Clima (climamods.js, copied from Macro Clima): future climate
+     first, then the urban heat island on top. They change air temperature, dew point (future only) and long-wave sky
+     radiation; sun and daylight are unchanged. */
+  const modsOn = () => !!(st.mods.level || st.mods.uhi);
+  const fileYearsOf = (w) => CM.fileYears(`${w.file || ""} ${w.name || ""} ${w.source || ""}`.replace(/TMYx (\d{4})-(\d{4})/, "TMYx.$1-$2"), w.comments);
+  function modWeather(w) {
+    const key = [st.wxIdx, st.mods.level, st.mods.uhi ? st.mods.uhi.svf : "-", st.mods.uhi ? st.mods.uhi.fveg : "-"].join("|");
+    if (st.modCache && st.modCache.key === key && st.modCache.w === w) return st.modCache.out;
+    let out = { t: w.t, td: w.td, ir: w.ir, fut: null, uhi: null };
+    if (modsOn()) {
+      const rh = w.rh || Float64Array.from(w.t, (x, i) => Math.max(1, Math.min(100, 100 * CM.pws(Math.min(w.td[i], x)) / CM.pws(x))));
+      const W0 = { dbt: w.t, dpt: w.td, rh, hir: w.ir, prec: new Float64Array(8760), dni: w.dni, dhi: w.dhi, ws: w.ws, meta: { lat: w.lat, lon: w.lon, tz: w.tz } };
+      const P = CM.prepWeather(W0, { level: st.mods.level, uhi: st.mods.uhi, year: fileYearsOf(w).year, future: window.CLIMA_FUTURE, regions: window.CLIMA_REGIONS });
+      out = { t: P.W.dbt, td: P.W.dpt, ir: P.W.hir, fut: P.fut, uhi: P.uhi };
+    }
+    st.modCache = { key, w, out }; return out;
+  }
+  const modLabel = (m) => { m = m || st.mods; const p = []; if (m.level) p.push(CM.futLab(m.level)); if (m.uhi) { const k = Object.keys(CM.UHI_PRESETS).find((x) => CM.UHI_PRESETS[x].svf === m.uhi.svf && CM.UHI_PRESETS[x].fveg === m.uhi.fveg); p.push(`${k || "custom"} heat island (sky view factor ${m.uhi.svf.toFixed(2)}, vegetation ${m.uhi.fveg.toFixed(2)})`); } return p.join("; "); };
+  const forEngine = (w) => { const m = modWeather(w); return { name: w.name, lat: w.lat, lon: w.lon, tz: w.tz, t: m.t, td: m.td, p: w.p, ir: m.ir, dni: w.dni, dhi: w.dhi, ws: w.ws, albedo: 0.2 }; };
 
   // ------------------------------------------------------------ state
   // search size per facade: random designs, then rounds of variations around the Pareto front
@@ -61,7 +80,7 @@
   const st = {
     wxList: WXDATA.map(fromRecord), wxIdx: 0, wx: null, use: "office", region: "C",
     model: "na", cat: { en: "II", ash: "80", na: "II" }, fans: false,
-    dims: S.USE.office.dims.slice(), wall: 0.35, coolSet: 26, fanW: Register.val("run.fan.power"), blindCtl: "auto", dinC: {}, copH: 3, copC: 3.5,
+    dims: S.USE.office.dims.slice(), wall: 0.35, coolSet: 26, fanW: Register.val("run.fan.power"), blindCtl: "auto", mods: { level: 0, uhi: null }, uhiLast: { svf: 0.6, fveg: 0.2 }, dinC: {}, copH: 3, copC: 3.5,
     limit: null, target: null, upper: null, autoT: null, autoU: null, w: [1 / 3, 1 / 3, 1 / 3],
     scen: "corner", fa: 4, yAx: "E", allow: { mass: ["light", "medium", "heavy"], nightAch: [0, 2] }, ori: [0, 2, 4, 6], types: ["cellular", "corner"], showTen: false, mode: "cool", dlm: "S", floor: "en", zoom: {}, fac: null, dl: null, running: false, sel: null, ctx: null, gen: 0,
     brush: {}, excl: {}, rate: null, build: {}, dlDone: 0, dlTotal: 0, evals: 0,
@@ -112,6 +131,7 @@ self.onmessage=(e)=>{const m=e.data;
     if (!facTotal()) { setStatus("Choose at least one facade and one room type (corner rooms need two facades 90° apart)."); return; }
     if (!st.types.includes(st.scen) || !facList(st.scen).length) st.scen = st.types.find((sc) => facList(sc).length) || st.types[0];
     stopWorkers(); $("empty").hidden = true; $("results").hidden = false; setStale(false);
+    st.modsRun = { level: st.mods.level, uhi: st.mods.uhi ? Object.assign({}, st.mods.uhi) : null }; modBand();
     st.gen++; const gen = st.gen;
     st.dl = { cellular: {}, corner: {} }; st.fac = FAC(); st.prog = FAC(); st.build = {};
     AI.review = null; AI.chat = []; if (typeof renderReview === "function") { renderReview(); renderChat(); }
@@ -1237,7 +1257,7 @@ self.onmessage=(e)=>{const m=e.data;
   const strip = (h) => { const d = document.createElement("div"); d.innerHTML = h.replace(/<\/(li|p|h3)>/g, "\n").replace(/<h3>/g, "\n## "); return d.textContent.replace(/\n{3,}/g, "\n\n").trim(); };
   function climateOf() {
     const t = st.wx.t, m = []; let i = 0; [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31].forEach((d) => { let s = 0; for (let k = 0; k < d * 24; k++) s += t[i++]; m.push(r1(s / (d * 24))); });
-    return { weather_file: st.wx.name, source: st.wx.source, latitude: r1(st.wx.lat), longitude: r1(st.wx.lon), monthly_mean_air_C: m, annual_mean_C: r1(t.reduce((a, b) => a + b, 0) / 8760), max_air_C: r1(Math.max(...t)), min_air_C: r1(Math.min(...t)), din_region: st.region };
+    return { weather_file: st.wx.name, source: st.wx.source, weather_modifiers: st.modsRun ? modLabel(st.modsRun) || "none" : "none", latitude: r1(st.wx.lat), longitude: r1(st.wx.lon), monthly_mean_air_C: m, annual_mean_C: r1(t.reduce((a, b) => a + b, 0) / 8760), max_air_C: r1(Math.max(...t)), min_air_C: r1(Math.min(...t)), din_region: st.region };
   }
   // energy of one option split into heating, sensible cooling and moisture removal (delivered, kWh/m²a)
   function eSplit(r) { const c = r.r.cool, h = r.r.heat; return st.mode === "heat" ? { heating: r1(h.qh / st.copH), ceiling_fans: r1(h.fanE || 0) } : { heating: r1(c.qh / st.copH), cooling_sensible: r1((c.qcs != null ? c.qcs : c.qc) / st.copC), cooling_moisture_removal: r1((c.ql || 0) / st.copC), ceiling_fans_electricity: r1(c.fanE || 0) }; }
@@ -1524,6 +1544,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   const reread = () => { if (st.fac) renderAll(); };
   // v16: parameter register and version notes, written into Method and limits from the register itself
   const CHANGES = [
+    ["v16, phase 1.1", "17 Nov 2026", "Future climate (+1.5, +2, +3 °C) and urban heat island, with the same code, presets and notes as Macro Clima; every result, the DIN 4108-2 check included, can run on the modified weather. Uploaded files keep their relative humidity and comment lines."],
     ["v16, phase 1", "12 Nov 2026", "Renamed Room Clima. One parameter register for engine and page. DIN 4108-2 check rewritten from clause 8.4.2 (controls, Monday start, convective gains, g_tot rule, weekend rule for blinds by hand); region chosen from figure 1. All runs on the DIN 4108-2 gains. German annex band on the hourly outdoor temperature. Day ventilation at most 3 1/h; 5 1/h at night only when ticked. Windows never open while heating runs; night ventilation after warm days. Fan credit only in hours the fans run. Cooling loads on the 99th percentile. Weather gaps interpolated and listed. Fonts and zip reader bundled. Claude review in the debug build only."],
     ["v15", "31 Oct 2026", "In Germany, DIN 4108-2 compliance shown first per facade and per option; band degree-hours rank designs without the 500 K·h/a limit."],
     ["v14", "31 Oct 2026", "Cooling need by DIN 4108-2 in Germany and by the comfort standard elsewhere; fans only where credited."],
@@ -1545,10 +1566,40 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
       `<tr><td><code>${esc2(k)}</code></td><td>${esc2(v2s(r.v))}${r.unit ? " " + esc2(r.unit) : ""}</td><td>${esc2(r.text)}</td><td class="st ${r.status}">${r.status}</td><td>${esc2(r.src)}</td></tr>`).join("") + "</tbody>";
     $("changelog").innerHTML = "<thead><tr><th>Version</th><th>Date</th><th>Changes</th></tr></thead><tbody>" + CHANGES.map(([v, d, t]) => `<tr><td>${v}</td><td style="white-space:nowrap">${d}</td><td>${esc2(t)}</td></tr>`).join("") + "</tbody>";
   }
+  // ---- weather modifiers: controls and notes (wording as in Macro Clima)
+  function modBand() {
+    const m = st.modsRun, b = $("modband"); if (!b) return; const l = m ? modLabel(m) : "";
+    b.hidden = !l; if (l) b.textContent = `Modified weather: ${l}. Every result on this page, the DIN 4108-2 check included, uses it.`;
+  }
+  function modsSync() {
+    for (const b of document.querySelectorAll("#futSeg button")) b.setAttribute("aria-pressed", String(+b.dataset.v === st.mods.level));
+    const pk = st.mods.uhi ? (Object.keys(CM.UHI_PRESETS).find((k) => CM.UHI_PRESETS[k].svf === st.mods.uhi.svf && CM.UHI_PRESETS[k].fveg === st.mods.uhi.fveg) || "") : "off";
+    for (const b of document.querySelectorAll("#uhiSeg button")) b.setAttribute("aria-pressed", String(b.dataset.v === pk));
+    const u = st.mods.uhi || st.uhiLast; $("uhibox").hidden = !st.mods.uhi; $("svf").value = u.svf; $("svfo").textContent = u.svf.toFixed(2); $("fveg").value = u.fveg; $("fvego").textContent = u.fveg.toFixed(2);
+    const w = st.wx, reg = CM.futRegion({ meta: { lat: w.lat, lon: w.lon } }, window.CLIMA_REGIONS), yr = fileYearsOf(w), fn = [];
+    if (reg) fn.push(`IPCC region: ${esc(CM.regName(reg))} (${reg.id}). Change measured from the file's years${yr.known ? ` (${yr.from}-${yr.to})` : ""}.`);
+    if (!yr.known) fn.push(`<span class="warmtxt">The file does not state its years; they are taken to centre on 2010.</span>`);
+    const m = modsOn() ? modWeather(w) : null;
+    if (st.mods.level && m && m.fut) { const a = m.fut.dT.reduce((x, v) => x + v, 0) / 12; fn.push(`Applied: ${fmt(Math.round(a * 10) / 10)} K on average over the year, ${fmt(Math.round(Math.min(...m.fut.dT) * 10) / 10)} to ${fmt(Math.round(Math.max(...m.fut.dT) * 10) / 10)} K by month.`); }
+    if (st.mods.level && m && !m.fut) fn.push(`<span class="warmtxt">No regional change is available for this location; the file is used as recorded.</span>`);
+    $("futnote").innerHTML = fn.map((x) => `<span>${x}</span>`).join("");
+    const un = [];
+    if (st.mods.uhi && m && m.uhi) un.push(`Heat island factor ${m.uhi.factor.toFixed(2)} (2 − sky view factor − vegetation fraction). Estimated heat island: ${fmt(Math.round(m.uhi.nightMean * 10) / 10)} K on average with the sun down, up to ${fmt(Math.round(m.uhi.max * 10) / 10)} K.`);
+    if (st.mods.uhi && !CM.isNWEurope(w.lat, w.lon)) un.push(`<span class="warmtxt">The model was calibrated on cities in north-western Europe. For this location the estimate is indicative.</span>`);
+    if (st.mods.uhi && !CM.AIRPORT.test(`${w.name} ${w.file || ""} ${w.source || ""}`)) un.push(`<span class="warmtxt">This station's name does not mark it as an airport. If it stands in a built-up area, its data already hold part of the heat island, and this estimate adds it again.</span>`);
+    $("uhinote").innerHTML = un.map((x) => `<span>${x}</span>`).join("");
+  }
+  function bindMods() {
+    for (const b of document.querySelectorAll("#futSeg button")) b.onclick = () => { st.mods.level = +b.dataset.v; modsSync(); setStale(true); };
+    for (const b of document.querySelectorAll("#uhiSeg button")) b.onclick = () => { const v = b.dataset.v; st.mods.uhi = v === "off" ? null : Object.assign({}, CM.UHI_PRESETS[v]); if (st.mods.uhi) st.uhiLast = Object.assign({}, st.mods.uhi); modsSync(); setStale(true); };
+    const sl = () => { st.mods.uhi = { svf: +$("svf").value, fveg: +$("fveg").value }; st.uhiLast = Object.assign({}, st.mods.uhi); modsSync(); setStale(true); };
+    $("svf").oninput = () => { $("svfo").textContent = (+$("svf").value).toFixed(2); }; $("fveg").oninput = () => { $("fvego").textContent = (+$("fveg").value).toFixed(2); };
+    $("svf").onchange = sl; $("fveg").onchange = sl;
+  }
   function init() {
-    fillRegister();
+    fillRegister(); bindMods();
     st.wxList.forEach((w) => { w.region = regionFor(w); }); st.region = st.wx.region; locDefaults();
-    fillControls(); wxInfo(); regionInfo();
+    fillControls(); wxInfo(); regionInfo(); modsSync();
     $("wx").onchange = () => { selectBuiltin(+$("wx").value); };
     $("region").value = st.region;
     $("region").onchange = () => { st.region = $("region").value; if (inGermany(st.wx)) st.wx.regionGiven = st.region; regionInfo(); fillLimit(); if (coolStale()) setStale(true); reread(); };
@@ -1631,7 +1682,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     try {
       const w = parseEPW(text, fname); w.region = regionFor(w);
       st.wxList.push(w); st.wxIdx = st.wxList.length - 1; st.wx = w; st.region = w.region;
-      locDefaults(); fillControls(); $("region").value = st.region; wxInfo(); regionInfo(); (err || $("fileerr")).textContent = ""; setStale(true);
+      locDefaults(); fillControls(); $("region").value = st.region; wxInfo(); regionInfo(); modsSync(); (err || $("fileerr")).textContent = ""; setStale(true);
       return true;
     } catch (e) { (err || $("fileerr")).textContent = e.message; return false; }
   }
@@ -1649,7 +1700,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     }
     const rd = new FileReader(); rd.onload = () => useText(rd.result, f.name, out); rd.readAsText(f);
   }
-  function selectBuiltin(i) { st.wxIdx = i; st.wx = st.wxList[i]; st.region = st.wx.region; locDefaults(); fillControls(); $("region").value = st.region; wxInfo(); regionInfo(); setStale(true); }
+  function selectBuiltin(i) { st.wxIdx = i; st.wx = st.wxList[i]; st.region = st.wx.region; locDefaults(); fillControls(); $("region").value = st.region; wxInfo(); regionInfo(); modsSync(); setStale(true); }
   // ============================================================ v4 presentation (decision of 25 October 2026)
   /* One screen: priorities, results at a glance, a 3D room per facade, decisions as cards, a facade panel with what-if
      switches, and the evidence folded away. All numbers come from the same engine and scoring as before. */
@@ -1747,7 +1798,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     let din = "";
     if (dinRule()) { const cs = B.A.map((a, i) => ({ a, c: dinComply(sc, a, rows[i], true) })), done = cs.every((x) => x.c.exact), fail = cs.filter((x) => x.c.exact && !x.c.ok), khs = cs.filter((x) => x.c.exact).map((x) => x.c.kh);
       const val = !done ? "checking…" : fail.length ? `fails at ${listJoin(fail.map((x) => orientLabel(sc, x.a)))}` : `complies at ${listJoin(B.A.map((a) => orientLabel(sc, a)))}`;
-      din = t(fail.length ? "oh" : "ok", "Summer protection, DIN 4108-2", val, khs.length ? `${rng2(khs)} of ${fmt(dinLim())} K·h/a above ${C.DIN_REF[st.region]} °C` : "", `Without cooling, with the conditions of DIN 4108-2 (gains ${fmt(Math.round(DIN_GAIN[st.use] * 10) / 10)} W/m²), region ${st.region}. On this weather file an indication: the proof uses the ${Register.val("din.weather")[st.region]}.`); }
+      din = t(fail.length ? "oh" : "ok", "Summer protection, DIN 4108-2", val, khs.length ? `${rng2(khs)} of ${fmt(dinLim())} K·h/a above ${C.DIN_REF[st.region]} °C` : "", `Without cooling, with the conditions of DIN 4108-2 (gains ${fmt(Math.round(DIN_GAIN[st.use] * 10) / 10)} W/m²), region ${st.region}. On this weather file an indication: the proof uses the ${Register.val("din.weather")[st.region]}.${st.modsRun && modLabel(st.modsRun) ? " Run on the modified weather (" + modLabel(st.modsRun) + "): a look ahead, not a proof." : ""}`); }
     return din + t("dl", "Daylight", rng((r) => r.m.S, dlVal), DLU[st.dlm], `Range across the ${n} facades. Minimum: ${FLOORNAME[st.floor]}.`)
       + (bandMode() ? t("oh", "Warm hours above the comfort band", rng((r) => r.m.C, (v) => fmt(Math.round(v))), "K·h/a without cooling, with the gains of DIN 4108-2", `Range across the ${n} facades. Ranks the designs; no limit applies here (DIN 4108-2 decides compliance). Scored relative to this run.`)
         : t("oh", "Overheating", rng((r) => r.m.C, (v) => fmt(Math.round(v))), st.coolClimate ? "K·h/a above the comfort band if the cooling fails (resilience)" : "K·h/a above the comfort band, without cooling", `Range across the ${n} facades. ${shortTxt}${rel}`))
@@ -2059,7 +2110,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const u = URL.createObjectURL(blob), a = document.createElement("a"); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
   }
   const safeName = (t) => t.replace(/[^A-Za-z0-9 +._-]/g, "").replace(/\s+/g, "_").replace(/\+/g, "").replace(/_+/g, "_").slice(0, 120);
-  const srcLine = () => `Room Clima v16 · ${st.wx.name} · ${S.USE[st.use] ? st.use : ""} · ${new Date().toISOString().slice(0, 10)}`;
+  const srcLine = () => `Room Clima v16 · ${st.wx.name}${st.modsRun && modLabel(st.modsRun) ? " (" + modLabel(st.modsRun) + ")" : ""} · ${S.USE[st.use] ? st.use : ""} · ${new Date().toISOString().slice(0, 10)}`;
   // a standalone SVG: computed styles inlined, white background, title and source line
   function standaloneSvg(svg, title, outW) {
     const vb = (svg.getAttribute("viewBox") || `0 0 ${svg.clientWidth} ${svg.clientHeight}`).split(/\s+/).map(Number), [vx, vy, vw, vh] = vb;

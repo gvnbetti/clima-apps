@@ -280,6 +280,7 @@ table.cmp { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width
 details.adv { margin-top: 10px; border-top: 1px solid var(--soft); padding-top: 8px } details.adv > summary { cursor: pointer; font-size: 13px; color: var(--mute) }
 .xbtn { display: inline-flex; gap: 4px } .ghost.xb { width: auto; padding: 4px 9px; font-size: 12px; cursor: pointer; min-height: 30px }
 details.ev.in { margin-top: 14px }
+.modband { margin: 0 0 12px; padding: 7px 10px; border-left: 3px solid var(--warm); background: var(--warm-soft); font-size: 13px } .modnote span { display: block; margin-top: 3px } .warmtxt { color: var(--warm) }
 .regt { font-size: 12.5px; min-width: 640px } .regt th, .regt td { text-align: left; vertical-align: top; padding: 5px 6px; border-top: 1px solid var(--soft) } .regt td.st { white-space: nowrap; font: 500 11px var(--f-data); text-transform: uppercase; letter-spacing: .05em } .regt td.st.secondary, .regt td.st.assumption { color: var(--warm) }
 .coolt { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 620px } .coolt th, .coolt td { text-align: left; padding: 7px 6px; border-top: 1px solid var(--soft) } .coolt thead th { font-size: 12px; color: var(--mute); font-weight: 600 } .coolt tr.on { background: var(--bg) }
 
@@ -316,6 +317,18 @@ details.ev.in { margin-top: 14px }
         <select id="region" aria-label="Summer climate region"><option value="A">A, summer-cool (25 °C)</option><option value="B">B, moderate (26 °C)</option><option value="C">C, summer-hot (27 °C)</option></select>
         <span class="err" id="regionask" hidden>Choose the region of the site.</span>
         <span class="small" id="reginfo"></span></div>
+      <div class="grp"><span class="lab">Future climate</span>
+        <div class="seg" id="futSeg" role="group" aria-label="Future climate"><button type="button" data-v="0" aria-pressed="true">Present</button><button type="button" data-v="1.5" aria-pressed="false" title="around 2030">+1.5 °C</button><button type="button" data-v="2" aria-pressed="false" title="around 2050">+2 °C</button><button type="button" data-v="3" aria-pressed="false" title="around 2080 to 2100">+3 °C</button></div>
+        <span class="small">Global warming since 1850-1900. Approximate years: +1.5 °C around 2030, +2 °C around 2050, +3 °C around 2080 to 2100 (earlier on high emissions).</span>
+        <span class="small modnote" id="futnote"></span></div>
+      <div class="grp"><span class="lab">Urban context</span>
+        <div class="seg" id="uhiSeg" role="group" aria-label="Urban context"><button type="button" data-v="off" aria-pressed="true">As recorded</button><button type="button" data-v="suburban" aria-pressed="false">Suburban</button><button type="button" data-v="urban" aria-pressed="false">Urban</button><button type="button" data-v="dense" aria-pressed="false">Dense</button></div>
+        <div id="uhibox" hidden>
+          <label class="inl">Sky view factor, area average <input id="svf" type="range" min="0.2" max="1" step="0.05" style="width:100px"> <output id="svfo"></output></label>
+          <label class="inl">Vegetation fraction <input id="fveg" type="range" min="0" max="0.8" step="0.05" style="width:100px"> <output id="fvego"></output></label>
+        </div>
+        <span class="small modnote" id="uhinote"></span>
+        <span class="small">Weather files usually come from airports outside the city. An urban context raises the air temperature by an estimated heat island (Theeuwes et al. 2017). Same model, presets and code as Macro Clima and Micro Clima; the preset values are placeholders.</span></div>
       <div class="grp"><span class="lab">Use</span>
         <div class="seg" id="useSeg"><button type="button" data-v="dwelling">Dwelling</button><button type="button" data-v="office">Office</button><button type="button" data-v="school">School</button></div>
         <span class="small">DIN 4108-2 boundary conditions for gains, schedules, base air change and heating setpoint.</span>
@@ -370,6 +383,7 @@ details.ev.in { margin-top: 14px }
         </div></details></details>
       <p id="empty">No results yet. Choose the weather, use and room on the left, then press Run.</p>
       <div id="results" hidden>
+      <div class="modband" id="modband" hidden></div>
       <div class="ttabs" id="ttabs" role="group" aria-label="Room type"></div>
       <div id="notes"></div>
       <section class="aibox" id="aibox" hidden><h2>Critical review by Claude</h2>
@@ -419,7 +433,8 @@ details.ev.in { margin-top: 14px }
       <p>Recommendations: the building's facades are combined by taking, for each set of shared measures, each facade's best option with that set, and keeping the set with the highest mean score (checked against brute force). Each statement gives the modelled difference against the same option with only that measure changed. "Little difference": every alternative tested changes the result by less than 3 daylight points, 100 K·h/a and 1 kWh/m²a. "Avoid": a large difference (five times that) at every facade. Only the strategies ticked in the inputs are simulated and recommended.</p>
       <p>Search: for each facade of the building, 60 designs at random, window ratio, outdoor shading and glazing drawn from those meeting the daylight minimum there, then four rounds of 30 variations of options on the Pareto front, then every single change of every design on the front, repeated until the front stops changing (at most 5,000 designs per facade). Checked against brute force at 7 facades in 3 climates (v3).</p>
       <p>Weather files: gaps in air temperature, dew point and radiation are filled by linear interpolation in time and listed under the weather input; a file with more than 2% of hours missing in any of them is refused. Missing long-wave sky radiation is computed from dew point and sky cover (Clark and Allen). The bundled German file is a test reference year whose edition is not recorded; it stands for region C.</p>
-      <p>Not included yet: humidity in the comfort metric (reported separately), construction cost and carbon, obstruction by neighbouring buildings, future climate. Supply air is outdoor air.</p>
+      <p>Weather modifiers, shared with Macro Clima and Micro Clima (same code, copied from Macro Clima and checked against it to 2·10⁻⁶ K): future climate shifts the file to a global warming level of +1.5, +2 or +3 °C by the monthly change of its IPCC AR6 region, measured from the middle of the file's years (2010 when the file does not state them); relative humidity is held, so the dew point rises, and long-wave sky radiation follows the temperature. The urban context adds an estimated heat island (Theeuwes et al. 2017) to the air temperature, full at night and 15 % of it at the sun's daily peak, with the vapour pressure held. Future change first, heat island on top. Sun, daylight and wind are unchanged. With a modifier on, every result uses the modified weather, the DIN 4108-2 check included, which is then a look ahead, not a proof.</p>
+      <p>Not included yet: humidity in the comfort metric (reported separately), construction cost and carbon, obstruction by neighbouring buildings. Supply air is outdoor air.</p>
       <h3>Parameter register</h3>
       <p class="small">Every value the engine and this page use, with its source. Standard: from the text of the standard named. Secondary: from a secondary source, to be checked against the standard. Decision: a modelling choice of this app, dated. Assumption: a typical value without a binding source.</p>
       <div class="tw"><table class="regt" id="regtable"></table></div>

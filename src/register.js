@@ -63,6 +63,11 @@
     "ceil.model": { v: { exp: 1.1, tWater: 16, dewMargin: 1 }, status: "assumption", src: "EN 14240 rating form q = q10 (ΔT/10)^n, n about 1.1 for radiant ceilings; ΔT from the room operative temperature", text: "Ceiling output q10 (ΔT / 10)^1.1, mean water at least 16 °C and at least 1 K above the room dew point" },
     "dl.tv": { v: { d60: 0.80, d45: 0.70, d30: 0.55, t60: 0.74, t45: 0.66, t30: 0.50 }, unit: "τ_v", status: "assumption", src: "Typical product values for double (d) and triple (t) glazing at g 0.60, 0.45, 0.30", text: "Light transmittance of the glazing by type and g value" },
 
+    // ---------------------------------------------------------------- weather modifiers, shared with Macro Clima and Micro Clima
+    "mods.future": { v: [0, 1.5, 2, 3], unit: "°C global warming since 1850-1900", status: "secondary", src: "IPCC AR6 WGI Atlas regional CMIP6 means (Iturbide et al. 2021, CC BY 4.0); morphing after Belcher et al. 2005; code shared with Macro Clima", text: "Future climate: the file is shifted to a global warming level by the monthly change of its IPCC region, measured from the file's own years; relative humidity held, long-wave sky radiation scaled with (T'/T)^4" },
+    "mods.uhi": { v: { suburban: [0.8, 0.35], urban: [0.6, 0.2], dense: [0.4, 0.1] }, unit: "[sky view factor, vegetation fraction]", status: "secondary", src: "Theeuwes et al. 2017, calibrated on 14 cities in north-western Europe; presets and diurnal profile as in Micro Clima (placeholders); code shared with Macro Clima", text: "Urban heat island added to the air temperature, vapour pressure held; full at night, 15 % of it at the sun's daily peak" },
+    "mods.fileYears": { v: 2010, unit: "mid-year", status: "assumption", src: "As Macro Clima", text: "Middle of the file's years when the file does not state them" },
+
     // ---------------------------------------------------------------- weather import
     "wx.maxGap": { v: 0.02, unit: "share of hours", status: "decision", src: "Decision of 12 November 2026", text: "A weather file with more than 2 % of hours missing in air temperature, dew point or radiation is refused; shorter gaps are filled by linear interpolation in time and listed" },
   };

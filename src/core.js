@@ -1245,7 +1245,7 @@
     const vFloor = u.tHeat + (ctx.ventFloor != null ? ctx.ventFloor : VR.floor), ops = openings(ctx, c); // design runs: window air is reduced so that the room stays above this operative temperature
     const cL = [], eL = [], eLA = [];
     const arm = ctx.nightArm != null ? ctx.nightArm : VR.arm; let curMax = -99, lastMax = -99, wasPres = 0; // night ventilation armed after a warm day
-    const top = new Float32Array(8760), tair = new Float32Array(8760), gOcc = ctx.gOcc != null ? ctx.gOcc : u.gainOcc;
+    const top = new Float32Array(8760), tair = new Float32Array(8760), bdown = keepHourly ? new Uint8Array(8760) : null, gOcc = ctx.gOcc != null ? ctx.gOcc : u.gainOcc;
     const eHist = coolHi ? new Int16Array(CBINS) : null, eHistA = coolHi ? new Int16Array(CBINS) : null; let ePeak = 0, ePeakA = 0, cPeakVent = 0; // ceiling: load at its rating (10 K), fresh-air share at the peak
     let qHsum = 0, qCsum = 0, qLsum = 0, humid = 0, tmax = -99, cPeak = 0, latH = 0, cMax = 0, vHours = 0, ventHeat = 0;
     const cHist = coolHi ? new Int16Array(CBINS) : null; // hours of sensible cooling by load, CBIN W/m² floor per bin
@@ -1256,8 +1256,9 @@
       const te = wx.t[i], cp = rho[i] * 1006 / 3600;
       let mask = 0;
       const weekend = (((i / 24) | 0) % 7) >= 5; // 1 January a Monday
-      /* blinds down when the sun on the window is above the DIN 4108-2 threshold of the use (8.4.2 j), in every run and for
-         both blind types (decision of 17 November 2026). Blinds operated by hand stay up at weekends in non-residential use. */
+      /* blinds down when the sun on the window is above the DIN 4108-2 threshold of the use (8.4.2 j), both blind types. Design
+         runs keep them up while the room air is at or below 23 °C (winter sun); the DIN check uses the threshold alone
+         (decision of 17 November 2026). Blinds operated by hand stay up at weekends in non-residential use. */
       if (shd.fc < 1 && !(hand && weekend) && (din || HOLD == null || tAir > HOLD)) for (let w = 0; w < wins.length; w++) if (irr[w][i] > wthr[w]) mask |= wins[w].bit;
       const base = occ[i] ? achOcc : u.achUnocc;
       let want = base, isDay = false;
@@ -1297,7 +1298,7 @@
       eng.commit(r); tAir = r.thAir; topPrev = r.thOp; if (rec && fanOn) { fanH++; fanMask[i] = 1; }
       if (pres[i]) { if (!wasPres) curMax = -99; if (r.thOp > curMax) curMax = r.thOp; } else if (wasPres) lastMax = curMax; wasPres = pres[i];
       if (rec) {
-        top[i] = r.thOp; tair[i] = r.thAir; if (r.thOp > tmax) tmax = r.thOp;
+        top[i] = r.thOp; tair[i] = r.thAir; if (r.thOp > tmax) tmax = r.thOp; if (bdown) { let m = mask, n = 0; while (m) { n += m & 1; m >>= 1; } bdown[i] = n; }
         if (q > 0) { qHsum += q; if (ach > base + 1e-6 && !din) ventHeat++; } else qCsum -= q;
         if (cHist && q < 0) { const wm = -q / Af; cL.push([wm, Math.max(0, p.hVe * (p.thSup - r.thAir) / Af)]); if (wm > cMax) cMax = wm; cHist[Math.min(CBINS - 1, Math.floor(wm / CBIN))]++;
           /* chilled ceiling (register ceil.model): output q = cap10 * (dT / 10)^1.1, dT = room operative temperature minus mean water temperature; the water may not run
@@ -1327,7 +1328,7 @@
     // design peaks (v16): the 99th percentile of the occupied cooling hours, so that a Monday restart does not set the size
     if (cL.length) { cL.sort((a, b) => a[0] - b[0]); const k = cL.length < 100 ? cL.length - 1 : Math.min(cL.length - 1, Math.floor(VR.peak * cL.length)); cPeak = cL[k][0]; cPeakVent = cL[k][1]; }
     ePeak = pctl(eL, VR.peak); ePeakA = pctl(eLA, VR.peak);
-    return { top, tair: keepHourly ? tair : null, heat: qHsum / 1000 / Af, cool: qCsum / 1000 / Af, fanH, fanE: fanH * fanW / 1000, fanMask, coolLat: qLsum / 1000 / Af, cHist, cPeak, cMax, latH, eHist, ePeak, ePeakMax: eL.length ? Math.max.apply(null, eL) : 0, eHistA, ePeakA, cPeakVent, humid, tmax, zone, shade: shd, dayOpen, nightOpen, gtotOk, ventHeat, vHours };
+    return { top, tair: keepHourly ? tair : null, bdown, nWin: wins.length, heat: qHsum / 1000 / Af, cool: qCsum / 1000 / Af, fanH, fanE: fanH * fanW / 1000, fanMask, coolLat: qLsum / 1000 / Af, cHist, cPeak, cMax, latH, eHist, ePeak, ePeakMax: eL.length ? Math.max.apply(null, eL) : 0, eHistA, ePeakA, cPeakVent, humid, tmax, zone, shade: shd, dayOpen, nightOpen, gtotOk, ventHeat, vHours };
   }
   // free-running and heating-on, scored under every evaluation
   // ideal cooling in occupied hours to an hourly upper limit set by the page from the comfort model (ctx.coolHi; v6, 27 October
@@ -1409,7 +1410,7 @@
     return skyCache[k];
   }
   let SKY1 = null;
-  const RG = root.Register || require("./register.js"), UDI = RG.val("dl.udi"), LIT = RG.val("dl.light");
+  const RG = root.Register || require("./register.js"), UDI = RG.val("dl.udi"), LIT = RG.val("dl.light"), BREF = RG.val("dl.blindRef");
   /* hours: daylight (sun above the horizon, from the sky) and the occupied hours of the use, as the thermal runs: DIN 4108-2
      schedule, Monday 1 January (v16 phase 2; until v16 phase 1 daylight used 8:00 to 18:00 on every day). Evaluated once
      on their union. */
@@ -1463,9 +1464,10 @@
   }
   // job: {scenario: "cellular"|"corner", wwr, fixed}; returns per orientation index: {tvKey: readings}
   /* job: {scenario: "cellular"|"corner", wwr, fixed}; returns per orientation index: {tvKey: readings without blinds,
-     tvKey|interior, tvKey|exterior: readings with blinds as operated}. Blinds come down by the DIN 4108-2 irradiance rule on
-     each facade, as in the thermal runs; when down, daylight from that facade is scaled by the blind's light transmittance
-     (the windows of a corner room count half each). The EN 17037 minimum (A1) is always read without blinds. */
+     tvKey|interior, tvKey|exterior: readings with blinds as operated}. The hours with blinds down come from a heated run of a
+     reference room (register dl.blindRef), so daylight and the thermal runs use the same rule; when down, daylight from that
+     window is scaled by the blind's light transmittance (the windows of a corner room count half each). The EN 17037
+     minimum (A1) is always read without blinds. */
   const KEEP = ["a100", "a300", "a500", "a750", "en", "A1"];
   function job(ctx, j, opt) {
     opt = opt || FAST;
@@ -1475,9 +1477,13 @@
     const dc = DL.coefficients(c, Object.assign({ sky: SKY1 }, opt)), out = [], nW = c.windows.length;
     for (let a = 0; a < 8; a++) {
       const az = S.PARAMS.azimuth[a], sk = skyFor(ctx, az, SKY1), H = hourSets(sk, ctx), il = DL.illuminance(dc, sk, H.all), res = {};
-      const down = [S.blindsDown(ctx, az)]; if (nW > 1) down.push(S.blindsDown(ctx, (az + 90) % 360));
-      const facOf = (tau) => Float32Array.from(H.all, (i) => 1 - down.reduce((s, m) => s + (m[i] ? (1 - tau) / nW : 0), 0));
-      const fx = { interior: facOf(S.shadeOf(ctx, { shading: 1, uglass: 0.8, gglass: 0.45 }).tau), exterior: facOf(S.shadeOf(ctx, { shading: 2, uglass: 0.8, gglass: 0.45 }).tau) };
+      // blind hours from a heated run of the reference room with this window, orientation and blind type (same rule as the design runs)
+      const facOf = (lv) => {
+        const d = Object.assign({ scenario: j.scenario === "corner_top" ? "corner" : j.scenario, azimuth: az, wwr: j.wwr, fixed: j.fixed, shading: lv, fans: 0, supply: "outdoor", roof: "standard" }, BREF);
+        const sim = S.simulate(ctx, d, "heat", true), tau = S.shadeOf(ctx, d).tau;
+        return Float32Array.from(H.all, (i) => 1 - sim.bdown[i] / sim.nWin * (1 - tau));
+      };
+      const fx = { interior: facOf(1), exterior: facOf(2) };
       for (const tk of Object.keys(TV)) {
         const r0 = readings(il.E, il.Es, nS, H, TV[tk] / TAU0, tb, null, band, light); res[tk] = r0;
         for (const k of ["interior", "exterior"]) { const r = readings(il.E, il.Es, nS, H, TV[tk] / TAU0, tb, fx[k], band, light); KEEP.forEach((x) => { r[x] = r0[x]; }); r.passA = r.A1 && r.A2 && r.A3; res[tk + "|" + k] = r; }

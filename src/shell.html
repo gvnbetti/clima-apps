@@ -305,7 +305,7 @@ details.ev.in { margin-top: 14px }
 .cool .cbi { fill: var(--cool); fill-opacity: .75 } .cool .cbo { fill: var(--warm); fill-opacity: .8 } .cool .ccap { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 5 3 } .cool .ccapt { font: 600 11px var(--f-body); fill: var(--ink) }
 </style>
 <div class="wrap">
-  <header class="top"><h1>Room Clima <span class="aitag">v16 · phase 1</span></h1><span class="tag">What to build, facade by facade, for daylight, comfort and energy in this climate</span><span class="draft">Draft, not validated</span><button type="button" id="askbtn" class="askbtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg>Ask Claude</button></header>
+  <header class="top"><h1>Room Clima <span class="aitag">v16 · phase 2</span></h1><span class="tag">What to build, facade by facade, for daylight, comfort and energy in this climate</span><span class="draft">Draft, not validated</span><button type="button" id="askbtn" class="askbtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg>Ask Claude</button></header>
   <div class="grid">
     <aside>
       <h2 class="colh">Inputs</h2>
@@ -333,6 +333,12 @@ details.ev.in { margin-top: 14px }
         <div class="seg" id="useSeg"><button type="button" data-v="dwelling">Dwelling</button><button type="button" data-v="office">Office</button><button type="button" data-v="school">School</button></div>
         <span class="small">DIN 4108-2 boundary conditions for gains, schedules, base air change and heating setpoint.</span>
         <label class="inl">Blinds operated <select id="blindctl" aria-label="How blinds are operated" style="width:auto"><option value="auto">automatically</option><option value="hand">by hand</option></select></label>
+        <span class="small" id="blindthr"></span>
+        <details class="small"><summary>Blind properties</summary>
+          <label class="inl">Exterior blind F<sub>C</sub> <input id="fcext" type="number" step="0.05" min="0" max="1" placeholder="DIN" style="width:64px"> light <input id="tauext" type="number" step="0.05" min="0" max="1" style="width:64px"></label>
+          <label class="inl">Interior blind F<sub>C</sub> <input id="fcint" type="number" step="0.05" min="0" max="1" placeholder="DIN" style="width:64px"> light <input id="tauint" type="number" step="0.05" min="0" max="1" style="width:64px"></label>
+          <span class="small">F<sub>C</sub>: share of solar heat let through when down; empty = DIN 4108-2 Table 7 by glazing (exterior 0.25, 0.30 with solar control glass; interior 0.70 double, 0.65 triple). Light: share of daylight let through when down (assumptions 0.10 and 0.25).</span>
+        </details>
         <label class="inl">Ceiling fan power <input id="fanw" type="number" step="0.5" min="0" max="10" style="width:70px"> W/m² floor, while on</label>
         <span class="small" id="gainnote"></span></div>
       <div class="grp"><span class="lab">Room</span>
@@ -361,7 +367,7 @@ details.ev.in { margin-top: 14px }
       <details class="reading" id="settings"><summary><span class="colh">Reading</span> <span id="readline" class="readline">Choose the inputs and press Run.</span> <span class="link">Change</span></summary><p class="sub">These choices score the same calculation. A change of the daylight measure, minimum or comfort model completes the trade-off front in the background; only the missing designs are simulated.</p>
         <div class="rgrid">
           <div class="grp"><span class="lab">Daylight</span>
-            <div class="seg" id="dlSeg" role="group" aria-label="Daylight measure"><button type="button" data-v="S">Useful daylight, %</button><button type="button" data-v="EN">EN 17037 rating</button></div>
+            <div class="seg" id="dlSeg" role="group" aria-label="Daylight measure"><button type="button" data-v="UDI">Useful daylight (UDI), %</button><button type="button" data-v="S">Daylight score S, %</button><button type="button" data-v="EN">EN 17037 rating</button></div>
             <span class="small" id="dlnote"></span>
             <label class="chk"><input type="checkbox" id="floorOn"> Require the EN 17037 minimum</label>
             <span class="small">Designs that miss it drop out of the ranking, however good their comfort and energy.</span></div>
@@ -378,7 +384,7 @@ details.ev.in { margin-top: 14px }
         <details class="adv"><summary>Advanced: other daylight measures</summary>
         <div class="rgrid">
           <div class="grp"><span class="lab">Daylight measure</span>
-            <select id="dlm" aria-label="Daylight measure"><option value="S">Useful daylight, % of floor and working hours</option><option value="UDA">Useful daylight area, % of floor</option><option value="LEED">LEED sDA, % of floor, reduced when ASE is above 10%</option><option value="EN">EN 17037 rating</option></select>
+            <select id="dlm" aria-label="Daylight measure"><option value="UDI">Useful daylight (UDI) with blinds, % of floor and hours</option><option value="S">Daylight score S, % of floor and working hours</option><option value="UDA">Useful daylight area, % of floor</option><option value="LEED">LEED sDA, % of floor, reduced when ASE is above 10%</option><option value="EN">EN 17037 rating</option></select>
             <label class="inl">Required minimum <select id="floor" aria-label="Required daylight minimum"><option value="en">EN 17037 minimum</option><option value="enx">EN 17037 minimum, excess area at most 10%</option><option value="none">None</option></select></label></div>
         </div></details></details>
       <p id="empty">No results yet. Choose the weather, use and room on the left, then press Run.</p>

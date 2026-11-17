@@ -35,15 +35,27 @@
 
     // ---------------------------------------------------------------- design runs (comfort, energy): controls of this app
     "run.gains": { v: "DIN 4108-2", status: "decision", src: "Decision of 11 November 2026", text: "Comfort runs use the gains and schedules of DIN 4108-2. Energy runs use the same until the DIN V 18599-10 profiles are added" },
-    "run.day.levels": { v: [0, 3], unit: "1/h", status: "standard", src: DIN + ", 8.4.2 h", text: "Day window ventilation levels: none or 3 1/h" },
-    "run.night.levels": { v: [0, 2, 5], unit: "1/h", status: "standard", src: DIN + ", 8.4.2 i", text: "Night ventilation levels: none, 2 1/h (windows open at night), 5 1/h (across storeys or by a system; off by default)" },
+    "run.day.levels": { v: [0, 1, 2], unit: "code", status: "decision", src: "Decision of 17 November 2026", text: "Day window ventilation: 0 none, 1 tilt windows, 2 side-hung windows open. Air flow from the opening by EN 16798-7; in the DIN 4108-2 check any day opening counts as 3 1/h" },
+    "run.night.levels": { v: [0, 1, 5], unit: "code", status: "decision", src: "Decision of 17 November 2026", text: "Night ventilation: 0 none, 1 tilt windows secured at night (air flow by EN 16798-7; 2 1/h in the DIN 4108-2 check), 5 air across storeys (atrium, stair) or a fan system, 5 1/h as DIN 4108-2 (off by default)" },
+    "vent.method": { v: { cst: 0.0035, cwnd: 0.001, k: 1800 }, unit: "q = k · A · √(C_st · h · ΔT), m³/h", status: "secondary", src: "EN 16798-7:2017, single-sided airing (coefficients as quoted by REHVA and AIVC, 2022); wind term off by decision of 17 November 2026", text: "Window air flow each hour from the effective opening area A, the sash height h and the indoor-outdoor temperature difference; wind is not credited, since site wind is unknown at concept stage. The method is built to underestimate. Openings on two facades are added as two single-sided openings, without cross ventilation" },
+    "vent.openShare": { v: 0.5, unit: "share of window area", status: "decision", src: "Decision of 17 November 2026", text: "Openable sash area: half of the window area (fixed, not editable)" },
+    "vent.tilt": { v: { angle: 10, ck: 0.174 }, unit: "°, factor", status: "secondary", src: "EN 16798-7 opening-angle factor C_k(α) = 2.6·10⁻⁷ α³ − 1.19·10⁻⁴ α² + 1.86·10⁻² α (from EN 15242)", text: "Tilt windows at 10°: effective area 17 % of the sash area. Side-hung windows fully open: the whole sash area" },
+    "vent.depthMax": { v: 2.5, unit: "× room height", status: "standard", src: "ASR A3.6, Table 3", text: "Workplaces: a room ventilated from one side may be at most 2.5 times its clear height deep" },
+    "asr.tilt": { v: 0.35, unit: "m² per person present", status: "standard", src: "ASR A3.6, Table 3 (single-sided, continuous ventilation)", text: "Workplaces: effective opening for continuous ventilation by tilt windows, single-sided" },
+    "asr.purge": { v: 1.05, unit: "m² per 10 m² of floor", status: "standard", src: "ASR A3.6, Table 3 (single-sided, purge ventilation)", text: "Workplaces: opening for purge ventilation by fully opened windows, single-sided" },
+    "asr.persons": { v: { office: 2, school: 28 }, unit: "persons", status: "decision", src: "Room presets of the spec of 23 October 2026", text: "Persons present for the ASR A3.6 check: two-person office, classroom for 28 pupils. Dwellings: no check" },
     "run.day.tAir": { v: 23, unit: "°C", status: "standard", src: DIN + ", 8.4.2 h", text: "Windows open by day when the room air is above 23 °C" },
     "run.day.margin": { v: 1, unit: "K", status: "decision", src: "Decision of 12 November 2026", text: "and the outdoor air is at least 1 K cooler than the room air" },
     "run.day.tOutMin": { v: 12, unit: "°C", status: "decision", src: "Spec of 23 October 2026", text: "and the outdoor air is at least 12 °C (draught)" },
     "run.night.margin": { v: 2, unit: "K", status: "decision", src: "Spec of 23 October 2026", text: "Windows open at night when the room air is above the heating setpoint and at least 2 K warmer than outside" },
     "run.night.arm": { v: 24, unit: "°C operative", status: "decision", src: "Decision of 12 November 2026", text: "Night ventilation runs only after a warm day: when the operative temperature in the last presence period exceeded 24 °C" },
     "run.vent.floor": { v: 2, unit: "K above the heating setpoint", status: "decision", src: "Decision of 12 November 2026, after tests in three climates", text: "Window air flow is reduced in the hour so that the operative temperature does not fall below the heating setpoint plus 2 K (23 °C non-residential, 22 °C residential); windows never open while heating runs" },
-    "run.blind.warm": { v: 23, unit: "°C", status: "decision", src: "Decision of 24 October 2026", text: "In the design runs blinds come down by the DIN 4108-2 irradiance thresholds only when the room air is above 23 °C, so that winter sun is kept" },
+    "run.blinds": { v: "DIN 4108-2 irradiance", status: "decision", src: "Decision of 17 November 2026", text: "Every run, exterior and interior blinds alike: blinds come down when the sun on the window exceeds the DIN 4108-2 threshold (8.4.2 j), whatever the room temperature. The same hours apply to daylight" },
+    "run.blind.heatHold": { v: null, unit: "°C or null", status: "decision", src: "Open question of 17 November 2026", text: "Optional: blinds stay up while the room air is below this temperature, to keep winter sun (until v16 phase 1: 23 °C). Off (null) by the decision of 17 November 2026; with it off, blinds also come down on sunny winter days" },
+    "blind.ext": { v: { fc: "DIN 4108-2 Table 7", tau: 0.10 }, unit: "F_C, light transmittance", status: "assumption", src: "F_C: DIN 4108-2 Table 7 row 3.2.1 (0.25; 0.30 with solar control glass). Light transmittance: assumption", text: "Exterior blind (venetian blind at 45°): solar factor and daylight let through when down. Both editable" },
+    "blind.int": { v: { fc: "DIN 4108-2 Table 7", tau: 0.25 }, unit: "F_C, light transmittance", status: "assumption", src: "F_C: DIN 4108-2 Table 7 row 2.1 (0.70 double, 0.65 triple and solar control glass). Light transmittance: assumption", text: "Interior blind (white): solar factor and daylight let through when down. Both editable" },
+    "dl.udi": { v: { nonres: [300, 3000], res: [100, 2000] }, unit: "lx", status: "decision", src: "Decision of 17 November 2026; 100 to 2,000 lx after Nabil and Mardaljevic 2005", text: "Daylight score: share of the floor and of the hours with useful daylight, 300 to 3,000 lx for offices and schools over their occupied hours, 100 to 2,000 lx for dwellings over daylight hours, with blinds as operated" },
+    "dl.light": { v: { lpd: 6, target: { office: 500, school: 300 } }, unit: "W/m², lx", status: "assumption", src: "Targets as DIN V 18599-10 and EN 12464-1 (office 500 lx, classroom 300 lx); LED power density an assumption", text: "Lighting electricity, offices and schools only: continuous dimming against the daylight at each point of the floor, in occupied hours. Not counted for dwellings, as in DIN V 18599" },
     "run.fan.power": { v: 1.5, unit: "W/m² of floor", status: "assumption", src: "DC ceiling fans at about 0.9 m/s (v12)", text: "Ceiling fan power while running" },
     "run.fan.start": { v: 25, unit: "°C operative", status: "decision", src: "v11", text: "Fans run in occupied hours when the operative temperature of the previous hour was 25 °C or more" },
     "run.fan.credit": { v: 1.8, unit: "K", status: "secondary", src: "EN 16798-1 air speed allowance at 0.9 m/s, as used since v11", text: "Fans raise the upper comfort limit by 1.8 K, in the hours in which they run" },
@@ -1178,11 +1190,11 @@
   const colOf = (u, g) => g <= RV("din.fc.scGlass") ? "sc" : panes(u);
   // F_C by glass column (solar control / double / triple), DIN 4108-2 Table 7 rows 3.2.1, 3.1.1 and 2.1 (register)
   const FC = RV("din.fc");
+  // v16 phase 2: two blind types, exterior and interior; F_C and light transmittance editable through ctx.blinds
   const SHADES = {
-    none: { label: "No shading", fc: { double: 1, triple: 1, sc: 1 }, dR: 0 },
-    shutter: { label: "Exterior roller shutter, three quarters closed", fc: FC.shutter, dR: 0.10 },
-    venetian: { label: "Exterior venetian blind", fc: FC.venetian, dR: 0.10 },
-    interior: { label: "Interior blind, white", fc: FC.interior, dR: 0 },
+    none: { label: "No blinds", fc: { double: 1, triple: 1, sc: 1 }, dR: 0, tau: 1 },
+    exterior: { label: "Exterior blind", fc: FC.venetian, dR: 0.10, tau: RV("blind.ext").tau },
+    interior: { label: "Interior blind", fc: FC.interior, dR: 0, tau: RV("blind.int").tau },
   };
   // fixed outdoor shading on the outer face of the wall (glass 10 cm behind the inner face); overhang at the window head, fins at the jambs
   const FIXED = {
@@ -1194,12 +1206,11 @@
   };
   const ENGINE = { solOnWindows: false }; // after the EnergyPlus check of the room types (24 October 2026)
   const WALL = { depth: 0.35, glass: 0.25 }; // default; glass 10 cm behind the inner face. Override per run with ctx.wall
-  const SHADE_LEVELS = { dwelling: ["none", "shutter", "venetian"], office: ["none", "interior", "venetian"], school: ["none", "interior", "venetian"] };
+  const SHADE_LEVELS = { dwelling: ["none", "interior", "exterior"], office: ["none", "interior", "exterior"], school: ["none", "interior", "exterior"] };
   const W_COIL = 0.0093; // kg/kg: saturation at 13 °C, the coil leaving temperature of the cooling air
   const FAN_W = RV("run.fan.power"); // W/m² floor while running (register; editable through ctx.fanW)
   const CM = RV("ceil.model"), T_WATER = CM.tWater; // °C: lowest mean water temperature of a chilled ceiling (rating point)
   const W_DEHUM = 0.012; // kg/kg: humidity ratio above which the cooled room is dehumidified in occupied hours (as the humid-hours limit)
-  const BLIND_WARM = RV("run.blind.warm"); // °C room air above which blinds may come down in the design runs
   const BI = RV("din.blind.irr"), SHADE_IRR = { dwelling: BI.res, office: BI.nonres, school: BI.nonres }; // [north, other], W/m2
   const PARAMS = {
     azimuth: [0, 45, 90, 135, 180, 225, 270, 315],
@@ -1257,7 +1268,7 @@
     const dinMask = useKey === "dwelling" ? new Uint8Array(8760).fill(1) : s.occ;
     if (!wx._supply) wx._supply = supplyAir(wx);
     const wall = opt.wallDepth != null ? { depth: opt.wallDepth, glass: Math.max(0, opt.wallDepth - 0.1) } : WALL;
-    return { wx, use: u, useKey, occ: s.occ, pres: s.pres, rho, dinMask, BN: wx._bands, wall, dims: opt.dims || null, coolSet: opt.coolSet || 26, coolHi: opt.coolHi ? Float32Array.from(opt.coolHi) : null, coolHiFan: opt.coolHiFan ? Float32Array.from(opt.coolHiFan) : null, fanW: opt.fanW != null ? opt.fanW : null, gOcc: opt.gainOcc != null ? opt.gainOcc : null, blindCtl: opt.blindCtl || "auto" };
+    return { wx, use: u, useKey, occ: s.occ, pres: s.pres, rho, dinMask, BN: wx._bands, wall, dims: opt.dims || null, coolSet: opt.coolSet || 26, coolHi: opt.coolHi ? Float32Array.from(opt.coolHi) : null, coolHiFan: opt.coolHiFan ? Float32Array.from(opt.coolHiFan) : null, fanW: opt.fanW != null ? opt.fanW : null, gOcc: opt.gainOcc != null ? opt.gainOcc : null, blindCtl: opt.blindCtl || "auto", blinds: opt.blinds || null };
   }
   // ground temperature at about 2 m: annual mean plus a damped, delayed 30-day mean (used only by the earth-tempered
   // supply, which is set aside; not part of any run)
@@ -1286,9 +1297,20 @@
   }
   function shadeOf(ctx, c) {
     const key = SHADE_LEVELS[ctx.useKey][c.shading], sh = SHADES[key];
-    const col = colOf(c.uglass, c.gglass);
-    return { key, label: sh.label, fc: sh.fc[col], dR: sh.dR };
+    const col = colOf(c.uglass, c.gglass), ov = ctx.blinds && ctx.blinds[key];
+    return { key, label: sh.label, fc: ov && ov.fc != null ? ov.fc : sh.fc[col], dR: sh.dR, tau: ov && ov.tau != null ? ov.tau : sh.tau };
   }
+  /* window openings for ventilation (v16 phase 2): per window of the room, the openable sash area (half the window area,
+     frame included) and the sash height; effective area for tilt (C_k at 10°) or fully open side-hung windows */
+  const HOLD = RV("run.blind.heatHold"), VM = RV("vent.method"), V_SHARE = RV("vent.openShare"), V_CK = RV("vent.tilt").ck;
+  function openings(ctx, c) {
+    const dims = c.dims || ctx.dims || ctx.use.dims, W = dims[0], D = dims[1], H = dims[2];
+    const walls = c.scenario === "cellular" ? [W] : [W, D];
+    return walls.map((L) => { const r = Z.windowRect(L, H, c.wwr, 0.3); return { sash: V_SHARE * c.wwr * L * H, h: r.z1 - r.z0 }; });
+  }
+  const effArea = (ops, kind) => ops.reduce((s, o) => s + o.sash * (kind === 2 ? 1 : V_CK), 0); // m², kind 1 tilt, 2 open
+  // EN 16798-7 single-sided airing without wind: m³/h through all openings of the kind, at a temperature difference dT
+  const ventFlow = (ops, kind, dT) => dT <= 0 ? 0 : ops.reduce((s, o) => s + VM.k * o.sash * (kind === 2 ? 1 : V_CK) * Math.sqrt(VM.cst * o.h * dT), 0);
   // blinds down per hour for a facade azimuth: irradiance on the facade above the use's threshold (same rule as simulate)
   function blindsDown(ctx, az) {
     const thr = SHADE_IRR[ctx.useKey], lim = shadeSide(ctx.wx.lat, az) ? thr[0] : thr[1], I = G.irradiance(ctx.wx, 90, az).tot, out = new Uint8Array(8760);
@@ -1310,7 +1332,7 @@
     const achOcc = achOccOf(u, zone.height || zone.volume / zone.floorArea), nonres = u.din !== "residential";
     const hand = ctx.blindCtl === "hand" && nonres; // DIN 4108-2, 8.4.2 j: blinds operated by hand are not used at weekends
     const gtotOk = (c.gglass || 1) * shd.fc <= VR.gtot + 1e-9; // DIN 4108-2, 8.4.2 i: night ventilation counts only with g_tot <= 0.4
-    const vFloor = u.tHeat + (ctx.ventFloor != null ? ctx.ventFloor : VR.floor); // design runs: window air is reduced so that the room stays above this operative temperature
+    const vFloor = u.tHeat + (ctx.ventFloor != null ? ctx.ventFloor : VR.floor), ops = openings(ctx, c); // design runs: window air is reduced so that the room stays above this operative temperature
     const cL = [], eL = [], eLA = [];
     const arm = ctx.nightArm != null ? ctx.nightArm : VR.arm; let curMax = -99, lastMax = -99, wasPres = 0; // night ventilation armed after a warm day
     const top = new Float32Array(8760), tair = new Float32Array(8760), gOcc = ctx.gOcc != null ? ctx.gOcc : u.gainOcc;
@@ -1324,10 +1346,9 @@
       const te = wx.t[i], cp = rho[i] * 1006 / 3600;
       let mask = 0;
       const weekend = (((i / 24) | 0) % 7) >= 5; // 1 January a Monday
-      /* blinds down when the sun on the facade is above the DIN 4108-2 threshold of the use. Design runs add the room-warm
-         condition (air above 23 °C), so winter sun is kept; the DIN check uses the irradiance alone. Blinds operated by hand
-         stay up at weekends in non-residential use (8.4.2 j). */
-      if (shd.fc < 1 && !(hand && weekend) && (din || ctx.blindRule === "din" || tAir > BLIND_WARM)) for (let w = 0; w < wins.length; w++) if (irr[w][i] > wthr[w]) mask |= wins[w].bit;
+      /* blinds down when the sun on the window is above the DIN 4108-2 threshold of the use (8.4.2 j), in every run and for
+         both blind types (decision of 17 November 2026). Blinds operated by hand stay up at weekends in non-residential use. */
+      if (shd.fc < 1 && !(hand && weekend) && (din || HOLD == null || tAir > HOLD)) for (let w = 0; w < wins.length; w++) if (irr[w][i] > wthr[w]) mask |= wins[w].bit;
       const base = occ[i] ? achOcc : u.achUnocc;
       let want = base, isDay = false;
       /* window ventilation. DIN check (8.4.2 h, i): by day up to 3 1/h when the room air is above 23 °C and above the outdoor
@@ -1337,13 +1358,13 @@
          warmer than outside; in both cases the air flow is reduced so that the room does not fall below the heating setpoint
          + 1 K. In the cooled run windows stay shut while cooling runs (v12): by day they open only when the outdoor air is at
          least 2 K below the cooling limit and not humid; at night only when the outdoor air is not humid. */
-      if (din) {
+      if (din) { // DIN 4108-2, 8.4.2 h and i: any day opening counts as 3 1/h; tilt windows at night as 2 1/h; across storeys 5 1/h
         if (pres[i]) { if (c.dayAch > 0 && tAir > VR.dinDayT && tAir > te) { want = Math.max(base, VR.dinDay); isDay = true; } }
-        else if (c.nightAch > 0 && gtotOk && tAir > u.tHeat && tAir > te) want = Math.max(base, c.nightAch);
-      } else {
+        else if (c.nightAch > 0 && gtotOk && tAir > u.tHeat && tAir > te) want = Math.max(base, c.nightAch === 5 ? 5 : 2);
+      } else { // v16 phase 2: air flow of the opening (EN 16798-7, single-sided, no wind); across storeys: 5 1/h
         const dryOut = !coolHi || wx.w[i] <= W_DEHUM, coolOk = !coolHi || !occ[i] || te <= coolHi[i] - 2;
-        if (pres[i]) { if (c.dayAch > 0 && tAir > VR.dayT && te <= tAir - VR.dayM && te >= VR.dayOut && dryOut && coolOk) { want = Math.max(base, c.dayAch); isDay = true; } }
-        else if (c.nightAch > 0 && lastMax > arm && tAir > u.tHeat && te <= tAir - VR.nightM && dryOut) want = Math.max(base, c.nightAch);
+        if (pres[i]) { if (c.dayAch > 0 && tAir > VR.dayT && te <= tAir - VR.dayM && te >= VR.dayOut && dryOut && coolOk) { want = Math.max(base, ventFlow(ops, c.dayAch, tAir - te) / V); isDay = true; } }
+        else if (c.nightAch > 0 && lastMax > arm && tAir > u.tHeat && te <= tAir - VR.nightM && dryOut) want = Math.max(base, c.nightAch === 5 ? 5 : ventFlow(ops, 1, tAir - te) / V);
       }
       const sup = c.supply || "outdoor", tb = sup === "earth" ? SA.earth[i] : sup === "evap" ? SA.evap[i] : te;
       const fanOn = c.fans && !din && occ[i] && topPrev >= fanT; p.qInt = (occ[i] ? gOcc : u.gainUnocc) * Af + (fanOn ? fanW * Af : 0); p.phiHC = 0; p.shadeMask = mask;
@@ -1436,7 +1457,7 @@
     const out = []; for (let i = 0; i < k; i++) { const d = {}; keys.forEach((key) => { d[key] = cols[key][i]; }); out.push(d); }
     return out;
   }
-  const api = { CBIN, CBINS, USE, OPAQUE, panes, colOf, FIXED, WALL, SUPPLY, ROOF, supplyAir, blindsDown, SHADES, SHADE_LEVELS, SHADE_IRR, PARAMS, SCENARIOS, schedules, context, simulate, runCombo, runDin, T_WATER, FAN_W, designs, shadeOf, zoneParams, humidityRatio, isNorth, shadeSide, achOccOf, pctl, VR };
+  const api = { CBIN, CBINS, USE, OPAQUE, panes, colOf, FIXED, WALL, SUPPLY, ROOF, supplyAir, blindsDown, SHADES, SHADE_LEVELS, SHADE_IRR, PARAMS, SCENARIOS, schedules, context, simulate, runCombo, runDin, T_WATER, FAN_W, designs, shadeOf, zoneParams, humidityRatio, isNorth, shadeSide, achOccOf, pctl, VR, openings, effArea, ventFlow };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Sweep = api;
 })(this);
 
@@ -1478,24 +1499,33 @@
     return skyCache[k];
   }
   let SKY1 = null;
-  // hours: daylight (sun above the horizon, from the sky) and 8:00 to 18:00; evaluated once on their union
-  function hourSets(sk) {
+  const RG = root.Register || require("./register.js"), UDI = RG.val("dl.udi"), LIT = RG.val("dl.light");
+  /* hours: daylight (sun above the horizon, from the sky) and the occupied hours of the use, as the thermal runs: DIN 4108-2
+     schedule, Monday 1 January (v16 phase 2; until v16 phase 1 daylight used 8:00 to 18:00 on every day). Evaluated once
+     on their union. */
+  function hourSets(sk, ctx) {
+    const u = ctx && ctx.use, o0 = u ? u.occ[0] : 8, o1 = u ? u.occ[1] : 18, wdOnly = u ? u.weekdays : false;
     const all = [], day = [], occ = [];
-    for (let i = 0; i < 8760; i++) { const d = sk.sun[3 * i + 2] > 0, o = (i % 24) >= 8 && (i % 24) < 18; if (d || o) { all.push(i); day.push(d ? 1 : 0); occ.push(o ? 1 : 0); } }
+    for (let i = 0; i < 8760; i++) { const h = i % 24, d = sk.sun[3 * i + 2] > 0, o = h >= o0 && h < o1 && (!wdOnly || ((i / 24) | 0) % 7 < 5) && !(o0 === 0 && o1 === 24); if (d || o) { all.push(i); day.push(d ? 1 : 0); occ.push(o ? 1 : 0); } }
     return { all, day, occ };
   }
-  // metrics from per-sensor hourly illuminance on the union of hours; tb: "day" | "occ" time base for Reading A
-  function readings(E, Es, nS, H, sc, tb) {
+  /* metrics from per-sensor hourly illuminance on the union of hours; tb: "day" | "occ" time base for Reading A.
+     v16 phase 2: fac (optional) = daylight factor of each hour for blinds as operated; band = useful daylight range of the
+     use; light = { lpd, target } for lighting electricity with continuous dimming (offices and schools). */
+  function readings(E, Es, nS, H, sc, tb, fac, band, light) {
+    band = band || UDI.nonres; let udiN = 0, uLo = 0, uHi = 0, litSum = 0;
     const nH = H.all.length, nDay = H.day.reduce((a, b) => a + b, 0), nOcc = H.occ.reduce((a, b) => a + b, 0);
     const A = tb === "day" ? H.day : H.occ, nA = tb === "day" ? nDay : nOcc;
     let a100 = 0, a300 = 0, a500 = 0, a750 = 0, uda = 0, exa = 0, Ssum = 0, udaP = 0, exaP = 0, sda = 0, ase = 0, f1 = 0, f2 = 0, f3 = 0, f4 = 0;
     for (let s = 0; s < nS; s++) {
       let d100 = 0, d300 = 0, d500 = 0, d750 = 0, ua = 0, ue = 0, sc_ = 0, uaP = 0, ueP = 0, o300 = 0, sun = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0;
       for (let t = 0; t < nH; t++) {
-        const e = E[s * nH + t] * sc;
+        const e = E[s * nH + t] * sc * (fac ? fac[t] : 1);
+        if (light && H.occ[t]) litSum += e >= light.target ? 0 : 1 - e / light.target;
         if (H.day[t]) { if (e >= 100) d100++; if (e >= 300) d300++; if (e >= 500) d500++; if (e >= 750) d750++; }
         if (A[t]) {
           if (e < 100) b1++; else if (e < 300) b2++; else if (e <= 3000) b3++; else b4++;
+          if (e < band[0]) uLo++; else if (e <= band[1]) udiN++; else uHi++;
           if (e >= 300 && e <= 3000) ua++; if (e > 3000) ue++;
           sc_ += e < 300 ? e / 300 : e <= 3000 ? 1 : 0;
           if (e >= 200 && e <= 2000) uaP++; if (e > 2000) ueP++;
@@ -1508,9 +1538,12 @@
       if (o300 >= 0.5 * nOcc) sda++; if (sun > 250) ase++;
       f1 += b1 / nA; f2 += b2 / nA; f3 += b3 / nA; f4 += b4 / nA;
     }
+    const udi = 100 * udiN / (nS * nA), udiLo = 100 * uLo / (nS * nA), udiHi = 100 * uHi / (nS * nA);
+    const lightE = light ? light.lpd * litSum / nS / 1000 : 0; // kWh/m²a
     const p = (x) => Math.round(1000 * x / nS) / 10;
     const r = { a100: p(a100), a300: p(a300), a500: p(a500), a750: p(a750), UDA: p(uda), EXA: p(exa), S: Math.round(1000 * Ssum / nS) / 1000,
-      UDAp: p(udaP), EXAp: p(exaP), sDA: p(sda), ASE: p(ase), bins: [p(f1), p(f2), p(f3), p(f4)] };
+      UDAp: p(udaP), EXAp: p(exaP), sDA: p(sda), ASE: p(ase), bins: [p(f1), p(f2), p(f3), p(f4)],
+      udi: Math.round(10 * udi) / 10, udiLo: Math.round(10 * udiLo) / 10, udiHi: Math.round(10 * udiHi) / 10, band: band.slice(), light: Math.round(100 * lightE) / 100 };
     r.en = r.a750 >= 50 && r.a500 >= 95 ? "high" : r.a500 >= 50 && r.a300 >= 95 ? "medium" : r.a300 >= 50 && r.a100 >= 95 ? "minimum" : "none";
     r.A1 = r.en !== "none"; r.A2 = r.UDA >= 50; r.A3 = r.EXA <= 10; r.passA = r.A1 && r.A2 && r.A3;
     r.grade = r.A1 && r.A3 ? (r.UDA >= 80 ? "A" : r.UDA >= 65 ? "B" : r.UDA >= 50 ? "C" : "fail") : "fail";
@@ -1519,28 +1552,42 @@
     return r;
   }
   // job: {scenario: "cellular"|"corner", wwr, fixed}; returns per orientation index: {tvKey: readings}
+  /* job: {scenario: "cellular"|"corner", wwr, fixed}; returns per orientation index: {tvKey: readings without blinds,
+     tvKey|interior, tvKey|exterior: readings with blinds as operated}. Blinds come down by the DIN 4108-2 irradiance rule on
+     each facade, as in the thermal runs; when down, daylight from that facade is scaled by the blind's light transmittance
+     (the windows of a corner room count half each). The EN 17037 minimum (A1) is always read without blinds. */
+  const KEEP = ["a100", "a300", "a500", "a750", "en", "A1"];
   function job(ctx, j, opt) {
     opt = opt || FAST;
     SKY1 = SKY1 || DL.skyPatches(1);
     const c = room(ctx, j.scenario, j.wwr, j.fixed), nS = c.sensors.length, tb = ctx.useKey === "dwelling" ? "day" : "occ";
-    const dc = DL.coefficients(c, Object.assign({ sky: SKY1 }, opt)), out = [];
+    const band = ctx.useKey === "dwelling" ? UDI.res : UDI.nonres, light = ctx.useKey === "dwelling" ? null : { lpd: LIT.lpd, target: LIT.target[ctx.useKey] || 500 };
+    const dc = DL.coefficients(c, Object.assign({ sky: SKY1 }, opt)), out = [], nW = c.windows.length;
     for (let a = 0; a < 8; a++) {
-      const az = S.PARAMS.azimuth[a], sk = skyFor(ctx, az, SKY1), H = hourSets(sk), il = DL.illuminance(dc, sk, H.all), res = {};
-      for (const tk of Object.keys(TV)) res[tk] = readings(il.E, il.Es, nS, H, TV[tk] / TAU0, tb);
+      const az = S.PARAMS.azimuth[a], sk = skyFor(ctx, az, SKY1), H = hourSets(sk, ctx), il = DL.illuminance(dc, sk, H.all), res = {};
+      const down = [S.blindsDown(ctx, az)]; if (nW > 1) down.push(S.blindsDown(ctx, (az + 90) % 360));
+      const facOf = (tau) => Float32Array.from(H.all, (i) => 1 - down.reduce((s, m) => s + (m[i] ? (1 - tau) / nW : 0), 0));
+      const fx = { interior: facOf(S.shadeOf(ctx, { shading: 1, uglass: 0.8, gglass: 0.45 }).tau), exterior: facOf(S.shadeOf(ctx, { shading: 2, uglass: 0.8, gglass: 0.45 }).tau) };
+      for (const tk of Object.keys(TV)) {
+        const r0 = readings(il.E, il.Es, nS, H, TV[tk] / TAU0, tb, null, band, light); res[tk] = r0;
+        for (const k of ["interior", "exterior"]) { const r = readings(il.E, il.Es, nS, H, TV[tk] / TAU0, tb, fx[k], band, light); KEEP.forEach((x) => { r[x] = r0[x]; }); r.passA = r.A1 && r.A2 && r.A3; res[tk + "|" + k] = r; }
+      }
       out.push(res);
     }
     return out;
   }
+  // key of the daylight readings for a design: glass, and the blind type of its shading level
+  const dlKey = (ctx, dz) => { const t = tvKey(dz.uglass, dz.gglass), k = dz.shading != null ? S.SHADE_LEVELS[ctx.useKey][dz.shading] : "none"; return k && k !== "none" ? t + "|" + k : t; };
   // per-sensor maps for one option at full resolution: UDI-a and UDI-e shares (Reading A time base), sun hours
   function floorMap(ctx, scenario, wwr, fixedKey, az, tvk) {
     SKY1 = SKY1 || DL.skyPatches(1);
-    const c = room(ctx, scenario, wwr, fixedKey), nS = c.sensors.length, sk = skyFor(ctx, az, SKY1), H = hourSets(sk), tb = ctx.useKey === "dwelling" ? "day" : "occ";
+    const c = room(ctx, scenario, wwr, fixedKey), nS = c.sensors.length, sk = skyFor(ctx, az, SKY1), H = hourSets(sk, ctx), tb = ctx.useKey === "dwelling" ? "day" : "occ";
     const il = DL.illuminance(DL.coefficients(c, { sky: SKY1 }), sk, H.all), sc = TV[tvk] / TAU0, nH = H.all.length, A = tb === "day" ? H.day : H.occ, nA = A.reduce((x, y) => x + y, 0);
     const ua = new Float32Array(nS), ue = new Float32Array(nS), sun = new Float32Array(nS);
     for (let s = 0; s < nS; s++) { let a1 = 0, e1 = 0, n = 0; for (let t = 0; t < nH; t++) { const e = il.E[s * nH + t] * sc; if (A[t]) { if (e >= 300 && e <= 3000) a1++; if (e > 3000) e1++; } if (H.occ[t] && il.Es[s * nH + t] * sc > 1000) n++; } ua[s] = a1 / nA; ue[s] = e1 / nA; sun[s] = n; }
     return { room: c, ua, ue, sun, all: readings(il.E, il.Es, nS, H, sc, tb), tb };
   }
-  const api = { job, floorMap, room, sensors, readings, TV, tvKey, TAU0 };
+  const api = { job, floorMap, room, sensors, readings, TV, tvKey, TAU0, dlKey, hourSets };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.DaySweep = api;
 })(typeof window !== "undefined" ? window : globalThis);
 
@@ -1610,13 +1657,14 @@
   }
   // daylight measures, each 0..1, and minimum levels (decision of 24 October 2026)
   const DLM = {
+    UDI: (d) => (d.udi != null ? d.udi : 0) / 100, // v16 phase 2 default: useful daylight share with blinds as operated
     S: (d) => d.S, // useful daylight score of Reading A
     UDA: (d) => d.UDA / 100, // share of floor with 300 to 3,000 lx for at least half the hours
     LEED: (d) => (d.sDA / 100) * (d.ASE > 10 ? 10 / d.ASE : 1), // sDA, reduced in proportion when ASE is above 10%
     EN: (d) => ({ none: 0, minimum: 1 / 3, medium: 2 / 3, high: 1 })[d.en], // EN 17037 level as steps
   };
   const FLOOR = { en: (d) => !!d.A1, enx: (d) => !!(d.A1 && d.A3), none: () => true };
-  function daylight(d, measure, floor) { if (!d) return { A1: false, S: 0 }; return { A1: FLOOR[floor || "en"](d), S: DLM[measure || "S"](d) }; }
+  function daylight(d, measure, floor) { if (!d) return { A1: false, S: 0 }; return { A1: FLOOR[floor || "en"](d), S: DLM[measure || "UDI"](d) }; }
   const api = { dS, dC, dE, score, pareto, corner, analyse, daylight, DLM, FLOOR };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Score = api;
 })(typeof window !== "undefined" ? window : globalThis);
@@ -1644,15 +1692,16 @@
     const dl = SC.daylight(row.dl, o.dlm, o.floor);
     // v11: ceiling fans raise the upper comfort limit where the standard allows it (o.fanOk); their electricity is added
     const fk = row.dz.fans && o.fanOk ? "_fan" : "";
-    return { A1: dl.A1, S: dl.S, C: comfortOf(row.heat, o.key + fk), E: o.mode === "heat" ? row.heat.qh / o.copH + (row.heat.fanE || 0) : row.cool.qh / o.copH + row.cool.qc / o.copC + (row.cool.fanE || 0) };
+    return { A1: dl.A1, S: dl.S, C: comfortOf(row.heat, o.key + fk), E: (o.mode === "heat" ? row.heat.qh / o.copH + (row.heat.fanE || 0) : row.cool.qh / o.copH + row.cool.qc / o.copC + (row.cool.fanE || 0)) + (row.heat.lightE || 0) };
   }
   function evaluator(ctx, o) {
     const seen = new Map(), arch = [];
-    const dlOf = (dz) => { const t = o.tab[dz.wwr + "|" + dz.fixed]; return t ? t[DS.tvKey(dz.uglass, dz.gglass)] || null : null; };
+    const dlOf = (dz) => { const t = o.tab[dz.wwr + "|" + dz.fixed]; return t ? t[DS.dlKey(ctx, dz)] || t[DS.tvKey(dz.uglass, dz.gglass)] || null : null; };
     const ev = (dz) => {
       const k = keyOf(dz); if (seen.has(k)) return seen.get(k);
       const c = Object.assign({ scenario: o.scenario, azimuth: o.azimuth, supply: "outdoor" }, dz);
       const row = { dz: Object.assign({}, dz), heat: S.runCombo(ctx, c, "heat").heat, cool: S.runCombo(ctx, c, "cool").cool, dl: dlOf(dz) };
+      row.heat.lightE = row.cool.lightE = row.dl && row.dl.light ? row.dl.light : 0; // lighting electricity, kWh/m²a
       row.m = metrics(row, o); seen.set(k, row); arch.push(row);
       if (o.onProgress && arch.length % 10 === 0) o.onProgress(arch.length);
       return row;
@@ -1766,7 +1815,7 @@
 let ctx=null;
 const two=(c)=>({heat:Sweep.runCombo(ctx,c,'heat').heat,cool:Sweep.runCombo(ctx,c,'cool').cool});
 self.onmessage=(e)=>{const m=e.data;
- if(m.type==='init'){const wx=m.wx;Object.assign(wx,Geo.solarPosition(wx.lat,wx.lon,wx.tz));ctx=Sweep.context(wx,m.use,{dims:m.dims,wallDepth:m.wall,coolSet:m.coolSet,coolHi:m.coolHi,coolHiFan:m.coolHiFan,gainOcc:m.gainOcc,fanW:m.fanW,blindCtl:m.blindCtl});postMessage({type:'ready'});}
+ if(m.type==='init'){const wx=m.wx;Object.assign(wx,Geo.solarPosition(wx.lat,wx.lon,wx.tz));ctx=Sweep.context(wx,m.use,{dims:m.dims,wallDepth:m.wall,coolSet:m.coolSet,coolHi:m.coolHi,coolHiFan:m.coolHiFan,gainOcc:m.gainOcc,fanW:m.fanW,blindCtl:m.blindCtl,blinds:m.blinds});postMessage({type:'ready'});}
  else if(m.type==='run'){const out=m.tasks.map(t=>{let r;
    if(t.kind==='dl') r=DaySweep.job(ctx,t.job);
    else if(t.kind==='fac') r=FacadeSearch.search(ctx,Object.assign(t.o,{onProgress:(n)=>postMessage({type:'prog',id:t.id,n})}));

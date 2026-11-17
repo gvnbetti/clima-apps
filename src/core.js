@@ -1218,6 +1218,28 @@
     const walls = c.scenario === "cellular" ? [W] : [W, D];
     return walls.map((L) => { const r = Z.windowRect(L, H, c.wwr, 0.3); return { sash: V_SHARE * c.wwr * L * H, h: r.z1 - r.z0 }; });
   }
+  /* embodied carbon of the elements the options change, per m² of floor, over the study period with replacements
+     (v16 phase 3, register carbon.*). dims [W, D, H]; scenario "cellular" (one facade) or corner (two). */
+  function carbonOf(dims, scenario, dz) {
+    const W = dims[0], D = dims[1], H = dims[2], Af = W * D, Y = RV("carbon.years"), rep = (life) => Math.ceil(Y / life);
+    const fw = RV("carbon.window"), fl = RV("carbon.wall"), fb = RV("carbon.blind"), ff = RV("carbon.fixed"), fm = RV("carbon.mass"), fn = RV("carbon.fan"), fo = RV("carbon.night");
+    const walls = scenario === "cellular" ? [W] : [W, D], out = { window: 0, wall: 0, blinds: 0, fixed: 0, mass: 0, fans: 0, night: 0 };
+    const key = SHADE_LEVELS.office[dz.shading] || "none";
+    walls.forEach((L) => {
+      const Aw = dz.wwr * L * H, Ao = (1 - dz.wwr) * L * H, r = Z.windowRect(L, H, dz.wwr, 0.3), hw = r.z1 - r.z0;
+      out.window += Aw * ((dz.uglass >= 1 ? fw.double : fw.triple) + (dz.gglass <= 0.3 ? fw.coat : 0)) * rep(fw.life);
+      out.wall += Ao * (fl.base + fl.perCm * (fl.cm[dz.opaque] || 0));
+      if (key !== "none") out.blinds += Aw * fb[key][0] * rep(fb[key][1]);
+      const dep = { none: [0, 0], oh05: [0.5, 0], oh10: [1, 0], fin05: [0, 0.5], box05: [0.5, 0.5] }[dz.fixed] || [0, 0];
+      out.fixed += ff * (dep[0] * L + 2 * dep[1] * hw);
+      if (dz.nightAch === 1) out.night += fo.window * rep(fo.life);
+    });
+    if (dz.nightAch === 5) out.night += fo.storey * Af * rep(fo.life);
+    out.mass = (fm[dz.mass] || 0) * Af;
+    if (dz.fans) out.fans = fn.unit * Math.ceil(Af / fn.area) * rep(fn.life);
+    const per = {}; let tot = 0; for (const k in out) { per[k] = out[k] / Af; tot += per[k]; }
+    return { per, total: tot };
+  }
   const effArea = (ops, kind) => ops.reduce((s, o) => s + o.sash * (kind === 2 ? 1 : V_CK), 0); // m², kind 1 tilt, 2 open
   // EN 16798-7 single-sided airing without wind: m³/h through all openings of the kind, at a temperature difference dT
   const ventFlow = (ops, kind, dT) => dT <= 0 ? 0 : ops.reduce((s, o) => s + VM.k * o.sash * (kind === 2 ? 1 : V_CK) * Math.sqrt(VM.cst * o.h * dT), 0);
@@ -1259,7 +1281,7 @@
       /* blinds down when the sun on the window is above the DIN 4108-2 threshold of the use (8.4.2 j), both blind types. Design
          runs keep them up while the room air is at or below 23 °C (winter sun); the DIN check uses the threshold alone
          (decision of 17 November 2026). Blinds operated by hand stay up at weekends in non-residential use. */
-      if (shd.fc < 1 && !(hand && weekend) && (din || HOLD == null || tAir > HOLD)) for (let w = 0; w < wins.length; w++) if (irr[w][i] > wthr[w]) mask |= wins[w].bit;
+      if (shd.fc < 1 && !(hand && weekend) && (din || HOLD == null || tAir > HOLD) && !(ctx.blindHalf && ((i / 24) | 0) % 2)) for (let w = 0; w < wins.length; w++) if (irr[w][i] > wthr[w]) mask |= wins[w].bit;
       const base = occ[i] ? achOcc : u.achUnocc;
       let want = base, isDay = false;
       /* window ventilation. DIN check (8.4.2 h, i): by day up to 3 1/h when the room air is above 23 °C and above the outdoor
@@ -1368,7 +1390,7 @@
     const out = []; for (let i = 0; i < k; i++) { const d = {}; keys.forEach((key) => { d[key] = cols[key][i]; }); out.push(d); }
     return out;
   }
-  const api = { CBIN, CBINS, USE, OPAQUE, panes, colOf, FIXED, WALL, SUPPLY, ROOF, supplyAir, blindsDown, SHADES, SHADE_LEVELS, SHADE_IRR, PARAMS, SCENARIOS, schedules, context, simulate, runCombo, runDin, T_WATER, FAN_W, designs, shadeOf, zoneParams, humidityRatio, isNorth, shadeSide, achOccOf, pctl, VR, openings, effArea, ventFlow };
+  const api = { CBIN, CBINS, USE, OPAQUE, panes, colOf, FIXED, WALL, SUPPLY, ROOF, supplyAir, blindsDown, SHADES, SHADE_LEVELS, SHADE_IRR, PARAMS, SCENARIOS, schedules, context, simulate, runCombo, runDin, T_WATER, FAN_W, designs, shadeOf, zoneParams, humidityRatio, isNorth, shadeSide, achOccOf, pctl, VR, openings, effArea, ventFlow, carbonOf };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Sweep = api;
 })(this);
 
@@ -1519,18 +1541,39 @@
    the ten best and what they share, and the regret of each measure. */
 (function (root) {
   "use strict";
+  const RG = root.Register || require("./register.js");
   const clip = (x) => Math.max(0, Math.min(1, x));
   function dS(m) { return m.A1 ? clip(m.S) : 0; }
   // comfort: 1 at 0 and 0 at twice the limit; or, when no option of the room type meets the limit, relative to the run:
   // 1 at the lowest overheating found (o.cBest) and 0 at o.cZero (decision of 25 October 2026)
-  function dC(m, o) { return o.cZero != null ? clip((o.cZero - m.C) / Math.max(1e-9, o.cZero - o.cBest)) : clip(1 - m.C / (2 * o.limit)); }
-  function dE(m, o) { return o.upper <= o.target ? (m.E <= o.target ? 1 : 0) : clip((o.upper - m.E) / (o.upper - o.target)); }
+  /* v16 phase 3: absolute scales (register score.shape). Comfort 1 at 0, 0.5 at the limit; energy 1 at or below the target,
+     0.5 at the limit. Neither reaches 0, so designs that miss a target are still ranked. */
+  function dC(m, o) { return 1 / (1 + Math.max(0, m.C) / Math.max(1e-9, o.limit)); }
+  function dE(m, o) { return m.E <= o.target ? 1 : 1 / (1 + (m.E - o.target) / Math.max(1e-9, o.upper - o.target)); }
+  /* targets (register rec.rule): o.dlT daylight share 0..1, o.limit comfort, o.upper energy limit, o.dinLim with m.din in
+     Germany. Shortfalls as shares of the target; ws the largest, weighted by the priorities (largest weight = 1). */
+  function meets(m, o) {
+    const req = !!m.A1 && (m.din == null || o.dinLim == null || m.din <= o.dinLim);
+    const hOk = m.H == null || o.maxOut == null || m.H <= o.maxOut; // share of occupied hours above the band, where the model has one
+    // o.noC: a climate where every design needs cooling; comfort without cooling is then a resilience figure, not a target
+    const t = { A1: !!m.A1, din: m.din == null || o.dinLim == null || m.din <= o.dinLim, S: m.S >= o.dlT - 1e-9, C: o.noC ? true : m.C <= o.limit && hOk, E: m.E <= o.upper };
+    return Object.assign(t, { req, all: req && t.S && t.C && t.E });
+  }
+  function shortfall(m, o) {
+    const sH = m.H == null || o.maxOut == null ? 0 : Math.max(0, (m.H - o.maxOut) / Math.max(1e-9, o.maxOut));
+    const s = [m.A1 ? Math.max(0, (o.dlT - m.S) / Math.max(1e-9, o.dlT)) : 1, o.noC ? 0 : Math.max(0, (m.C - o.limit) / Math.max(1e-9, o.limit), sH), Math.max(0, (m.E - o.upper) / Math.max(1e-9, o.upper))];
+    const wm = Math.max(...o.w); return { s, ws: Math.max(...s.map((x, i) => x * o.w[i] / wm)) };
+  }
+  /* one number to rank by: designs meeting every target in (2, 3] by their score; the others by closeness, in (1, 2] when
+     they meet the daylight minimum and DIN 4108-2, in (0, 1] when not */
+  function rank(m, o, D) { const t = meets(m, o); if (t.all) return { q: 2 + D, t, ws: 0, s: [0, 0, 0] }; const f = shortfall(m, o); return { q: (t.req ? 1 : 0) + 1 / (1 + f.ws), t, ws: f.ws, s: f.s }; }
   // o: {w:[wS,wC,wE], limit, target, upper}
   function score(m, o) {
     const d = [dS(m), dC(m, o), dE(m, o)], w = o.w;
     let D = 1;
     for (let i = 0; i < 3; i++) { if (w[i] <= 0) continue; if (d[i] <= 0) { D = 0; break; } D *= Math.pow(d[i], w[i]); }
-    return { d, D, short: m.C > o.limit };
+    const k = o.dlT != null ? rank(m, o, D) : null;
+    return { d, D, short: m.C > o.limit, q: k ? k.q : D, t: k ? k.t : null, ws: k ? k.ws : 0, s: k ? k.s : null };
   }
   // non-dominated options among those meeting A1: no other option is at least as good on all three and better on one
   function pareto(ms) {
@@ -1581,7 +1624,9 @@
   };
   const FLOOR = { en: (d) => !!d.A1, enx: (d) => !!(d.A1 && d.A3), none: () => true };
   function daylight(d, measure, floor) { if (!d) return { A1: false, S: 0 }; return { A1: FLOOR[floor || "en"](d), S: DLM[measure || "UDI"](d) }; }
-  const api = { dS, dC, dE, score, pareto, corner, analyse, daylight, DLM, FLOOR };
+  // daylight answer in words (register score.dl), from the share 0..1
+  const DLW = RG.val("score.dl"), dlWord = (S) => { const p = 100 * S, w = DLW.words; return p < w[0] ? "not enough" : p < w[1] ? "sufficient" : p < w[2] ? "good" : "very good"; };
+  const api = { dS, dC, dE, score, meets, shortfall, rank, dlWord, DLW, pareto, corner, analyse, daylight, DLM, FLOOR };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Score = api;
 })(typeof window !== "undefined" ? window : globalThis);
 

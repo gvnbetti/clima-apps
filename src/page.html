@@ -70,6 +70,10 @@
     st.modCache = { key, w, out }; return out;
   }
   const modLabel = (m) => { m = m || st.mods; const p = []; if (m.level) p.push(CM.futLab(m.level)); if (m.uhi) { const k = Object.keys(CM.UHI_PRESETS).find((x) => CM.UHI_PRESETS[x].svf === m.uhi.svf && CM.UHI_PRESETS[x].fveg === m.uhi.fveg); p.push(`${k || "custom"} heat island (sky view factor ${m.uhi.svf.toFixed(2)}, vegetation ${m.uhi.fveg.toFixed(2)})`); } return p.join("; "); };
+  /* v16 phase 3: the climate scenario (register scen.climate): +2 °C, or +3 °C when the run is at +2 °C, none at +3 °C;
+     the heat island of the run kept */
+  const scenLevel = () => { const L = st.mods.level || 0, s = Register.val("scen.climate"); return L < s ? s : L < 3 ? 3 : null; };
+  function forEngineAt(L) { const keep = st.mods.level; st.mods.level = L; st.modCache = null; try { return forEngine(st.wx); } finally { st.mods.level = keep; st.modCache = null; } }
   const forEngine = (w) => { const m = modWeather(w); return { name: w.name, lat: w.lat, lon: w.lon, tz: w.tz, t: m.t, td: m.td, p: w.p, ir: m.ir, dni: w.dni, dhi: w.dhi, ws: w.ws, albedo: 0.2 }; };
 
   // ------------------------------------------------------------ state
@@ -89,10 +93,14 @@
 
   // ------------------------------------------------------------ workers
   const WTAIL = `
-let ctx=null;
+let ctx=null,M0=null,ctxF=null,ctxP=null;
+/* v16 phase 3: scenario contexts. clim: the run's weather at the scenario's warming level (sent as wxF), comfort band and
+   cooling limit recomputed on it; poor: half the blind hours (night ventilation is switched off in the design itself) */
+const mkF=()=>{const m=M0,w=m.wxF;Object.assign(w,Geo.solarPosition(w.lat,w.lon,w.tz));const c=Sweep.context(w,m.use,{dims:m.dims,wallDepth:m.wall,coolSet:m.coolSet,coolHi:m.coolHi,coolHiFan:m.coolHiFan,gainOcc:m.gainOcc,fanW:m.fanW,blindCtl:m.blindCtl,blinds:m.blinds});
+ if(m.coolNa){c.coolHi=Float32Array.from(c.BN.B['na_'+m.coolNa].hi);c._coolArr=null;if(m.coolHiFan){const o=new Float32Array(8760);for(let i=0;i<8760;i++)o[i]=c.coolHi[i]+Comfort.FAN_DT>=25?c.coolHi[i]+Comfort.FAN_DT:c.coolHi[i];c.coolHiFan=o;}}return c;};
 const two=(c)=>({heat:Sweep.runCombo(ctx,c,'heat').heat,cool:Sweep.runCombo(ctx,c,'cool').cool});
 self.onmessage=(e)=>{const m=e.data;
- if(m.type==='init'){const wx=m.wx;Object.assign(wx,Geo.solarPosition(wx.lat,wx.lon,wx.tz));ctx=Sweep.context(wx,m.use,{dims:m.dims,wallDepth:m.wall,coolSet:m.coolSet,coolHi:m.coolHi,coolHiFan:m.coolHiFan,gainOcc:m.gainOcc,fanW:m.fanW,blindCtl:m.blindCtl,blinds:m.blinds});postMessage({type:'ready'});}
+ if(m.type==='init'){const wx=m.wx;Object.assign(wx,Geo.solarPosition(wx.lat,wx.lon,wx.tz));ctx=Sweep.context(wx,m.use,{dims:m.dims,wallDepth:m.wall,coolSet:m.coolSet,coolHi:m.coolHi,coolHiFan:m.coolHiFan,gainOcc:m.gainOcc,fanW:m.fanW,blindCtl:m.blindCtl,blinds:m.blinds});M0=m;ctxF=null;ctxP=null;postMessage({type:'ready'});}
  else if(m.type==='run'){const out=m.tasks.map(t=>{let r;
    if(t.kind==='dl') r=DaySweep.job(ctx,t.job);
    else if(t.kind==='fac') r=FacadeSearch.search(ctx,Object.assign(t.o,{onProgress:(n)=>postMessage({type:'prog',id:t.id,n})}));
@@ -101,6 +109,7 @@ self.onmessage=(e)=>{const m=e.data;
    else if(t.kind==='din') r=Sweep.runDin(ctx,Object.assign({scenario:t.scenario,azimuth:t.azimuth,supply:'outdoor'},t.dz));
    else if(t.kind==='fmap') r=DaySweep.floorMap(ctx,t.scenario,t.wwr,t.fixed,t.az,t.tvk);
    else if(t.kind==='one') r=two(Object.assign({scenario:t.scenario,azimuth:t.azimuth,supply:'outdoor'},t.dz));
+   else if(t.kind==='scen'){const c0=t.sk==='clim'?(ctxF||(ctxF=mkF())):(ctxP||(ctxP=Object.assign({},ctx,{blindHalf:true,_coolArr:null})));const d=Object.assign({scenario:t.scenario,azimuth:t.azimuth,supply:'outdoor'},t.dz);if(t.sk==='poor')d.nightAch=0;r={heat:Sweep.runCombo(c0,d,'heat').heat,cool:Sweep.runCombo(c0,d,'cool').cool};}
    return {id:t.id,kind:t.kind,r};});postMessage({type:'done',out});}
 };`;
   const WORKER = CORE + WTAIL;
@@ -136,6 +145,7 @@ self.onmessage=(e)=>{const m=e.data;
     st.dl = { cellular: {}, corner: {} }; st.fac = FAC(); st.prog = FAC(); st.build = {};
     AI.review = null; AI.chat = []; if (typeof renderReview === "function") { renderReview(); renderChat(); }
     st.coolClimate = null; if (st.wAuto) { st.w = EQW.slice(); st.wAuto = false; } st.zoom = {}; st.wwrFine = []; st.wwrBy = {}; st.refine = null; st.runDl = runKey4(); st.topping = null; st.wi = null; st.balCache = {}; st.fmap = {}; fmPending.clear(); st.evals = 0; st.dlDone = 0; st.running = true; st.sel = null; st.rate = null; st.autoT = st.autoU = null; st.cache = {};
+    st.scenR = {}; scenPending.clear(); st.scenLv = scenLevel();
     const eng = forEngine(st.wx);
     st.ctxWx = Object.assign({}, eng, G.solarPosition(eng.lat, eng.lon, eng.tz));
     st.ctx = S.context(st.ctxWx, st.use, { dims: st.dims, wallDepth: st.wall, coolSet: st.coolSet, gainOcc: gainNow(), fanW: st.fanW, blindCtl: st.blindCtl, blinds: JSON.parse(JSON.stringify(st.blinds)) }); st.gainRun = gainNow(); st.fanWRun = st.fanW; st.blindCtlRun = st.blindCtl; st.blindsRun = JSON.parse(JSON.stringify(st.blinds)); st.dinC = {}; dinPending.clear(); st.ctx.coolHi = coolHiNow(st.ctx); st.ctx.coolHiFan = coolHiFanNow(st.ctx, st.ctx.coolHi); st.coolKeyRun = coolKeyNow();
@@ -156,14 +166,15 @@ self.onmessage=(e)=>{const m=e.data;
           else if (o.kind === "topup") topDone(o.id[0], o.id[1], o.r);
           else if (o.kind === "refine") refineDone(o.id[0], o.id[1], o.r);
           else if (o.kind === "fmap") { st.fmap[o.id] = o.r; fmPending.delete(o.id); scheduleRender(false); }
-          else if (o.kind === "din") { st.dinC[o.id] = o.r; dinPending.delete(o.id); scheduleRender(false); }
+          else if (o.kind === "din") { st.dinC[o.id] = o.r; st.dinVer = (st.dinVer || 0) + 1; dinPending.delete(o.id); scheduleRender(false); }
+          else if (o.kind === "scen") { st.scenR[o.id] = o.r; scenPending.delete(o.id); scheduleRender(false); }
         });
         if (!st.facQueued && st.dlDone >= st.dlTotal) { queueFacades(); workers.forEach((x) => { if (x !== w && x.idle) feed(x); }); }
         if (st.refine && st.refine.phase === "dl" && st.dlDone >= st.dlTotal) refineSearch();
         feed(w);
       };
       w.onerror = (e) => { if (!w.ready && st.wmode === "file") { st.wmode = "inline"; startRun(); return; } setStatus("A calculation failed: " + e.message); };
-      w.postMessage({ type: "init", wx: eng, use: st.use, dims: st.dims, wall: st.wall, coolSet: st.coolSet, coolHi: Array.from(st.ctx.coolHi), coolHiFan: st.ctx.coolHiFan ? Array.from(st.ctx.coolHiFan) : null, gainOcc: st.gainRun, fanW: st.fanWRun, blindCtl: st.blindCtlRun, blinds: st.blindsRun });
+      w.postMessage({ type: "init", wx: eng, use: st.use, dims: st.dims, wall: st.wall, coolSet: st.coolSet, coolHi: Array.from(st.ctx.coolHi), coolHiFan: st.ctx.coolHiFan ? Array.from(st.ctx.coolHiFan) : null, gainOcc: st.gainRun, fanW: st.fanWRun, blindCtl: st.blindCtlRun, blinds: st.blindsRun, wxF: st.scenLv ? forEngineAt(st.scenLv) : null, coolNa: st.model === "na" ? st.cat.na : null });
       workers.push(w);
     }
     t0 = performance.now(); scheduleRender(true);
@@ -255,7 +266,10 @@ self.onmessage=(e)=>{const m=e.data;
   }
   // proposed energy anchors until set: target = lowest delivered energy found among options meeting the EN 17037
   // minimum at any facade; upper value = the median of those options
-  function autoAnchors() {
+  /* v16 phase 3: energy anchors are fixed per use (register score.energy), no longer proposed from the run. The function
+     keeps its other duties. */
+  function autoAnchors() { fillAnchors(); checkCoolClimate(); }
+  function autoAnchorsOld() {
     const Es = [];
     for (const sc of S.SCENARIOS) st.fac[sc].forEach((F, a) => { if (!F) return; F.rows.forEach((x) => { if (dlScore(sc, x.dz, a).A1) Es.push(energyOf(x.r)); }); });
     if (!Es.length) return;
@@ -320,14 +334,19 @@ self.onmessage=(e)=>{const m=e.data;
   }
   const coolStale = () => !!(st.fac && st.coolKeyRun && st.coolKeyRun !== coolKeyNow());
   const dinLim = () => C.dinLimit(st.use);
-  const targetNow = () => st.target != null ? st.target : st.autoT != null ? st.autoT : 10;
-  const upperNow = () => st.upper != null ? st.upper : st.autoU != null ? st.autoU : 40;
+  const EANCH = Register.val("score.energy"), DLS = Register.val("score.dl");
+  const targetNow = () => st.target != null ? st.target : EANCH[st.use][0];
+  const upperNow = () => st.upper != null ? st.upper : EANCH[st.use][1];
+  // daylight target as a share 0..1 of the measure in use; the EN 17037 rating: the minimum level
+  const dlTNow = () => st.dlm === "EN" ? 1 / 3 : (st.dlT != null ? st.dlT : DLS.target) / 100;
+  const gridNow = () => st.grid != null ? st.grid : Register.val("carbon.grid");
   const energyOf = (r) => (st.mode === "heat" ? r.heat.qh / st.copH + (r.heat.fanE || 0) : r.cool.qh / st.copH + r.cool.qc / st.copC + (r.cool.fanE || 0)) + (r.heat.lightE || 0);
   const comfortOf = (r, dz) => FS.comfortOf(r.heat, compKey(dz));
-  const scoreOpts = (sc) => Object.assign({ w: st.w, limit: limitNow(), target: targetNow(), upper: upperNow() }, sc ? comfortAnchors(sc) : {});
+  const scoreOpts = (sc) => ({ w: st.w, limit: limitNow(), target: targetNow(), upper: upperNow(), dlT: dlTNow(), dinLim: dinRule() ? dinLim() : null, maxOut: st.model === "din" ? null : st.maxOut, noC: !!st.coolClimate });
   /* When no option of a room type that meets the daylight minimum also meets the comfort limit, comfort is scored relative
      to the run for that room type: 1 at the lowest overheating found, 0 at the median (at least the lowest + the limit). */
-  function comfortAnchors(sc) {
+  function comfortAnchors(sc) { return {}; } // v16 phase 3: comfort is never scored relative to the run
+  function comfortAnchorsOld(sc) {
     if (!st.fac || !st.fac[sc]) return {};
     const key = readKey() + "|" + st.fac[sc].map((F) => F ? F.ver : 0).join(","), c = st.cache["CA" + sc];
     if (c && c.key === key) return c.v;
@@ -341,11 +360,12 @@ self.onmessage=(e)=>{const m=e.data;
     return r ? r[a][DS.dlKey(st.ctx, dz)] || r[a][DS.tvKey(dz.uglass, dz.gglass)] : null;
   }
   const dlScore = (sc, dz, a) => SC.daylight(dlOf(sc, dz, a), st.dlm, st.floor);
-  const readKey = () => JSON.stringify([st.mode, st.dlm, st.floor, st.model, st.cat, st.naFan, st.region, limitNow(), targetNow(), upperNow(), st.copH, st.copC, st.w, st.brush, Object.keys(st.excl).map((k) => [k, [...st.excl[k]]]), st.use]);
+  const readKey = () => JSON.stringify([!!st.coolClimate, st.dinVer || 0, st.dlT, st.grid, st.mode, st.dlm, st.floor, st.model, st.cat, st.naFan, st.region, limitNow(), targetNow(), upperNow(), st.copH, st.copC, st.w, st.brush, Object.keys(st.excl).map((k) => [k, [...st.excl[k]]]), st.use]);
   // one option scored under the current reading
   function scoreRow(sc, a, dz, r) {
-    const dl = dlOf(sc, dz, a), dq = SC.daylight(dl, st.dlm, st.floor), m = { A1: dq.A1, S: dq.S, C: comfortOf(r, dz), E: energyOf(r) }, s = SC.score(m, scoreOpts(sc));
-    const row = { sc, a, dz, r, dl, m, d: s.d, D: s.D, short: bandMode() ? false : s.short };
+    const dl = dlOf(sc, dz, a), dq = SC.daylight(dl, st.dlm, st.floor), ex = dinRule() ? st.dinC[[sc, a, FS.keyOf(dz)].join("|")] : null,
+      m = { A1: dq.A1, S: dq.S, C: comfortOf(r, dz), E: energyOf(r), H: st.model === "din" ? null : shareOf(r, dz), din: dinRule() ? (ex ? ex["din_" + st.region] : r.heat["din_" + st.region]) : null, dinExact: !!ex }, s = SC.score(m, scoreOpts(sc));
+    const row = { sc, a, dz, r, dl, m, d: s.d, D: s.D, q: s.q, t: s.t, ws: s.ws, sf: s.s, short: s.short };
     row.v = { wwr: dz.wwr, fixed: dz.fixed, uglass: dz.uglass, gglass: dz.gglass, opaque: dz.opaque, mass: dz.mass, shading: dz.shading, dayAch: dz.dayAch, nightAch: dz.nightAch, roof: dz.roof,
       D: Math.round(s.D * 100), S: Math.round(m.S * 100), C: m.C, E: m.E, din: r.heat["din_" + st.region], hum: r.heat.humid };
     return row;
@@ -373,7 +393,11 @@ self.onmessage=(e)=>{const m=e.data;
     const frontM = SC.pareto(ok.map((r) => Object.assign({ row: r }, r.m))), front = new Set(frontM.map((m) => m.row));
     const an = SC.analyse(ok, MEASURES(sc), 10), corners = [[4, 1, 1], [1, 4, 1], [1, 1, 4]].map((w) => { const o = Object.assign({}, scoreOpts(sc), { w: normW(w) }); let b = null, bd = 0; ok.forEach((r) => { const D = SC.score(r.m, o).D; if (D > bd) { bd = D; b = r; } }); return b; }); // v12: same weights as the priority buttons
     const out = { key, F, rows, ok, front, an, corners, best: an.best };
-    st.cache[sc + a] = out; return out;
+    st.cache[sc + a] = out;
+    /* v16 phase 3: in Germany the DIN 4108-2 check with the standard's conditions decides; the design run only estimates it.
+       Once the search is done, the six best-ranked designs without the check are checked, so the ranking settles quickly. */
+    if (dinRule() && !st.running && workers.length) ok.filter((r) => !r.m.dinExact && r.t && r.t.din).sort((x, y) => y.q - x.q).slice(0, 6).forEach((r) => dinOf(sc, a, r.dz));
+    return out;
   }
 
   // ------------------------------------------------------------ words
@@ -473,7 +497,7 @@ self.onmessage=(e)=>{const m=e.data;
   // the reading in one sentence; the settings open from it
   function readingLine() {
     const m = MODELS[st.model], cat = m.cats.length ? ", " + m.catLabel(st.cat[st.model]).replace(/^Category/, "category") : "";
-    $("readline").innerHTML = `Scored for <b>${DLNAME[st.dlm].toLowerCase().replace("(udi)", "(UDI)")}</b> (minimum: ${FLOORNAME[st.floor]}), <b>comfort by ${m.label}${cat}</b> ${bandMode() ? `ranked by degree-hours above the band (no limit; DIN 4108-2 decides compliance)` : `with a limit of ${fmt(limitNow())} K·h/a`}, and <b>${st.mode === "cool" ? `energy for heating and cooling to ${coolTxt()}` : "energy for heating"}</b> (COP ${st.mode === "cool" ? st.copH + " / " + st.copC : st.copH}; target ${fmt(targetNow())}, upper value ${fmt(upperNow())} kWh/m²a${st.target == null ? ", proposed from this run" : ""}). Priorities: ${wTxt()}.${st.locNote && !st.modelManual ? ` <span class="small">Comfort model set from the location (${st.locNote.replace(/\.$/, "")}); change it in the reading panel.</span>` : ""}`;
+    $("readline").innerHTML = `Scored for <b>${DLNAME[st.dlm].toLowerCase().replace("(udi)", "(UDI)")}</b> (minimum: ${FLOORNAME[st.floor]}), <b>comfort by ${m.label}${cat}</b> ${`with a limit of ${fmt(limitNow())} K·h/a`}, and <b>${st.mode === "cool" ? `energy for heating and cooling to ${coolTxt()}` : "energy for heating"}</b> (COP ${st.mode === "cool" ? st.copH + " / " + st.copC : st.copH}; target ${fmt(targetNow())}, limit ${fmt(upperNow())} kWh/m²a). Daylight target ${Math.round(dlTNow() * 100)}${st.dlm === "EN" ? " (minimum level)" : "%"}. Priorities: ${wTxt()}. Fixed scales: designs that meet every target come first.${st.locNote && !st.modelManual ? ` <span class="small">Comfort model set from the location (${st.locNote.replace(/\.$/, "")}); change it in the reading panel.</span>` : ""}`;
   }
   function renderTypeTabs() {
     $("ttabs").innerHTML = st.types.map((sc) => `<button type="button" data-v="${sc}" aria-pressed="${sc === st.scen}">${SCLAB[sc]}<small>${facList(sc).map((a) => orientLabel(sc, a)).join(", ") || "no facade pair"}</small></button>`).join("");
@@ -491,10 +515,11 @@ self.onmessage=(e)=>{const m=e.data;
     const key = readKey() + "|" + A.map((a) => facade(sc, a).key).join(",");
     if (st.cache["T" + sc] && st.cache["T" + sc].key === key) return st.cache["T" + sc].v;
     const sets = new Map();
-    A.forEach((a) => facade(sc, a).ok.forEach((r) => { if (!(r.D > 0)) return; const k = FS.SHARED.map((p) => r.dz[p]).join("|");
+    // v16 phase 3: designs ranked by targets first (row.q: meeting every target, then the score; else closeness)
+    A.forEach((a) => facade(sc, a).ok.forEach((r) => { const k = FS.SHARED.map((p) => r.dz[p]).join("|");
       const e = sets.get(k) || { shared: FS.SHARED.reduce((o, p) => { o[p] = r.dz[p]; return o; }, {}), per: {}, k4: SH4.map((p) => r.dz[p]).join("|") };
-      if (!e.per[a] || r.D > e.per[a].D) e.per[a] = r; sets.set(k, e); }));
-    const full = [...sets.values()].filter((e) => A.every((a) => e.per[a])).map((e) => Object.assign(e, { mean: A.reduce((s, a) => s + e.per[a].D, 0) / A.length, min: Math.min(...A.map((a) => e.per[a].D)) }));
+      if (!e.per[a] || r.q > e.per[a].q) e.per[a] = r; sets.set(k, e); }));
+    const full = [...sets.values()].filter((e) => A.every((a) => e.per[a])).map((e) => Object.assign(e, { mean: A.reduce((s, a) => s + e.per[a].q, 0) / A.length, min: Math.min(...A.map((a) => e.per[a].q)) }));
     full.sort((x, y) => y.mean - x.mean || y.min - x.min);
     const v = { A, full }; st.cache["T" + sc] = { key, v }; return v;
   }
@@ -514,7 +539,7 @@ self.onmessage=(e)=>{const m=e.data;
     const t = typeSets(sc); if (!t || !t.full.length) return null;
     const g = globalShared(), full = t.full;
     const best = (g && full.find((e) => e.k4 === g)) || full[0];
-    return { A: t.A, best, next: full.filter((e) => e !== best).slice(0, 2), own: full[0], global: !!(g && best.k4 === g) };
+    return { A: t.A, best, next: full.filter((e) => e !== best).slice(0, 2), own: full[0], global: !!(g && best.k4 === g), meetAll: t.A.every((a) => best.per[a].t && best.per[a].t.all), miss: t.A.filter((a) => !(best.per[a].t && best.per[a].t.all)) };
   }
 
   // ------------------------------------------------------------ recommendations
@@ -522,7 +547,15 @@ self.onmessage=(e)=>{const m=e.data;
   const RAYC = ["var(--sun)", "var(--accent)", "var(--cool)"];
   const TH = { S: 3, C: 100, E: 1 }, BIG = 5;
   const PRI = [[1, 1, 1], [4, 1, 1], [1, 4, 1], [1, 1, 4], [5, 5, 2], [5, 2, 5], [2, 5, 5]].map((w) => w.map((x) => x / (w[0] + w[1] + w[2])));
-  const delta = (b, r) => ({ dS: pts(r.m.S) - pts(b.m.S), dC: r.m.C - b.m.C, dE: r.m.E - b.m.E });
+  const delta = (b, r) => ({ dS: pts(r.m.S) - pts(b.m.S), dC: r.m.C - b.m.C, dE: r.m.E - b.m.E, dK: carbonOf(r).tot - carbonOf(b).tot });
+  /* v16 phase 3: carbon over the study period, per m² floor: embodied (the elements the options change, register carbon.*)
+     and operational (delivered energy × grid factor × years) */
+  function carbonOf(row) {
+    const k = "K" + FS.keyOf(row.dz) + "|" + row.sc + "|" + Math.round(row.m.E * 100) + "|" + gridNow(); if (st.cache[k]) return st.cache[k];
+    const em = S.carbonOf(st.dims, row.sc === "cellular" ? "cellular" : "corner", row.dz), op = row.m.E * gridNow() * Register.val("carbon.years");
+    return (st.cache[k] = { emb: em.total, per: em.per, op, tot: em.total + op });
+  }
+  const kgTxt = (x) => fmt(Math.round(x)) + " kg CO₂e/m²";
   // v14: daylight in whole points; a difference of 3 points or less (the accuracy of the daylight search) counts as small
   const TSd = TH.S + 0.5;
   const sev = (c) => c ? Math.max(-c.dS / TSd, c.dC / TH.C, c.dE / TH.E) : 0;
@@ -595,7 +628,7 @@ self.onmessage=(e)=>{const m=e.data;
   function briefCore(sc) {
     const B = buildResult(sc); if (!B) return null;
     const A = B.A, o = scoreOpts(sc), meas = VARM(sc);
-    const bestAt = PRI.map((w) => A.map((a) => { let b = null, bd = 0; facade(sc, a).ok.forEach((r) => { const D = SC.score(r.m, Object.assign({}, o, { w })).D; if (D > bd) { bd = D; b = r; } }); return b; }));
+    const bestAt = PRI.map((w) => A.map((a) => { let b = null, bd = 0; facade(sc, a).ok.forEach((r) => { const D = SC.score(r.m, Object.assign({}, o, { w })).q; if (D > bd) { bd = D; b = r; } }); return b; }));
     const items = {}, allSw = {};
     meas.forEach((p) => {
       const chosen = A.map((a) => B.best.per[a].dz[p]);
@@ -685,7 +718,7 @@ self.onmessage=(e)=>{const m=e.data;
     if (kind === 5) return { kind, txt: "air across storeys (atrium, stair) or a fan system, 5 air changes per hour, as DIN 4108-2", warn: "" };
     const a = S.effArea(ops, kind), [W, D, H] = st.dims, V = W * D * H, ach = S.ventFlow(ops, kind, 3) / V;
     let warn = "";
-    if (st.use !== "dwelling") {
+    if (st.use !== "dwelling" && p === "dayAch") { // ASR A3.6 applies to the occupied room: day ventilation only
       const pers = Register.val("asr.persons")[st.use], need = kind === 1 ? Register.val("asr.tilt") * pers : Register.val("asr.purge") * W * D / 10;
       if (a < need - 1e-9) warn = kind === 1 ? `below ASR A3.6 (${fmt(Math.round(need * 100) / 100)} m² for ${pers} people): fresh air also needs purge ventilation or a mechanical system` : `below ASR A3.6 (${fmt(Math.round(need * 100) / 100)} m² for ${fmt(Math.round(W * D))} m² of floor)`;
       if (D > Register.val("vent.depthMax") * H) warn += (warn ? "; " : "") + `the room is deeper than ${Register.val("vent.depthMax")} times its height, the ASR A3.6 limit for one-sided ventilation`;
@@ -695,7 +728,8 @@ self.onmessage=(e)=>{const m=e.data;
   const openTxt = (p, dz, sc) => { const o = openInfo(p, dz, sc); return o ? o.txt + (o.warn ? ` (<span class="bad">${o.warn}</span>)` : "") : ""; };
   // v13: a choice at the end of the range tested (smallest or largest option) is flagged: options beyond it were not tried
   function edgeTxt(p, levels) {
-    if (!["wwr", "dayAch", "nightAch"].includes(p)) return ""; const L = LVa(p).slice().sort((x, y) => x - y), u = [...new Set(levels)];
+    if (p !== "wwr") return ""; // v16 phase 3: window types and night ventilation are kinds, not sizes
+    const L = LVa(p).slice().sort((x, y) => x - y), u = [...new Set(levels)];
     if (L.length < 2 || u.length !== 1) return "";
     return u[0] === L[0] && L[0] > 0 ? ` This is the smallest option tested; smaller ones were not tried.` : u[0] === L[L.length - 1] ? ` This is the largest option tested; larger ones were not tried.` : "";
   }
@@ -710,8 +744,8 @@ self.onmessage=(e)=>{const m=e.data;
     else {
       parts.push(`${ok.length} of ${rows.length} options meet the daylight minimum (daylight ${rg(ok.map((r) => pts(r.m.S)), " of 100", true)}).`);
       const cz = ok.every((r) => r.d[1] <= 0), ez = ok.every((r) => r.d[2] <= 0);
-      if (cz) parts.push(`Among them, overheating is ${rg(ok.map((r) => r.m.C), " K·h/a")}, all at or above the point where comfort scores 0 (${fmt(o.cZero != null ? o.cZero : 2 * o.limit)} K·h/a).`);
-      if (ez) parts.push(`Delivered energy is ${rg(ok.map((r) => r.m.E), " " + UE)}, all at or above the upper value of ${fmt(o.upper)} ${UE}. Raise the upper value in the reading panel.`);
+      if (cz) parts.push(`Among them, overheating is ${rg(ok.map((r) => r.m.C), " K·h/a")}.`);
+      if (ez) parts.push(`Delivered energy is ${rg(ok.map((r) => r.m.E), " " + UE)}.`);
       if (!cz && !ez) parts.push(`Each option is at 0 in at least one part; check the ranges in the explorer below.`);
     }
     return `<p class="lead bad">No option of this room type scores above 0.</p><p>${parts.join(" ")}</p>`;
@@ -804,7 +838,7 @@ self.onmessage=(e)=>{const m=e.data;
     $("tradeoff").innerHTML = tradeoffSvg(fa);
     $("toh").textContent = `Trade-off at ${orientLabel(sc, a)}: daylight against ${st.yAx === "C" ? "overheating, coloured by energy" : "energy, coloured by overheating"}`;
     const lg = (c, t) => `<span class="lgi"><span class="k dotk ${c}"></span>${t}</span>`;
-    $("tolegend").innerHTML = (st.yAx === "C" ? lg("cin", "Energy at or below the target") + lg("cmid", "Between target and upper value") + lg("cout", "At or above the upper value") : lg("cin", "Comfort within the limit") + lg("cmid", "Above the limit") + lg("cout", "Twice the limit or more")) + `<span>Larger dots: the Pareto front (no other design better on all three). Green ring: recommended. Labels: the designs that come out on top with each priority button.</span>`;
+    $("tolegend").innerHTML = (st.yAx === "C" ? lg("cin", "Energy at or below the target") + lg("cmid", "Between target and limit") + lg("cout", "Above the limit") : lg("cin", "Comfort within the limit") + lg("cmid", "Above the limit") + lg("cout", "Twice the limit or more")) + `<span>Larger dots: the Pareto front (no other design better on all three). Green ring: recommended. Labels: the designs that come out on top with each priority button.</span>`;
     bindZoom(fa);
     document.querySelectorAll("#yaxSeg button").forEach((b) => { b.setAttribute("aria-pressed", b.dataset.v === st.yAx); b.onclick = () => { st.yAx = b.dataset.v; renderFacade(); }; });
     document.querySelectorAll("#tradeoff .pt").forEach((p) => p.onclick = () => { const r = fa.rows[+p.dataset.i]; select(r, "Option at this facade"); });
@@ -845,13 +879,14 @@ self.onmessage=(e)=>{const m=e.data;
     const rows = fa.rows.filter((r) => r.m.A1), oks = new Set(fa.ok);
     if (!rows.length) return `<p class="why">No option at this facade meets the daylight minimum (${FLOORNAME[st.floor]}), so no option scores above 0.</p>`;
     const yC = st.yAx === "C", yv = (r) => yC ? r.m.C : r.m.E, lim = limitNow();
-    // default view: the options that score above 0 (comfort below twice the limit, energy below the upper value); zoom by dragging a box
+    // default view: the options meeting the daylight minimum; zoom by dragging a box
     let x0, x1, y0, y1; const view = st.zoom[st.yAx];
     if (view) ({ x0, x1, y0, y1 } = view);
     else {
       const pos = rows.filter((r) => r.D > 0), base = pos.length ? pos : rows;
       x0 = Math.max(0, Math.floor(Math.min(...base.map((r) => r.m.S * 100)) / 10) * 10 - 5); x1 = Math.min(100, Math.ceil(Math.max(...base.map((r) => r.m.S * 100)) / 10) * 10 + 5);
-      if (yC) { y0 = 0; y1 = 2 * lim * 1.04; } else { y0 = Math.max(0, Math.floor(Math.min(...base.map(yv), targetNow()) - 1)); y1 = upperNow() * 1.04; }
+      // v16 phase 3: fixed scales, so the view covers the designs found, not only those inside the limits
+      if (yC) { y0 = 0; y1 = Math.min(4 * lim, Math.max(2 * lim, ...base.map(yv))) * 1.04; } else { y0 = Math.max(0, Math.floor(Math.min(...base.map(yv), targetNow()) - 1)); y1 = Math.min(3 * upperNow(), Math.max(upperNow(), ...base.map(yv))) * 1.04; }
       if (y1 <= y0) y1 = y0 + 1;
     }
     const X = (v) => L + (W - L - R) * (v - x0) / (x1 - x0), Y = (v) => T + (H - T - B) * (1 - (v - y0) / (y1 - y0));
@@ -865,9 +900,9 @@ self.onmessage=(e)=>{const m=e.data;
     if (nOut) s += `<text x="${L + 6}" y="${T + 12}" class="ax">${nOut} of ${rows.length} options outside this view${view ? "" : " (score 0)"}</text>`;
     const raw = (y1 - y0) / 5, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((k) => k >= raw);
     for (let v = Math.ceil(y0 / step) * step; v <= y1; v += step) s += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" class="grid"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" class="ax">${fmt(v)}</text>`;
-    (yC ? [["comfort limit", lim], ["twice the limit (score 0)", 2 * lim]] : [["energy target", targetNow()], ["energy upper value", upperNow()]]).forEach(([lab, v]) => { if (v >= y0 && v <= y1) s += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" class="anch"/><text x="${W - R - 4}" y="${Y(v) - 4}" text-anchor="end" class="ax">${lab}</text>`; });
+    (yC ? [["comfort limit", lim], ["twice the limit (score 1/3)", 2 * lim]] : [["energy target", targetNow()], ["energy limit (score 0.5)", upperNow()]]).forEach(([lab, v]) => { if (v >= y0 && v <= y1) s += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" class="anch"/><text x="${W - R - 4}" y="${Y(v) - 4}" text-anchor="end" class="ax">${lab}</text>`; });
     s += `<text x="${L + (W - L - R) / 2}" y="${H - 6}" text-anchor="middle" class="axl">${cap(DLU[st.dlm])} (better to the right)</text><text transform="translate(13 ${T + (H - T - B) / 2}) rotate(-90)" text-anchor="middle" class="axl">${yC ? `Overheating without cooling, ${unitC()} (better lower)` : `Delivered energy, ${UE} (better lower)`}</text>`;
-    const cls = yC ? (r) => r.m.E <= targetNow() ? "cin" : r.m.E < upperNow() ? "cmid" : "cout" : (r) => r.m.C <= lim ? "cin" : r.m.C < 2 * lim ? "cmid" : "cout";
+    const cls = yC ? (r) => r.m.E <= targetNow() ? "cin" : r.m.E <= upperNow() ? "cmid" : "cout" : (r) => r.m.C <= lim ? "cin" : r.m.C < 2 * lim ? "cmid" : "cout";
     const topI = new Map(fa.an.top.map((r, i) => [r, i]));
     const order = rows.filter(inV).sort((p, q) => (fa.front.has(p) ? 1 : 0) - (fa.front.has(q) ? 1 : 0));
     order.forEach((r) => {
@@ -1279,7 +1314,7 @@ self.onmessage=(e)=>{const m=e.data;
     return { result: "no combination of facades scores above 0", facades: facList(sc).map((a) => { const fa = facade(sc, a); if (!fa || !fa.rows.length) return { facade: orientLabel(sc, a), result: "not searched" };
       const R = fa.rows, ok = R.filter((r) => r.m.A1), rg = (f) => [r1(Math.min(...R.map(f))), r1(Math.max(...R.map(f)))], top = (f) => optView(R.slice().sort((x, y) => f(x) - f(y))[0]);
       return { facade: orientLabel(sc, a), options_evaluated: R.length, meeting_daylight_minimum: ok.length, range_daylight: rg((r) => pts(r.m.S)), range_overheating_Kh: rg((r) => r.m.C), range_energy_kWh_m2a: rg((r) => r.m.E),
-        comfort_score_zero_at_Kh: r1(scoreOpts(sc).cZero != null ? scoreOpts(sc).cZero : 2 * limitNow()), energy_score_zero_at: r1(upperNow()),
+        comfort_score_half_at_Kh: r1(limitNow()), energy_target: r1(targetNow()), energy_limit_score_half: r1(upperNow()), daylight_target: r1(dlTNow() * 100),
         best_daylight: top((r) => -r.m.S), least_overheating: top((r) => r.m.C), least_energy: top((r) => r.m.E) }; }) };
   }
   // v14: geometry of a room as built for the recommended design: glass area, solar aperture and exterior wall area per m² floor
@@ -1522,7 +1557,8 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     $("tgt").value = targetNow(); $("upp").value = upperNow();
     $("tgt").classList.toggle("auto", st.target == null); $("upp").classList.toggle("auto", st.upper == null);
     $("copc").disabled = st.mode === "heat";
-    $("enote").textContent = `${st.mode === "heat" ? "Heating need of the heated run ÷ COP; cooling not counted" : `Heated and cooled to ${coolTxt()}; heating and cooling need ÷ COP`}. Score 1 at or below the target, 0 at or above the upper value.${st.target == null || st.upper == null ? " Grey values are proposed from the run; type to set your own." : ""}`;
+    $("enote").textContent = `${st.mode === "heat" ? "Heating need of the heated run ÷ COP; cooling not counted" : `Heated and cooled to ${coolTxt()}; heating and cooling need ÷ COP`}. Score 1 at or below the target, 0.5 at the limit. Defaults per room use (assumptions, register score.energy); type to set your own.`;
+    $("dlt").value = st.dlT != null ? st.dlT : DLS.target; $("grid").value = gridNow();
   }
   // strategies to test (inputs): the levels of each measure that are feasible on this site
   const STRAT = ["wwr", "fixed", "shading", "dayAch", "nightAch", "fans", "mass", "opaque", "uglass", "gglass", "roof"];
@@ -1560,6 +1596,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   const reread = () => { if (st.fac) renderAll(); };
   // v16: parameter register and version notes, written into Method and limits from the register itself
   const CHANGES = [
+    ["v16, phase 3", "17 Nov 2026", "Fixed scales instead of scales from the run: daylight target 40% useful daylight, comfort limit, energy target and limit per use. Designs that meet every target come first; when none does, the closest design is recommended and the page says so, with the shortfalls and what could close the gap. Verdict table per facade: daylight in words, DIN 4108-2, comfort, cooling, energy, carbon. Other packages that do about as well by other means. Scenarios: +2 °C climate and poor operation (half the blind hours, no night ventilation) for the recommended design and the packages. Carbon over 50 years from generic factors (embodied and operation, not scored). What the simulation does not judge is named on each decision card. Corrected: the edge note on window types."],
     ["v16, phase 2", "17 Nov 2026", "Window ventilation as openings: tilt or side-hung windows by day, tilt windows secured at night, or air across storeys; half the window area openable; air flow single-sided without wind (EN 16798-7); offices and schools checked against ASR A3.6. Two blind types, exterior and interior, with F_C and light transmittance editable; blinds by the DIN 4108-2 irradiance thresholds when the room air is above 23 °C, also for daylight (the DIN check uses the thresholds alone). Daylight scored as useful daylight (UDI): 300 to 3,000 lx for offices and schools, 100 to 2,000 lx for dwellings; daylight hours follow the DIN 4108-2 schedule. Lighting electricity with continuous dimming for offices and schools."],
     ["v16, phase 1.1", "17 Nov 2026", "Future climate (+1.5, +2, +3 °C) and urban heat island, with the same code, presets and notes as Macro Clima; every result, the DIN 4108-2 check included, can run on the modified weather. Uploaded files keep their relative humidity and comment lines."],
     ["v16, phase 1", "12 Nov 2026", "Renamed Room Clima. One parameter register for engine and page. DIN 4108-2 check rewritten from clause 8.4.2 (controls, Monday start, convective gains, g_tot rule, weekend rule for blinds by hand); region chosen from figure 1. All runs on the DIN 4108-2 gains. German annex band on the hourly outdoor temperature. Day ventilation at most 3 1/h; 5 1/h at night only when ticked. Windows never open while heating runs; night ventilation after warm days. Fan credit only in hours the fans run. Cooling loads on the 99th percentile. Weather gaps interpolated and listed. Fonts and zip reader bundled. Claude review in the debug build only."],
@@ -1638,6 +1675,8 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     segs("useSeg", "use", () => { st.dims = S.USE[st.use].dims.slice(); st.limit = null; fillRoom(); fillStrategies(); blindThr(); setStale(true); });
     $("limit").onchange = () => { const v = +$("limit").value; st.limit = v > 0 ? v : null; fillLimit(); reread(); };
     $("tgt").onchange = () => { const v = +$("tgt").value; st.target = $("tgt").value === "" ? null : v >= 0 ? v : null; if (st.upper == null && st.target != null && upperNow() <= st.target) st.upper = st.target * 2; fillAnchors(); reread(); };
+    $("dlt").onchange = () => { const v = +$("dlt").value; st.dlT = $("dlt").value === "" ? null : v >= 0 && v <= 100 ? v : st.dlT; fillAnchors(); reread(); };
+    $("grid").onchange = () => { const v = +$("grid").value; st.grid = $("grid").value === "" ? null : v >= 0 ? v : st.grid; fillAnchors(); reread(); };
     $("upp").onchange = () => { const v = +$("upp").value; st.upper = $("upp").value === "" ? null : v > 0 ? v : null; fillAnchors(); reread(); };
     $("coph").onchange = () => { const v = +$("coph").value; if (v > 0) { st.copH = v; reread(); } };
     $("copc").onchange = () => { const v = +$("copc").value; if (v > 0) { st.copC = v; reread(); } };
@@ -1762,7 +1801,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     shading: (v) => ["None", "Interior", "Exterior"][v], dayAch: (v) => ({ 0: "Closed", 1: "Tilt", 2: "Open" })[v], nightAch: (v) => ({ 0: "None", 1: "Tilt", 5: "Across storeys" })[v], fans: (v) => v ? "Fans" : "None", roof: (v) => v === "cool" ? "Cool" : "Standard" };
   // ---- confidence: how many of the 7 priority settings keep a choice best at every facade
   const GREEN = (k) => k >= 7 ? "#1a7f37" : k >= 6 ? "#2f8f4a" : k >= 5 ? "#4f9f63" : k >= 4 ? "#79b689" : k >= 3 ? "#a3ccad" : "#c9dfcf";
-  const robTxt = (k) => k >= 7 ? "Robust: best in all 7 priority settings" : k >= 5 ? `Best in ${k} of 7 priority settings` : `Depends on priorities: best in ${k} of 7`;
+  const robTxt = (k) => k >= 7 ? "Best in all 7 priority settings" : k >= 5 ? `Best in ${k} of 7 priority settings` : `Depends on priorities: best in ${k} of 7`;
   // ---- building option under balanced priorities, for "what changed"
   function balancedOf(sc) {
     if (sameW(st.w, EQW)) return buildResult(sc);
@@ -1781,13 +1820,111 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   }
   function topDone(sc, a, r) { addRows(sc, a, r.rows); const T = st.topping; if (!T) return; if (--T.pending <= 0) { st.runDl = T.key; st.topping = null; } scheduleRender(false); }
 
+  /* ============================================================ v16 phase 3 (17 November 2026)
+     Verdicts on fixed scales, the closest design when nothing meets the targets, other packages, scenarios, carbon. */
+  const scenPending = new Set();
+  const SCN = () => [["clim", st.scenLv ? `${st.scenLv === 1.5 ? "+1.5" : "+" + st.scenLv} °C climate` : null], ["poor", "poor operation"]].filter((x) => x[1]);
+  // a design rerun in a scenario (register scen.*): queued once the search is done; daylight unchanged
+  function scenOf(sk, sc, a, row) {
+    const id = [sk, sc, a, FS.keyOf(row.dz)].join("|"), r = st.scenR[id];
+    if (r) { const m = Object.assign({}, row.m, { C: FS.comfortOf(r.heat, compKey(row.dz)), E: energyOf(r), H: st.model === "din" ? null : shareOf(r, row.dz), din: null }), s = SC.score(m, Object.assign(scoreOpts(sc), { dinLim: null }));
+      return { sc, a, dz: row.dz, r, m, q: s.q, t: s.t, share: shareOf(r, row.dz) }; }
+    if (st.running || st.topping || (st.refine && st.refine.phase !== "done") || scenPending.has(id) || !workers.length) return null;
+    scenPending.add(id); queue.push({ kind: "scen", id, sk, scenario: sc, azimuth: S.PARAMS.azimuth[a], dz: row.dz }); setTimeout(wake, 0); return null;
+  }
+  // share of occupied hours above the comfort band, without cooling
+  function shareOf(r, dz) { const h = r.heat, above = st.model === "din" ? h["dinh_" + st.region] : (h[compKey(dz)] || [])[3]; return above == null ? null : 100 * above / nOccNow(); }
+  // other packages at a facade (register rec.packages): same target status, score close to the recommended one, two or more measures different
+  const PKG = Register.val("rec.packages"), PKM = ["wwr", "fixed", "uglass", "gglass", "shading", "dayAch", "nightAch", "fans", "mass", "opaque", "roof"];
+  const ndiff = (x, y) => PKM.reduce((n, p) => n + (p === "wwr" ? (Math.abs(x.dz.wwr - y.dz.wwr) >= 0.1 ? 1 : 0) : x.dz[p] !== y.dz[p] ? 1 : 0), 0);
+  function packagesOf(sc, a, rec) {
+    const fa = facade(sc, a); if (!fa || !rec) return [];
+    const k = "PK" + sc + a + FS.keyOf(rec.dz) + fa.key; if (st.cache[k]) return st.cache[k];
+    const same = (r) => FS.SHARED.every((p) => r.dz[p] === rec.dz[p]);
+    const cand = fa.ok.filter((r) => r !== rec && same(r) && (rec.t.all ? r.t.all && r.D >= rec.D - PKG.maxLoss : !r.t.all && r.t.req === rec.t.req && r.ws <= rec.ws + 0.1)).sort((x, y) => y.q - x.q);
+    const out = []; for (const r of cand) { if (out.length >= PKG.n) break; if (ndiff(r, rec) >= PKG.minDiff && out.every((o) => ndiff(r, o) >= PKG.minDiff)) out.push(r); }
+    return (st.cache[k] = out);
+  }
+  const vWord = (r) => r.m.A1 ? SC.dlWord(r.m.S) : "below the minimum";
+  const overlit = (r) => r.dl && r.dl.udiHi != null && r.dl.udiHi > DLS.overlit;
+  // shortfalls of the closest design, in units
+  function missTxt(r) {
+    const t = r.t, w = [];
+    if (!t.A1) w.push(`the daylight minimum (${FLOORNAME[st.floor]}) is not met`);
+    if (t.A1 && !t.S) w.push(`useful daylight ${dlVal(r.m.S)} against ${Math.round(dlTNow() * 100)}${st.dlm === "EN" ? "" : "%"}`);
+    if (!t.din) w.push(`DIN 4108-2 ${r.m.dinExact ? "at" : "estimated at"} ${fmt(Math.round(r.m.din))} of ${fmt(dinLim())} K·h/a`);
+    if (!t.C) w.push(r.m.C > limitNow() ? `overheating ${fmt(Math.round(r.m.C))} K·h/a against ${fmt(limitNow())}` : `${pct(r.m.H)} of occupied hours above the comfort band against ${fmt(st.maxOut)}%`);
+    if (!t.E) w.push(`energy ${fmt(r.m.E)} against ${fmt(upperNow())} ${UE}`);
+    return listJoin(w);
+  }
+  // what could close the gap, in order of effort
+  function wayOut(sc, B) {
+    const w = [], off = STRAT.filter((p) => st.allow[p] && S.PARAMS[p] && st.allow[p].length < S.PARAMS[p].length && p !== "roof");
+    if (off.length) w.push(`allow the measures left out of the strategies to test (${listJoin(off.map((p) => SLAB[p].toLowerCase()))})`);
+    if (!fanOkNow()) w.push("ceiling fans, where the comfort standard credits them");
+    const miss = B.miss.map((a) => B.best.per[a]);
+    if (miss.some((r) => !r.t.C || !r.t.din)) w.push("cooling: see the cooling answer below (chilled ceiling before air conditioning)");
+    if (miss.some((r) => !r.t.S || !r.t.A1)) w.push("a shallower room or a higher ceiling for daylight");
+    if (miss.some((r) => !r.t.E)) w.push("a higher energy limit, if the project accepts it");
+    return w;
+  }
+  function verdictHtml(sc, B) {
+    const A = B.A, rows = A.map((a) => B.best.per[a]), Y = Register.val("carbon.years");
+    let h = `<div class="v4h"><h2>Verdict</h2><span class="small">Fixed targets: useful daylight ${Math.round(dlTNow() * 100)}${st.dlm === "EN" ? " (EN 17037 minimum level)" : "%"}, overheating at most ${fmt(limitNow())} K·h/a${st.model === "din" ? "" : ` and at most ${fmt(st.maxOut)}% of occupied hours above the band`}, energy ${fmt(upperNow())} ${UE}${dinRule() ? ", DIN 4108-2" : ""}. Change them in the reading panel.</span></div>`;
+    if (st.coolClimate) h += `<p class="small"><b>Cooling climate:</b> no design tested stays within the comfort limit without cooling, so comfort without cooling is shown as resilience (how the room fares if cooling fails) and is not a target here; the targets are daylight, energy with cooling${dinRule() ? " and DIN 4108-2" : ""}.</p>`;
+    if (B.meetAll) h += `<p class="lead ok">The recommended design meets every target at ${A.length > 1 ? "every facade" : orientLabel(sc, A[0])}.</p>`;
+    else { const wo = wayOut(sc, B);
+      h += `<p class="lead bad">No design tested meets every target at ${listJoin(B.miss.map((a) => orientLabel(sc, a)))}. The design shown there is the closest (the smallest largest shortfall, weighted by the priorities${dinRule() || st.floor !== "none" ? "; the daylight minimum and DIN 4108-2 are not traded" : ""}).</p><ul class="miss">${B.miss.map((a) => `<li><b>${orientLabel(sc, a)}</b>: ${missTxt(B.best.per[a])}.</li>`).join("")}</ul>${wo.length ? `<p class="small">What could close the gap, in order of effort: ${wo.join("; ")}.</p>` : ""}`; }
+    const sc2 = SCN();
+    h += `<div class="tw"><table class="cmp vtab"><thead><tr><th>Facade</th><th>Daylight</th>${dinRule() ? "<th>DIN 4108-2</th>" : ""}<th>Comfort, no cooling</th><th>Cooling</th><th>Energy</th><th>Carbon, ${Y} years</th></tr></thead><tbody>`;
+    rows.forEach((r, i) => { const a = A[i], cv = coolVerdict(r, sc, a), K = carbonOf(r), sh = shareOf(r.r, r.dz);
+      const scn = sc2.map(([sk, lab]) => { const x = scenOf(sk, sc, a, r); return x ? { lab, x, v: x.share != null && x.share <= st.maxOut ? "none" : "need" } : { lab, x: null }; });
+      const cRange = scn.filter((s) => s.x).map((s) => s.x.m.C), cc = [r.m.C].concat(cRange);
+      const asr = ["dayAch", "nightAch"].map((p) => openInfo(p, r.dz, sc)).filter((o) => o && o.warn);
+      h += `<tr><th scope="row">${orientLabel(sc, a)}</th>
+        <td><b class="${r.t.S && r.t.A1 ? "" : "bad"}">${cap(vWord(r))}</b><br><small>${dlVal(r.m.S)} useful${overlit(r) ? `; <span class="bad">over-lit ${fmt(r.dl.udiHi)}%</span>` : ""}</small></td>
+        ${dinRule() ? (() => { const c = dinComply(sc, a, r, true); return `<td><b class="${c.ok ? "" : "bad"}">${c.exact ? (c.ok ? "Complies" : "Fails") : "Checking"}</b><br><small>${fmt(Math.round(c.kh))} of ${fmt(dinLim())} K·h/a</small></td>`; })() : ""}
+        <td><b class="${r.t.C ? "" : "bad"}">${st.coolClimate ? "Resilience only" : r.t.C ? "Meets the target" : "Misses the target"}</b><br><small>${fmt(Math.round(r.m.C))} K·h/a${sh != null ? `, ${pct(sh)} of occupied hours above the band` : ""}${cRange.length ? `; ${fmt(Math.round(Math.min(...cc)))} to ${fmt(Math.round(Math.max(...cc)))} across scenarios` : ""}</small></td>
+        <td><b>${VSHORT[cv.v]}</b>${scn.length ? `<br><small>${scn.map((s) => `${s.lab}: ${s.x ? (s.v === "none" ? "no cooling" : `cooling likely (${pct(s.x.share)} of hours above the band)`) : "running…"}`).join("; ")}</small>` : ""}</td>
+        <td><b class="${r.t.E ? "" : "bad"}">${r.m.E <= targetNow() ? "At or below the target" : r.t.E ? "Within the limit" : "Above the limit"}</b><br><small>${fmt(r.m.E)} ${UE}</small></td>
+        <td><b>${kgTxt(K.tot)}</b><br><small>embodied ${fmt(Math.round(K.emb))}, operation ${fmt(Math.round(K.op))}</small></td></tr>`;
+      if (asr.length) h += `<tr><td></td><td colspan="${dinRule() ? 6 : 5}" class="small"><span class="bad">ASR A3.6: ${asr.map((o) => o.warn).join("; ")}.</span></td></tr>`;
+    });
+    h += `</tbody></table></div>`;
+    // robustness to the assumptions
+    const rob = A.map((a) => robustOf(sc, a, B.best.per[a])).filter(Boolean);
+    if (rob.length) h += `<p class="small"><b>Under other conditions</b> (${sc2.map((s) => s[1]).join(", ")}; register scen.*): ${rob.map((x) => `${orientLabel(sc, x.a)}: ${x.txt}`).join("; ")}.</p>`;
+    h += `<p class="small">Carbon: embodied carbon of the elements the options change (window, wall, blinds, fixed shading, mass, fans, night ventilation hardware, with replacements over ${Y} years) and operation at ${String(gridNow()).replace(".", ".")} kg CO₂e/kWh. Generic factors, to be replaced with the project's data. Not part of the score.</p>`;
+    return h;
+  }
+  // robustness of the recommended design: comfort limit kept, and still the best of the shortlist (recommended + packages)
+  function robustOf(sc, a, rec) {
+    const list = [rec].concat(packagesOf(sc, a, rec)), out = [];
+    for (const [sk, lab] of SCN()) {
+      const xs = list.map((r) => scenOf(sk, sc, a, r)); if (xs.some((x) => !x)) return { a, txt: "running…" };
+      const x0 = xs[0], best = xs.reduce((b, x) => x.q > b.q ? x : b, x0), i = xs.indexOf(best);
+      const keep = st.coolClimate ? `${fmt(Math.round(x0.m.C))} K·h/a without cooling, ${x0.t.all ? "meets the targets" : "misses " + (x0.t.E ? "the daylight target" : "the energy limit")}` : x0.t.C ? "holds the comfort target" : x0.m.C > limitNow() ? `${fmt(Math.round(x0.m.C))} K·h/a, above the limit` : `${pct(x0.m.H)} of hours above the band, above the ${fmt(st.maxOut)}% allowed`;
+      out.push(`${lab}: ${keep}${i > 0 ? `, and package ${String.fromCharCode(65 + i - 1)} does better there` : list.length > 1 ? ", still the best of the shortlist" : ""}`);
+    }
+    return out.length ? { a, txt: out.join("; ") } : null;
+  }
+  function packagesHtml(sc, a, rec) {
+    const P = packagesOf(sc, a, rec), meas = MEASURES(sc), Y = Register.val("carbon.years"); if (!P.length) return `<h3 class="v4k">Other packages at this facade</h3><p class="small">No other design ${rec.t.all ? "meets the targets within 0.05 of the score" : "comes as close"} while differing in two or more measures: the recommended design has no near equal here.</p>`;
+    const K0 = carbonOf(rec), scn = SCN();
+    const row = (nm, r) => { const K = carbonOf(r), d = r === rec ? null : delta(rec, r);
+      const sx = scn.map(([sk]) => scenOf(sk, sc, a, r)).map((x) => x ? fmt(Math.round(x.m.C)) : "…").join(" / ");
+      return `<tr${r === rec ? ` class="rr"` : ""}><th scope="row">${nm}</th><td>${dlVal(r.m.S)}</td><td>${fmt(Math.round(r.m.C))}</td><td>${fmt(r.m.E)}</td><td>${fmt(Math.round(K.tot))} <small>(${fmt(Math.round(K.emb))} embodied)</small></td>${scn.length ? `<td>${sx}</td>` : ""}<td class="small">${d ? meas.filter((p) => r.dz[p] !== rec.dz[p]).map((p) => lcF(choice4(p, r.dz[p]))).join("; ") : "the recommended design"}</td></tr>`; };
+    return `<h3 class="v4k">Other packages at this facade</h3><p class="small">Designs that ${rec.t.all ? "also meet every target and score within 0.05 of the recommended one" : "come about as close to the targets"}, each different from it and from each other in at least two measures. A single swap on a decision card keeps everything else; these change several things at once.</p>
+      <div class="tw"><table class="cmp"><thead><tr><th>Design</th><th>Daylight</th><th>Overheating, K·h/a</th><th>Energy, ${UE}</th><th>Carbon, kg CO₂e/m² over ${Y} years</th>${scn.length ? `<th>Overheating: ${scn.map((s) => s[1]).join(" / ")}</th>` : ""}<th>Differs in</th></tr></thead><tbody>${row("Recommended", rec)}${P.map((r, i) => row("Package " + String.fromCharCode(65 + i), r)).join("")}</tbody></table></div>`;
+  }
+
   // ---- render
   function renderV4() {
     const sc = st.scen, B = buildResult(sc), A = facList(sc);
     $("v4prio").innerHTML = prioHtml(sc, B); bindV4Prio();
-    if (!B) { $("v4tiles").innerHTML = ""; $("v4glance").innerHTML = `<p class="wait">${st.running || st.topping ? "The design appears when the facades of this room type have been searched." : "No combination of the facades scores above 0. Check the required daylight minimum and the comfort limit under Reading."}</p>`; $("v4dec").innerHTML = ""; $("v4fac").innerHTML = ""; $("v5cool").innerHTML = ""; $("coolsum").innerHTML = ""; return; }
+    if (!B) { $("v4tiles").innerHTML = ""; $("v4glance").innerHTML = `<p class="wait">${st.running || st.topping ? "The design appears when the facades of this room type have been searched." : "No combination of the facades scores above 0. Check the required daylight minimum and the comfort limit under Reading."}</p>`; $("v4dec").innerHTML = ""; $("v4fac").innerHTML = ""; $("v5verd").innerHTML = ""; $("v5cool").innerHTML = ""; $("coolsum").innerHTML = ""; return; }
     if (!A.includes(st.fa)) st.fa = A[0];
-    $("v4tiles").innerHTML = tilesHtml(sc, B);
+    $("v4tiles").innerHTML = tilesHtml(sc, B); $("v5verd").innerHTML = verdictHtml(sc, B);
     $("v5cool").innerHTML = coolHtml(sc, B); $("coolsum").innerHTML = coolSum(sc, B); bindCool();
     $("v4glance").innerHTML = glanceHtml(sc, B); document.querySelectorAll("#v4glance .fcard").forEach((b) => b.onclick = () => { st.fa = +b.dataset.a; st.wi = null; st.sel = null; renderAll(); });
     $("v4dec").innerHTML = decisionsHtml(sc, B); document.querySelectorAll("#v4dec .why").forEach((b) => b.onclick = () => { st.why = st.why === b.dataset.k ? null : b.dataset.k; renderV4(); });
@@ -1815,23 +1952,23 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const rows = B.A.map((a) => B.best.per[a]), n = rows.length;
     const rng = (f, show) => { const v = rows.map(f), lo = Math.min(...v), hi = Math.max(...v); return show(lo) === show(hi) ? show(lo) : show(lo) + "–" + show(hi); };
     const shortTxt = rows.some((r) => r.short) ? `<span class="bad">Above the comfort limit at ${listJoin(B.A.filter((a, i) => rows[i].short).map((a) => orientLabel(sc, a)))}.</span>` : `Limit: ${fmt(limitNow())} K·h/a.`;
-    const rel = scoreOpts(sc).cZero != null ? " No design meets the limit: comfort is scored relative to this run." : "";
+    const rel = "";
     const t = (cls, lab, val, unit, note) => `<div class="v4tile ${cls}"><span class="tk">${lab}</span><b>${val}</b><span class="u">${unit}</span><span class="small">${note}</span></div>`;
     let din = "";
     if (dinRule()) { const cs = B.A.map((a, i) => ({ a, c: dinComply(sc, a, rows[i], true) })), done = cs.every((x) => x.c.exact), fail = cs.filter((x) => x.c.exact && !x.c.ok), khs = cs.filter((x) => x.c.exact).map((x) => x.c.kh);
       const val = !done ? "checking…" : fail.length ? `fails at ${listJoin(fail.map((x) => orientLabel(sc, x.a)))}` : `complies at ${listJoin(B.A.map((a) => orientLabel(sc, a)))}`;
       din = t(fail.length ? "oh" : "ok", "Summer protection, DIN 4108-2", val, khs.length ? `${rng2(khs)} of ${fmt(dinLim())} K·h/a above ${C.DIN_REF[st.region]} °C` : "", `Without cooling, with the conditions of DIN 4108-2 (gains ${fmt(Math.round(DIN_GAIN[st.use] * 10) / 10)} W/m²), region ${st.region}. On this weather file an indication: the proof uses the ${Register.val("din.weather")[st.region]}.${st.modsRun && modLabel(st.modsRun) ? " Run on the modified weather (" + modLabel(st.modsRun) + "): a look ahead, not a proof." : ""}`); }
     return din + t("dl", "Daylight", rng((r) => r.m.S, dlVal), DLU[st.dlm], `Range across the ${n} facades. Minimum: ${FLOORNAME[st.floor]}.`)
-      + (bandMode() ? t("oh", "Warm hours above the comfort band", rng((r) => r.m.C, (v) => fmt(Math.round(v))), "K·h/a without cooling, with the gains of DIN 4108-2", `Range across the ${n} facades. Ranks the designs; no limit applies here (DIN 4108-2 decides compliance). Scored relative to this run.`)
+      + (bandMode() ? t("oh", "Warm hours above the comfort band", rng((r) => r.m.C, (v) => fmt(Math.round(v))), "K·h/a without cooling, with the gains of DIN 4108-2", `Range across the ${n} facades. Limit ${fmt(limitNow())} K·h/a (score 0.5 there); DIN 4108-2 decides compliance.`)
         : t("oh", "Overheating", rng((r) => r.m.C, (v) => fmt(Math.round(v))), st.coolClimate ? "K·h/a above the comfort band if the cooling fails (resilience)" : "K·h/a above the comfort band, without cooling", `Range across the ${n} facades. ${shortTxt}${rel}`))
-      + t("en", "Delivered energy", rng((r) => r.m.E, (v) => fmt(v)), st.mode === "cool" ? `${UE}, heating and cooling to ${coolTxt()}` : `${UE}, heating`, `Range across the ${n} facades. Target ${fmt(targetNow())}, upper value ${fmt(upperNow())} ${UE}${st.target == null ? ", proposed from this run" : ""}.`);
+      + t("en", "Delivered energy", rng((r) => r.m.E, (v) => fmt(v)), st.mode === "cool" ? `${UE}, heating and cooling to ${coolTxt()}` : `${UE}, heating`, `Range across the ${n} facades. Target ${fmt(targetNow())}, limit ${fmt(upperNow())} ${UE}.`);
   }
   // ---- the design at a glance: a small 3D room per facade, laid out around a plan or in a strip by direction
   const CELL = [[2, 1], [3, 1], [3, 2], [3, 3], [2, 3], [1, 3], [1, 2], [1, 1]];
   function chips4(sc, dz) {
     const c = [choice4("shading", dz.shading)];
     if (dz.fixed !== "none") c.push(SHORT4.fixed(dz.fixed));
-    if (dz.nightAch) c.push(`Night air ${dz.nightAch} ach`); if (dz.fans) c.push("Ceiling fans"); if (dz.dayAch) c.push(`Day air ${dz.dayAch} ach`);
+    if (dz.nightAch) c.push(`Night: ${SHORT4.nightAch(dz.nightAch).toLowerCase()}`); if (dz.fans) c.push("Ceiling fans"); if (dz.dayAch) c.push(`Day: ${SHORT4.dayAch(dz.dayAch).toLowerCase()} windows`);
     c.push(MASSN[dz.mass] + " mass"); if (sc === "corner_top") c.push(SHORT4.roof(dz.roof) + " roof");
     return c;
   }
@@ -1859,7 +1996,19 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
       ["Energy", c.dE, 1, (c.dE > 0 ? "+" : "−") + kwh(Math.abs(c.dE)), c.dE > 0], ["Daylight", c.dS, 3, dlDelta(c.dS), c.dS < 0]];
     return b.map(([m, v, u, txt, bad]) => { const none = Math.abs(v) < u / 10; return `<div class="wb"><span>${m}</span><span class="bar"><i style="width:${Math.min(100, Math.abs(v) / u * 10).toFixed(0)}%;background:${none ? "var(--out)" : bad ? "var(--warm)" : "var(--cool)"}"></i></span><b style="color:${none ? "var(--mute)" : bad ? "var(--warm)" : "var(--cool)"}">${none ? "no change" : txt}</b></div>`; }).join("");
   }
-  const deltaTxt = (c) => { const p = []; if (Math.abs(c.dC) >= 1) p.push(`${c.dC > 0 ? "+" : "−"}${fmt(Math.round(Math.abs(c.dC)))} K·h/a overheating`); if (Math.abs(c.dE) >= 0.1) p.push(`${c.dE > 0 ? "+" : "−"}${fmt(Math.abs(c.dE))} ${UE} energy`); if (Math.abs(c.dS) >= 1) p.push(`daylight ${dlDelta(c.dS)}`); return p.join(", ") || "no clear change"; };
+  const deltaTxt = (c) => { const p = []; if (Math.abs(c.dC) >= 1) p.push(`${c.dC > 0 ? "+" : "−"}${fmt(Math.round(Math.abs(c.dC)))} K·h/a overheating`); if (Math.abs(c.dE) >= 0.1) p.push(`${c.dE > 0 ? "+" : "−"}${fmt(Math.abs(c.dE))} ${UE} energy`); if (Math.abs(c.dS) >= 1) p.push(`daylight ${dlDelta(c.dS)}`); if (c.dK != null && Math.abs(c.dK) >= 5) p.push(`${c.dK > 0 ? "+" : "−"}${fmt(Math.round(Math.abs(c.dK)))} kg CO₂e/m² over ${Register.val("carbon.years")} years`); return p.join(", ") || "no clear change"; };
+  // v16 phase 3: what the simulation does not judge, per measure; any of these can reverse a close decision
+  const NOTSCORED = {
+    wwr: "Not scored: glare from low sun (beyond the over-lit share), view, privacy, cost.",
+    dayAch: "Not scored: outdoor noise, rain, draughts at desks. On a loud street, plan for the closed-window case.",
+    nightAch: "Not scored: security, noise, insects, rain. Needs secured tilt windows or protected openings.",
+    shading: "Not scored: wind (exterior blinds retract in strong wind), maintenance, view out when down.",
+    fixed: "Not scored: winter sun and view lost, cost, appearance.",
+    fans: "Not scored: noise and draught at desks.",
+    gglass: "Not scored: colour and reflection of solar control glass.",
+    mass: "Not scored: acoustics of exposed soffits.",
+  };
+  const nsTxt = (p) => NOTSCORED[p] ? ` <span class="small mute">${NOTSCORED[p]}</span>` : "";
   function decisionsHtml(sc, B) {
     const core = briefCore(sc); if (!core) return "";
     const ventTxt = (it, dz) => (it.p === "dayAch" || it.p === "nightAch") && dz && dz[it.p] ? ` ${cap(PNAME[it.p].toLowerCase())}: ${openTxt(it.p, dz, sc)}; single-sided, without wind (EN 16798-7).` : "";
@@ -1870,7 +2019,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
       return `<article class="dcard" style="border-color:${GREEN(k)};border-width:${k >= 5 ? 3 : 2}px">
         <div class="dch"><div><span class="small">${NAME4[it.p]}</span><b>${choice4(it.p, it.lv0)}</b>${it.tie ? `<span class="small">Or as chosen per facade (${(() => { const g = new Map(); B.A.forEach((a, i) => g.set(it.chosen[i], (g.get(it.chosen[i]) || []).concat(orientLabel(sc, a)))); return [...g.entries()].map(([lv, as]) => `${SHORT4[it.p](lv).toLowerCase()} at ${as.join(", ")}`).join("; "); })()}): little difference.</span>` : ""}</div>${FS.SHARED.includes(it.p) ? `<span class="tagb">Building-wide</span>` : ""}</div>
         <div class="imp"><span>Impact</span><span>${it.maxSev >= BIG ? "High" : it.maxSev >= 2 ? "Medium" : "Low"}</span></div><div class="ibar"><i style="width:${Math.max(4, Math.min(100, it.maxSev / 25 * 100)).toFixed(0)}%"></i></div>
-        <p>${w ? `Instead ${lcF(choice4(it.p, w.level))}: ${deltaTxt(w)}${at(w)}.` : ""}${extra || ""}</p>
+        <p>${w ? `Instead ${lcF(choice4(it.p, w.level))}: ${deltaTxt(w)}${at(w)}.` : ""}${extra || ""}${nsTxt(it.p)}</p>
         <div class="dcf"><span class="rob" style="color:${k >= 5 ? GREEN(7) : "var(--mute)"}">${robTxt(it.k)}</span>${rows.length ? `<button type="button" class="why ghost" data-k="${key}">${open ? "Hide" : "Why?"}</button>` : ""}</div>
         ${open ? `<div class="whyb">${rows.map((c) => `<span class="wt">Instead: ${lcF(choice4(it.p, c.level))}${at(c)}</span>${whyBars(c)}`).join("")}<span class="small">The same design with only this measure changed, simulated${it.est ? "; some values are estimates while the exact runs finish" : ""}. Orange: worse. Blue: better.</span></div>` : ""}</article>`;
     };
@@ -1949,6 +2098,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     }
     if (wi) h += `<button type="button" class="ghost" id="wireset">Back to the recommended design</button>`;
     h += `</div></div>`;
+    h += packagesHtml(sc, a, rec);
     // comparison with the picks
     const base = cur || rec, PD = presetDesigns(sc), names = { balanced: "Balanced", daylight: "Daylight first", comfort: "Comfort first", energy: "Energy first" };
     const cell = (v, ref, d, goodUp, txt) => { if (!ref) return `<td>${v}</td>`; const dv = d, none = Math.abs(dv) < (txt === "dl" ? 1 : txt === "C" ? 1 : 0.1); return `<td>${v} <small style="color:${none ? "var(--mute)" : (dv > 0) === goodUp ? "var(--cool)" : "var(--warm)"}">${none ? "" : txt === "dl" ? dlDelta(dv) : (dv > 0 ? "+" : "−") + fmt(txt === "C" ? Math.round(Math.abs(dv)) : Math.abs(dv))}</small></td>`; };
@@ -2007,7 +2157,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
      Passing both: no cooling needed. Otherwise a cooled ceiling is enough when the hours it cannot cover (from the ideal
      loads of the cooled run) stay within the same share of occupied hours; else a cooling system is needed. */
   st.maxOut = st.maxOut || Register.val("comfort.maxOut");
-  const nOccNow = () => st.ctx.occ.reduce((s0, x) => s0 + x, 0);
+  const nOccNow = () => st.ctx._nOcc || (st.ctx._nOcc = st.ctx.occ.reduce((s0, x) => s0 + x, 0));
   /* v7: the ceiling is sized on the peak. eHist / ePeak: the hourly sensible load expressed at the ceiling's rating (10 K between
      room and mean water), with the water kept above 16 °C and above the room dew point + 1 K; "A" for the ceiling alone (room
      humidity as ventilation and moisture gains give it), otherwise with dehumidified supply air holding the room at 12 g/kg at most. */

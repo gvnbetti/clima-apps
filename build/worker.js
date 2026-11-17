@@ -57,8 +57,9 @@
     "score.shape": { v: "d = 1 / (1 + x)", unit: "score 0 to 1", status: "decision", src: D17 + " (absolute scales, brief section 6)", text: "Scores on fixed scales, never against the run: daylight is the useful daylight share; comfort 1 with no overheating, 0.5 at the limit, 1/3 at twice the limit; energy 1 at or below the target, 0.5 at the limit. Scores never reach 0, so designs that miss a target are still ranked; whether a design meets the targets is decided separately" },
     "score.dl": { v: { target: 40, words: [40, 60, 80], overlit: 10 }, unit: "% of floor and hours", status: "assumption", src: "Proposal of the brief, section 9; to calibrate against the EN 17037 levels on the test rooms", text: "Daylight answer from the useful daylight share: below 40 % not enough, 40 to 60 % sufficient, 60 to 80 % good, 80 % and more very good. The target is met from 40 % (EN 17037 rating: from the minimum level). Flag: over-lit when more than 10 % of floor and hours are above the useful range" },
     "score.energy": { v: { office: [10, 25], school: [10, 25], dwelling: [6, 15] }, unit: "kWh/m²a delivered: target, limit", status: "assumption", src: D17 + " (absolute scales); values to be set per project", text: "Energy scale per use: score 1 at or below the target, 0.5 at the limit; the energy target is met at or below the limit. Delivered energy of the room: heating and cooling through the heat pump efficiencies, fans and, for offices and schools, lighting. Editable in the reading panel" },
-    "rec.rule": { v: "targets first, then score", status: "decision", src: D17 + " (brief section 6, when nothing meets the targets)", text: "Recommended design at each facade: among the designs that meet every target (the daylight minimum, useful daylight, the comfort limit and, except for the DIN 4108-2 model, at most the allowed share of occupied hours above the band (comfort.maxOut), the energy limit and, in Germany, DIN 4108-2: from the check with the standard's conditions where it has run, else estimated from the design run; the recommended design is always checked, and a failing one is replaced), the one with the highest score. When none meets them all: the closest design, with the smallest largest shortfall; each shortfall is a share of its target, weighted by the priorities. The daylight minimum and DIN 4108-2 are not traded: a design that meets them comes before one that does not" },
+    "rec.rule": { v: "targets first, then score", status: "decision", src: D17 + " (brief section 6, when nothing meets the targets)", text: "Ties: among designs within 0.01 in score and in the same tier, the one with less whole-life carbon (decision of 17 November 2026). Recommended design at each facade: among the designs that meet every target (the daylight minimum, useful daylight, the comfort limit and, except for the DIN 4108-2 model, at most the allowed share of occupied hours above the band (comfort.maxOut), the energy limit and, in Germany, DIN 4108-2: from the check with the standard's conditions where it has run, else estimated from the design run; the recommended design is always checked, and a failing one is replaced), the one with the highest score. When none meets them all: the closest design, with the smallest largest shortfall; each shortfall is a share of its target, weighted by the priorities. The daylight minimum and DIN 4108-2 are not traded: a design that meets them comes before one that does not" },
     "rec.packages": { v: { minDiff: 2, n: 5, closeWs: 0.1 }, unit: "measures, designs, shortfall", status: "decision", src: D17 + " (score band dropped the same evening)", text: "Other packages at each facade: every design that also meets every target and differs from the recommended one in at least two measures, best score first, with the score gap shown. Near twins are thinned (each shown design differs from the others in two or more measures too); up to five shown. When nothing meets the targets: designs whose largest shortfall is at most 0.1 above the closest design's" },
+    "search.prune": { v: 1, unit: "largest shortfall, share of its target", status: "decision", src: D17 + " (run time; a search only around the designs of the result was tested and rejected: it missed the best design in Mannheim and Dubai)", text: "Pareto local search: designs on the front of daylight, overheating and energy are extended by every single change only while their largest shortfall against the targets is at most 100% (overheating up to twice the limit, energy up to twice the limit, hours above the band up to twice the allowed share); when no design comes that close, up to twice the smallest largest shortfall found. Then a local search around the design with the least whole-life carbon among those that meet every target" },
     "scen.climate": { v: 2, unit: "°C global warming level", status: "decision", src: "Brief section 6 (scenarios); morph as the Future climate control (IPCC AR6 Atlas, Belcher et al. 2005)", text: "Climate scenario: +2 °C. When the run already uses +2 °C, +3 °C; when it uses +3 °C, no climate scenario. The urban heat island of the run is kept" },
     "scen.poor": { v: { blinds: 0.5, night: 0 }, unit: "share of blind hours, night ventilation", status: "decision", src: "Brief section 6 (scenarios)", text: "Poor operation: blinds come down only on every other day (half the blind hours) and windows stay shut at night. Day ventilation and everything else as designed" },
     "scen.rule": { v: "recommended and packages", status: "decision", src: D17, text: "The recommended design and the other packages of each facade are rerun in each scenario (daylight unchanged). Robust means: the recommended design still meets the comfort limit, or stays the best of the shortlist" },
@@ -1607,6 +1608,7 @@
     const band = ctx.useKey === "dwelling" ? UDI.res : UDI.nonres, light = ctx.useKey === "dwelling" ? null : { lpd: LIT.lpd, target: LIT.target[ctx.useKey] || 500 };
     const dc = DL.coefficients(c, Object.assign({ sky: SKY1 }, opt)), out = [], nW = c.windows.length;
     for (let a = 0; a < 8; a++) {
+      if (j.azs && !j.azs.includes(a)) { out.push(null); continue; } // v16 phase 3.2: only the orientations of the run
       const az = S.PARAMS.azimuth[a], sk = skyFor(ctx, az, SKY1), H = hourSets(sk, ctx), il = DL.illuminance(dc, sk, H.all), res = {};
       // blind hours from a heated run of the reference room with this window, orientation and blind type (same rule as the design runs)
       const facOf = (lv) => {
@@ -1634,7 +1636,7 @@
     for (let s = 0; s < nS; s++) { let a1 = 0, e1 = 0, n = 0; for (let t = 0; t < nH; t++) { const e = il.E[s * nH + t] * sc; if (A[t]) { if (e >= 300 && e <= 3000) a1++; if (e > 3000) e1++; } if (H.occ[t] && il.Es[s * nH + t] * sc > 1000) n++; } ua[s] = a1 / nA; ue[s] = e1 / nA; sun[s] = n; }
     return { room: c, ua, ue, sun, all: readings(il.E, il.Es, nS, H, sc, tb), tb };
   }
-  const api = { job, floorMap, room, sensors, readings, TV, tvKey, TAU0, dlKey, hourSets };
+  const api = { job, floorMap, room, sensors, readings, TV, tvKey, TAU0, dlKey, hourSets, skyFor };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.DaySweep = api;
 })(typeof window !== "undefined" ? window : globalThis);
 
@@ -1762,7 +1764,9 @@
     const dl = SC.daylight(row.dl, o.dlm, o.floor);
     // v11: ceiling fans raise the upper comfort limit where the standard allows it (o.fanOk); their electricity is added
     const fk = row.dz.fans && o.fanOk ? "_fan" : "";
-    return { A1: dl.A1, S: dl.S, C: comfortOf(row.heat, o.key + fk), E: (o.mode === "heat" ? row.heat.qh / o.copH + (row.heat.fanE || 0) : row.cool.qh / o.copH + row.cool.qc / o.copC + (row.cool.fanE || 0)) + (row.heat.lightE || 0) };
+    // v16 phase 3.2: with o.rk (ranking options from the page) also the share of hours above the band and the DIN estimate
+    const rk = o.rk, hx = row.heat[o.key + fk], H = rk && rk.model !== "din" && Array.isArray(hx) ? 100 * hx[3] / rk.nOcc : null, din = rk && rk.dinLim != null ? row.heat["din_" + rk.region] : null;
+    return { H, din, A1: dl.A1, S: dl.S, C: comfortOf(row.heat, o.key + fk), E: (o.mode === "heat" ? row.heat.qh / o.copH + (row.heat.fanE || 0) : row.cool.qh / o.copH + row.cool.qc / o.copC + (row.cool.fanE || 0)) + (row.heat.lightE || 0) };
   }
   function evaluator(ctx, o) {
     const seen = new Map(), arch = [];
@@ -1794,7 +1798,7 @@
       const g = pool[i % pool.length], r = rest[i];
       E.ev({ wwr: g.wwr, fixed: g.fixed, uglass: g.uglass, gglass: g.gglass, opaque: r.opaque, mass: r.mass, shading: r.shading, dayAch: r.dayAch, nightAch: r.nightAch, fans: r.fans || 0, roof: top ? r.roof : "standard" });
     }
-    const okGeo = (dz) => { if (noneA1) return true; const d = E.dlOf(dz); return SC.daylight(d, o.dlm, o.floor).A1; };
+    const okGeo = (dz) => { const d = E.dlOf(dz); if (!d) return false; if (noneA1) return true; return SC.daylight(d, o.dlm, o.floor).A1; };
     for (let round = 0; round < o.rounds; round++) {
       let front = SC.pareto(E.arch.map((r) => Object.assign({ row: r }, r.m))).map((m) => m.row);
       const inLim = front.filter((r) => r.m.C <= 2 * o.limit); if (inLim.length) front = inLim;
@@ -1812,12 +1816,35 @@
        design on the front of daylight, overheating and energy is simulated, until the front stops changing; stops at
        o.cap designs (default 5,000) and reports whether the front is complete. */
     const complete = o.pls === false ? true : paretoLocal(E, o, meas, okGeo);
+    if (o.rk && o.pls !== false) lowCarbonLocal(E, o, meas, okGeo);
     return { rows: E.arch.map((r) => ({ dz: r.dz, heat: r.heat, cool: r.cool })), noneA1, complete };
+  }
+  /* v16 phase 3.2: after the front is complete, a local search around the design with the least whole-life carbon among
+     those that meet every target, until it stops improving (carbon is not on the front, so the front alone may miss it) */
+  function lowCarbonLocal(E, o, meas, okGeo) {
+    const rk = o.rk, cap = o.cap || 5000, done = new Set(), o0 = { w: rk.pri[0], limit: o.limit, target: rk.target, upper: rk.upper, dlT: rk.dlT, maxOut: rk.maxOut, dinLim: rk.dinLim, noC: rk.noC };
+    const carb = (r) => r._k != null ? r._k : (r._k = S.carbonOf(rk.dims, rk.cscen, r.dz).total + r.m.E * rk.grid * rk.years);
+    for (;;) {
+      const meet = E.arch.filter((r) => SC.meets(r.m, o0).all); if (!meet.length) return;
+      const lo = meet.reduce((b, r) => carb(r) < carb(b) ? r : b, meet[0]), k = keyOf(lo.dz); if (done.has(k)) return; done.add(k);
+      for (const p of meas) for (const lv of LV(o, p)) {
+        if (lv === lo.dz[p]) continue;
+        const dz = Object.assign({}, lo.dz, { [p]: lv });
+        if (E.seen.has(keyOf(dz)) || !okGeo(dz)) continue;
+        if (E.arch.length >= cap) return; E.ev(dz);
+      }
+    }
   }
   function paretoLocal(E, o, meas, okGeo) {
     const cap = o.cap || 5000, done = new Set();
     for (;;) {
-      const front = SC.pareto(E.arch.map((r) => Object.assign({ row: r }, r.m))).map((m) => m.row).filter((r) => !done.has(keyOf(r.dz)));
+      let front = SC.pareto(E.arch.map((r) => Object.assign({ row: r }, r.m))).map((m) => m.row).filter((r) => !done.has(keyOf(r.dz)));
+      /* v16 phase 3.2: front members far from every target (largest shortfall above rk.prune, register search.prune) are not
+         expanded; the front still fills in wherever designs come within reach of the targets */
+      if (o.rk && o.rk.prune != null) { const rk = o.rk, o0 = { w: rk.pri[0], limit: o.limit, target: rk.target, upper: rk.upper, dlT: rk.dlT, maxOut: rk.maxOut, dinLim: rk.dinLim, noC: rk.noC };
+        // when nothing comes within reach, the bar is relative: twice the smallest largest shortfall found so far
+        let m0 = Infinity; for (const r of E.arch) { const x = SC.shortfall(r.m, o0).ws; if (x < m0) m0 = x; }
+        const thr = Math.max(rk.prune, 2 * m0); front = front.filter((r) => SC.shortfall(r.m, o0).ws <= thr); }
       if (!front.length) return true;
       for (const r of front) {
         done.add(keyOf(r.dz));

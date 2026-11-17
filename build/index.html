@@ -439,7 +439,7 @@ details.ev.in { margin-top: 14px }
       <p>Daylight: climate-based, in the page, validated against Radiance (sDA within about 1 point, ASE identical). Scored by one of four measures: useful daylight score S (default), useful daylight area, LEED sDA reduced when ASE is above 10%, or the EN 17037 rating as steps, with a minimum below which the score is 0 (EN 17037 minimum by default). Movable blinds do not yet enter the daylight results (planned for the next phase). Light transmittance by glazing: double 0.80 / 0.70 / 0.55 and triple 0.74 / 0.66 / 0.50 for g 0.60 / 0.45 / 0.30 (typical product values, an assumption).</p>
       <p>Constructions: the room is cut at the mid-plane of the slabs and internal walls, which are adiabatic. Thermal mass levels, heat capacity seen from the room per m² floor (EN ISO 13786, cellular room): light (timber floor on dry screed, gypsum linings, stud partitions) about 100 kJ/m²K; medium (concrete slab with screed and suspended ceiling, sand-lime inner leaf, stud partitions) about 230; heavy (as medium with the slab soffit exposed over 70% of the ceiling) about 390, close to DIN V 18599 "schwer"; very heavy (heavy with 17.5 cm sand-lime partitions) about 700, not tested unless ticked. Shading factors F_C from DIN 4108-2 Table 7. Mass works mainly together with night ventilation.</p>
       <p>Building-wide measures (glass, wall insulation, mass) are chosen once for all room types tested: the set with the highest mean score over every facade of every room type. Each room type keeps its own window, shading and ventilation choices. Every option includes the wall reveal of the chosen wall depth.</p>
-      <p>Scoring (v16 phase 3): fixed scales, never taken from the run. Daylight: the useful daylight share; target 40% (sufficient), words at 40, 60 and 80%. Comfort: 1 with no overheating, 0.5 at the limit, 1/3 at twice the limit. Energy: 1 at or below the target, 0.5 at the limit. The overall score is the weighted geometric mean, with the weights set in the priority triangle. Recommended design at each facade: among the designs that meet every target (daylight minimum, daylight target, comfort limit, energy limit and, in Germany, DIN 4108-2 as estimated in the design run), the one with the highest score; when none meets them all, the closest design: the smallest largest shortfall, each shortfall as a share of its target and weighted by the priorities, with the daylight minimum and DIN 4108-2 never traded. Other packages: every design that also meets every target and differs in two or more measures, best score first, with the score gap shown (up to five, near twins thinned). Overheating without cooling is free-running performance (thermal autonomy) over a typical year; it is not a passive survivability check (no power outage, no extreme week). Scenarios: the recommended design and the packages rerun at +2 °C (+3 °C when the run is at +2 °C) and with poor operation (blinds down on every other day only, no night ventilation). Carbon: embodied carbon of the elements the options change, with replacements over 50 years, plus delivered energy times the grid factor over 50 years; generic factors listed in the register, shown but not scored. Corner picks: the option with the smallest largest weighted shortfall, weight 0.6 on one metric and 0.2 on the others.</p>
+      <p>Scoring (v16 phase 3): fixed scales, never taken from the run. Daylight: the useful daylight share; target 40% (sufficient), words at 40, 60 and 80%. Comfort: 1 with no overheating, 0.5 at the limit, 1/3 at twice the limit. Energy: 1 at or below the target, 0.5 at the limit. The overall score is the weighted geometric mean, with the weights set in the priority triangle. Recommended design at each facade: among the designs that meet every target (daylight minimum, daylight target, comfort limit, energy limit and, in Germany, DIN 4108-2 as estimated in the design run), the one with the highest score; when none meets them all, the closest design: the smallest largest shortfall, each shortfall as a share of its target and weighted by the priorities, with the daylight minimum and DIN 4108-2 never traded. Other packages: every design that also meets every target and differs in two or more measures, best score first, with the score gap shown (up to five, near twins thinned). Overheating without cooling is free-running performance (thermal autonomy) over a typical year; it is not a passive survivability check (no power outage, no extreme week). Scenarios: the recommended design and the packages rerun at +2 °C (+3 °C when the run is at +2 °C) and with poor operation (blinds down on every other day only, no night ventilation). Carbon: embodied carbon of the elements the options change, with replacements over 50 years, plus delivered energy times the grid factor over 50 years; generic factors listed in the register, shown but not scored. Search (v16 phase 3.2): the front is not extended from designs whose largest shortfall exceeds 100%; afterwards a local search around the lowest-carbon design that meets every target; see search.prune in the register. Ties within 0.01 in score go to less whole-life carbon. Corner picks: the option with the smallest largest weighted shortfall, weight 0.6 on one metric and 0.2 on the others.</p>
       <p>Recommendations: the building's facades are combined by taking, for each set of shared measures, each facade's best option with that set, and keeping the set with the highest mean score (checked against brute force). Each statement gives the modelled difference against the same option with only that measure changed. "Little difference": every alternative tested changes the result by less than 3 daylight points, 100 K·h/a and 1 kWh/m²a. "Avoid": a large difference (five times that) at every facade. Only the strategies ticked in the inputs are simulated and recommended.</p>
       <p>Search: for each facade of the building, 60 designs at random, window ratio, outdoor shading and glazing drawn from those meeting the daylight minimum there, then four rounds of 30 variations of options on the Pareto front, then every single change of every design on the front, repeated until the front stops changing (at most 5,000 designs per facade). Checked against brute force at 7 facades in 3 climates (v3).</p>
       <p>Weather files: gaps in air temperature, dew point and radiation are filled by linear interpolation in time and listed under the weather input; a file with more than 2% of hours missing in any of them is refused. Missing long-wave sky radiation is computed from dew point and sky cover (Clark and Allen). The bundled German file is a test reference year whose edition is not recorded; it stands for region C.</p>
@@ -723,8 +723,9 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
     "score.shape": { v: "d = 1 / (1 + x)", unit: "score 0 to 1", status: "decision", src: D17 + " (absolute scales, brief section 6)", text: "Scores on fixed scales, never against the run: daylight is the useful daylight share; comfort 1 with no overheating, 0.5 at the limit, 1/3 at twice the limit; energy 1 at or below the target, 0.5 at the limit. Scores never reach 0, so designs that miss a target are still ranked; whether a design meets the targets is decided separately" },
     "score.dl": { v: { target: 40, words: [40, 60, 80], overlit: 10 }, unit: "% of floor and hours", status: "assumption", src: "Proposal of the brief, section 9; to calibrate against the EN 17037 levels on the test rooms", text: "Daylight answer from the useful daylight share: below 40 % not enough, 40 to 60 % sufficient, 60 to 80 % good, 80 % and more very good. The target is met from 40 % (EN 17037 rating: from the minimum level). Flag: over-lit when more than 10 % of floor and hours are above the useful range" },
     "score.energy": { v: { office: [10, 25], school: [10, 25], dwelling: [6, 15] }, unit: "kWh/m²a delivered: target, limit", status: "assumption", src: D17 + " (absolute scales); values to be set per project", text: "Energy scale per use: score 1 at or below the target, 0.5 at the limit; the energy target is met at or below the limit. Delivered energy of the room: heating and cooling through the heat pump efficiencies, fans and, for offices and schools, lighting. Editable in the reading panel" },
-    "rec.rule": { v: "targets first, then score", status: "decision", src: D17 + " (brief section 6, when nothing meets the targets)", text: "Recommended design at each facade: among the designs that meet every target (the daylight minimum, useful daylight, the comfort limit and, except for the DIN 4108-2 model, at most the allowed share of occupied hours above the band (comfort.maxOut), the energy limit and, in Germany, DIN 4108-2: from the check with the standard's conditions where it has run, else estimated from the design run; the recommended design is always checked, and a failing one is replaced), the one with the highest score. When none meets them all: the closest design, with the smallest largest shortfall; each shortfall is a share of its target, weighted by the priorities. The daylight minimum and DIN 4108-2 are not traded: a design that meets them comes before one that does not" },
+    "rec.rule": { v: "targets first, then score", status: "decision", src: D17 + " (brief section 6, when nothing meets the targets)", text: "Ties: among designs within 0.01 in score and in the same tier, the one with less whole-life carbon (decision of 17 November 2026). Recommended design at each facade: among the designs that meet every target (the daylight minimum, useful daylight, the comfort limit and, except for the DIN 4108-2 model, at most the allowed share of occupied hours above the band (comfort.maxOut), the energy limit and, in Germany, DIN 4108-2: from the check with the standard's conditions where it has run, else estimated from the design run; the recommended design is always checked, and a failing one is replaced), the one with the highest score. When none meets them all: the closest design, with the smallest largest shortfall; each shortfall is a share of its target, weighted by the priorities. The daylight minimum and DIN 4108-2 are not traded: a design that meets them comes before one that does not" },
     "rec.packages": { v: { minDiff: 2, n: 5, closeWs: 0.1 }, unit: "measures, designs, shortfall", status: "decision", src: D17 + " (score band dropped the same evening)", text: "Other packages at each facade: every design that also meets every target and differs from the recommended one in at least two measures, best score first, with the score gap shown. Near twins are thinned (each shown design differs from the others in two or more measures too); up to five shown. When nothing meets the targets: designs whose largest shortfall is at most 0.1 above the closest design's" },
+    "search.prune": { v: 1, unit: "largest shortfall, share of its target", status: "decision", src: D17 + " (run time; a search only around the designs of the result was tested and rejected: it missed the best design in Mannheim and Dubai)", text: "Pareto local search: designs on the front of daylight, overheating and energy are extended by every single change only while their largest shortfall against the targets is at most 100% (overheating up to twice the limit, energy up to twice the limit, hours above the band up to twice the allowed share); when no design comes that close, up to twice the smallest largest shortfall found. Then a local search around the design with the least whole-life carbon among those that meet every target" },
     "scen.climate": { v: 2, unit: "°C global warming level", status: "decision", src: "Brief section 6 (scenarios); morph as the Future climate control (IPCC AR6 Atlas, Belcher et al. 2005)", text: "Climate scenario: +2 °C. When the run already uses +2 °C, +3 °C; when it uses +3 °C, no climate scenario. The urban heat island of the run is kept" },
     "scen.poor": { v: { blinds: 0.5, night: 0 }, unit: "share of blind hours, night ventilation", status: "decision", src: "Brief section 6 (scenarios)", text: "Poor operation: blinds come down only on every other day (half the blind hours) and windows stay shut at night. Day ventilation and everything else as designed" },
     "scen.rule": { v: "recommended and packages", status: "decision", src: D17, text: "The recommended design and the other packages of each facade are rerun in each scenario (daylight unchanged). Robust means: the recommended design still meets the comfort limit, or stays the best of the shortlist" },
@@ -2273,6 +2274,7 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
     const band = ctx.useKey === "dwelling" ? UDI.res : UDI.nonres, light = ctx.useKey === "dwelling" ? null : { lpd: LIT.lpd, target: LIT.target[ctx.useKey] || 500 };
     const dc = DL.coefficients(c, Object.assign({ sky: SKY1 }, opt)), out = [], nW = c.windows.length;
     for (let a = 0; a < 8; a++) {
+      if (j.azs && !j.azs.includes(a)) { out.push(null); continue; } // v16 phase 3.2: only the orientations of the run
       const az = S.PARAMS.azimuth[a], sk = skyFor(ctx, az, SKY1), H = hourSets(sk, ctx), il = DL.illuminance(dc, sk, H.all), res = {};
       // blind hours from a heated run of the reference room with this window, orientation and blind type (same rule as the design runs)
       const facOf = (lv) => {
@@ -2300,7 +2302,7 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
     for (let s = 0; s < nS; s++) { let a1 = 0, e1 = 0, n = 0; for (let t = 0; t < nH; t++) { const e = il.E[s * nH + t] * sc; if (A[t]) { if (e >= 300 && e <= 3000) a1++; if (e > 3000) e1++; } if (H.occ[t] && il.Es[s * nH + t] * sc > 1000) n++; } ua[s] = a1 / nA; ue[s] = e1 / nA; sun[s] = n; }
     return { room: c, ua, ue, sun, all: readings(il.E, il.Es, nS, H, sc, tb), tb };
   }
-  const api = { job, floorMap, room, sensors, readings, TV, tvKey, TAU0, dlKey, hourSets };
+  const api = { job, floorMap, room, sensors, readings, TV, tvKey, TAU0, dlKey, hourSets, skyFor };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.DaySweep = api;
 })(typeof window !== "undefined" ? window : globalThis);
 
@@ -2428,7 +2430,9 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
     const dl = SC.daylight(row.dl, o.dlm, o.floor);
     // v11: ceiling fans raise the upper comfort limit where the standard allows it (o.fanOk); their electricity is added
     const fk = row.dz.fans && o.fanOk ? "_fan" : "";
-    return { A1: dl.A1, S: dl.S, C: comfortOf(row.heat, o.key + fk), E: (o.mode === "heat" ? row.heat.qh / o.copH + (row.heat.fanE || 0) : row.cool.qh / o.copH + row.cool.qc / o.copC + (row.cool.fanE || 0)) + (row.heat.lightE || 0) };
+    // v16 phase 3.2: with o.rk (ranking options from the page) also the share of hours above the band and the DIN estimate
+    const rk = o.rk, hx = row.heat[o.key + fk], H = rk && rk.model !== "din" && Array.isArray(hx) ? 100 * hx[3] / rk.nOcc : null, din = rk && rk.dinLim != null ? row.heat["din_" + rk.region] : null;
+    return { H, din, A1: dl.A1, S: dl.S, C: comfortOf(row.heat, o.key + fk), E: (o.mode === "heat" ? row.heat.qh / o.copH + (row.heat.fanE || 0) : row.cool.qh / o.copH + row.cool.qc / o.copC + (row.cool.fanE || 0)) + (row.heat.lightE || 0) };
   }
   function evaluator(ctx, o) {
     const seen = new Map(), arch = [];
@@ -2460,7 +2464,7 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
       const g = pool[i % pool.length], r = rest[i];
       E.ev({ wwr: g.wwr, fixed: g.fixed, uglass: g.uglass, gglass: g.gglass, opaque: r.opaque, mass: r.mass, shading: r.shading, dayAch: r.dayAch, nightAch: r.nightAch, fans: r.fans || 0, roof: top ? r.roof : "standard" });
     }
-    const okGeo = (dz) => { if (noneA1) return true; const d = E.dlOf(dz); return SC.daylight(d, o.dlm, o.floor).A1; };
+    const okGeo = (dz) => { const d = E.dlOf(dz); if (!d) return false; if (noneA1) return true; return SC.daylight(d, o.dlm, o.floor).A1; };
     for (let round = 0; round < o.rounds; round++) {
       let front = SC.pareto(E.arch.map((r) => Object.assign({ row: r }, r.m))).map((m) => m.row);
       const inLim = front.filter((r) => r.m.C <= 2 * o.limit); if (inLim.length) front = inLim;
@@ -2478,12 +2482,35 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
        design on the front of daylight, overheating and energy is simulated, until the front stops changing; stops at
        o.cap designs (default 5,000) and reports whether the front is complete. */
     const complete = o.pls === false ? true : paretoLocal(E, o, meas, okGeo);
+    if (o.rk && o.pls !== false) lowCarbonLocal(E, o, meas, okGeo);
     return { rows: E.arch.map((r) => ({ dz: r.dz, heat: r.heat, cool: r.cool })), noneA1, complete };
+  }
+  /* v16 phase 3.2: after the front is complete, a local search around the design with the least whole-life carbon among
+     those that meet every target, until it stops improving (carbon is not on the front, so the front alone may miss it) */
+  function lowCarbonLocal(E, o, meas, okGeo) {
+    const rk = o.rk, cap = o.cap || 5000, done = new Set(), o0 = { w: rk.pri[0], limit: o.limit, target: rk.target, upper: rk.upper, dlT: rk.dlT, maxOut: rk.maxOut, dinLim: rk.dinLim, noC: rk.noC };
+    const carb = (r) => r._k != null ? r._k : (r._k = S.carbonOf(rk.dims, rk.cscen, r.dz).total + r.m.E * rk.grid * rk.years);
+    for (;;) {
+      const meet = E.arch.filter((r) => SC.meets(r.m, o0).all); if (!meet.length) return;
+      const lo = meet.reduce((b, r) => carb(r) < carb(b) ? r : b, meet[0]), k = keyOf(lo.dz); if (done.has(k)) return; done.add(k);
+      for (const p of meas) for (const lv of LV(o, p)) {
+        if (lv === lo.dz[p]) continue;
+        const dz = Object.assign({}, lo.dz, { [p]: lv });
+        if (E.seen.has(keyOf(dz)) || !okGeo(dz)) continue;
+        if (E.arch.length >= cap) return; E.ev(dz);
+      }
+    }
   }
   function paretoLocal(E, o, meas, okGeo) {
     const cap = o.cap || 5000, done = new Set();
     for (;;) {
-      const front = SC.pareto(E.arch.map((r) => Object.assign({ row: r }, r.m))).map((m) => m.row).filter((r) => !done.has(keyOf(r.dz)));
+      let front = SC.pareto(E.arch.map((r) => Object.assign({ row: r }, r.m))).map((m) => m.row).filter((r) => !done.has(keyOf(r.dz)));
+      /* v16 phase 3.2: front members far from every target (largest shortfall above rk.prune, register search.prune) are not
+         expanded; the front still fills in wherever designs come within reach of the targets */
+      if (o.rk && o.rk.prune != null) { const rk = o.rk, o0 = { w: rk.pri[0], limit: o.limit, target: rk.target, upper: rk.upper, dlT: rk.dlT, maxOut: rk.maxOut, dinLim: rk.dinLim, noC: rk.noC };
+        // when nothing comes within reach, the bar is relative: twice the smallest largest shortfall found so far
+        let m0 = Infinity; for (const r of E.arch) { const x = SC.shortfall(r.m, o0).ws; if (x < m0) m0 = x; }
+        const thr = Math.max(rk.prune, 2 * m0); front = front.filter((r) => SC.shortfall(r.m, o0).ws <= thr); }
       if (!front.length) return true;
       for (const r of front) {
         done.add(keyOf(r.dz));
@@ -2698,7 +2725,8 @@ self.onmessage=(e)=>{const m=e.data;
     const eng = forEngine(st.wx);
     st.ctxWx = Object.assign({}, eng, G.solarPosition(eng.lat, eng.lon, eng.tz));
     st.ctx = S.context(st.ctxWx, st.use, { dims: st.dims, wallDepth: st.wall, coolSet: st.coolSet, gainOcc: gainNow(), fanW: st.fanW, blindCtl: st.blindCtl, blinds: JSON.parse(JSON.stringify(st.blinds)) }); st.gainRun = gainNow(); st.fanWRun = st.fanW; st.blindCtlRun = st.blindCtl; st.blindsRun = JSON.parse(JSON.stringify(st.blinds)); st.dinC = {}; dinPending.clear(); st.ctx.coolHi = coolHiNow(st.ctx); st.ctx.coolHiFan = coolHiFanNow(st.ctx, st.ctx.coolHi); st.coolKeyRun = coolKeyNow();
-    for (const sc of DLSC) for (const w of S.PARAMS.wwr) for (const f of S.PARAMS.fixed) queue.push({ kind: "dl", id: [sc, w + "|" + f], job: { scenario: sc, wwr: w, fixed: f } });
+    // v16 phase 3.2: daylight only for the room types and orientations of the run
+    for (const sc of DLSC.filter((d) => st.types.some((t) => dlScen(t) === d))) for (const w of S.PARAMS.wwr) for (const f of S.PARAMS.fixed) queue.push({ kind: "dl", id: [sc, w + "|" + f], job: { scenario: sc, wwr: w, fixed: f, azs: azsOf(sc) } });
     st.dlTotal = queue.length; st.facQueued = false;
     for (let k = 0; k < (st.wmode === "inline" ? 1 : NW); k++) {
       const w = makeWorker();
@@ -2740,6 +2768,9 @@ self.onmessage=(e)=>{const m=e.data;
   }
   const wake = () => workers.forEach((x) => { if (x.idle) feed(x); });
   // daylight readings of one facade: window ratio | outdoor shading -> glass transmittance key -> readings
+  const azsOf = (d) => [...new Set([].concat(...st.types.filter((t) => dlScen(t) === d).map(facList)))];
+  // ranking options sent to the search workers (targets first, priority settings, carbon): the targeted search uses them
+  const rankOpts = (sc) => ({ pri: PRI, target: targetNow(), upper: upperNow(), dlT: dlTNow(), maxOut: st.model === "din" ? null : st.maxOut, dinLim: dinRule() ? dinLim() : null, region: st.region, noC: !!st.coolClimate, nOcc: nOccNow(), model: st.model, dims: st.dims, cscen: sc === "cellular" ? "cellular" : "corner", grid: gridNow(), years: Register.val("carbon.years"), prune: Register.val("search.prune") });
   function dlTab(sc, a) { const T = st.dl[dlScen(sc)], o = {}; for (const k in T) o[k] = T[k][a]; return o; }
   // orientations searched: facade A of a room faces each direction the building has; a corner room needs its
   // second facade 90° clockwise to be one of the building's facades too
@@ -2749,7 +2780,7 @@ self.onmessage=(e)=>{const m=e.data;
     st.facQueued = true;
     const order = [st.scen].concat(st.types.filter((s) => s !== st.scen));
     for (const sc of order) for (const a of facList(sc)) {
-      queue.push({ kind: "fac", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, mode: st.mode, dlm: st.dlm, floor: st.floor, levels: effAllow(), nRandom: NRAND, rounds: ROUNDS, perRound: PERROUND, cap: CAP, seed: 11 + a + 17 * S.SCENARIOS.indexOf(sc) } });
+      queue.push({ kind: "fac", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, rk: rankOpts(sc), mode: st.mode, dlm: st.dlm, floor: st.floor, levels: effAllow(), nRandom: NRAND, rounds: ROUNDS, perRound: PERROUND, cap: CAP, seed: 11 + a + 17 * S.SCENARIOS.indexOf(sc) } });
     }
   }
   function addRows(sc, a, rows) {
@@ -2789,22 +2820,23 @@ self.onmessage=(e)=>{const m=e.data;
   function startRefine() {
     if (!st.fac || st.refine) return;
     // around the window size each of the 7 priority settings picks at that facade (and the building option's)
-    const coarse = st.allow.wwr || S.PARAMS.wwr, lo = Math.min(...coarse), hi = Math.max(...coarse), add = new Set(); st.wwrBy = {};
+    const coarse = st.allow.wwr || S.PARAMS.wwr, lo = Math.min(...coarse), hi = Math.max(...coarse), add = new Set(), addF = {}; st.wwrBy = {};
     for (const sc of st.types) { const B = buildResult(sc), o = scoreOpts(sc); for (const a of facList(sc)) { const fa = facade(sc, a); if (!fa) continue;
-      const picks = new Set(B && B.best.per[a] ? [B.best.per[a].dz.wwr] : []);
-      PRI.forEach((w) => { let b = null, bd = 0; fa.ok.forEach((r) => { const D = SC.score(r.m, Object.assign({}, o, { w })).D; if (D > bd) { bd = D; b = r; } }); if (b) picks.add(b.dz.wwr); });
+      const picks = new Set(B && B.best.per[a] ? [B.best.per[a].dz.wwr] : []), fx = (addF[dlScen(sc)] = addF[dlScen(sc)] || new Set());
+      if (B && B.best.per[a]) fx.add(B.best.per[a].dz.fixed);
+      PRI.forEach((w) => { const b = pickTie(fa.ok, (r) => SC.score(r.m, Object.assign({}, o, { w })).q); if (b) { picks.add(b.dz.wwr); fx.add(b.dz.fixed); } });
       const own = new Set(); picks.forEach((w0) => [-0.1, -0.05, 0.05, 0.1].forEach((d) => { const w = Math.round((w0 + d) * 100) / 100; if (w >= lo - 1e-9 && w <= hi + 1e-9 && !coarse.includes(w)) { own.add(w); add.add(w); } }));
       st.wwrBy[sc + a] = [...own]; } }
     st.wwrFine = [...add].sort((x, y) => x - y); st.refine = { phase: "dl", pending: 0, t0: performance.now() };
     if (!st.wwrFine.length) { st.refine.phase = "done"; scheduleRender(true); return; }
     const scs = [...new Set(st.types.map(dlScen))];
-    for (const sc of scs) for (const w of st.wwrFine) for (const f of S.PARAMS.fixed) { queue.push({ kind: "dl", id: [sc, w + "|" + f], job: { scenario: sc, wwr: w, fixed: f } }); st.dlTotal++; }
+    for (const sc of scs) for (const w of st.wwrFine) for (const f of addF[sc] || []) { queue.push({ kind: "dl", id: [sc, w + "|" + f], job: { scenario: sc, wwr: w, fixed: f, azs: azsOf(sc) } }); st.dlTotal++; }
     st.running = true; wake(); scheduleRender(true);
   }
   function refineSearch() {
     st.refine.phase = "search"; st.refine.dlSecs = (performance.now() - st.refine.t0) / 1000;
     for (const sc of st.types) for (const a of facList(sc)) { const F = st.fac[sc][a]; if (!F) continue; st.refine.pending++;
-      queue.push({ kind: "refine", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, mode: st.mode, dlm: st.dlm, floor: st.floor, levels: levelsFor(sc, a), meas: ["wwr", "fixed", "shading"], cap: CAP + 3000,
+      queue.push({ kind: "refine", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, rk: rankOpts(sc), mode: st.mode, dlm: st.dlm, floor: st.floor, levels: levelsFor(sc, a), meas: ["wwr", "fixed", "shading"], cap: CAP + 3000,
         rows: F.rows.map((x) => ({ dz: x.dz, heat: x.r.heat, cool: x.r.cool })) } }); }
     st.balCache = {}; st.cache = {};
   }
@@ -2906,7 +2938,7 @@ self.onmessage=(e)=>{const m=e.data;
   }
   function dlOf(sc, dz, a) {
     const r = st.dl && st.dl[dlScen(sc)][dz.wwr + "|" + dz.fixed];
-    return r ? r[a][DS.dlKey(st.ctx, dz)] || r[a][DS.tvKey(dz.uglass, dz.gglass)] : null;
+    return r && r[a] ? r[a][DS.dlKey(st.ctx, dz)] || r[a][DS.tvKey(dz.uglass, dz.gglass)] : null;
   }
   const dlScore = (sc, dz, a) => SC.daylight(dlOf(sc, dz, a), st.dlm, st.floor);
   const readKey = () => JSON.stringify([!!st.coolClimate, st.dinVer || 0, st.dlT, st.grid, st.mode, st.dlm, st.floor, st.model, st.cat, st.naFan, st.region, limitNow(), targetNow(), upperNow(), st.copH, st.copC, st.w, st.brush, Object.keys(st.excl).map((k) => [k, [...st.excl[k]]]), st.use]);
@@ -3059,6 +3091,14 @@ self.onmessage=(e)=>{const m=e.data;
      priorities; the background combination (startCombine) adds the options it needs to the archive. */
   // each set of building-wide measures with each facade's best design under it, for one room type
   const SH4 = ["opaque", "uglass", "gglass", "mass"]; // building-wide for every room type; the roof only on the top floor
+  /* v16 phase 3.2: the best by a rank function; among designs within 0.01 of it, in the same tier (meets every target /
+     meets the requirements / neither), the one with the least whole-life carbon (register rec.rule) */
+  function pickTie(rows, qf) {
+    let b = null, bq = -Infinity; const qs = rows.map((r) => { const q = qf(r); if (q > bq) { bq = q; b = r; } return q; });
+    if (!b) return null; let c = b, ck = carbonOf(b).tot;
+    rows.forEach((r, i) => { if (bq - qs[i] < 0.01 && Math.floor(qs[i]) === Math.floor(bq)) { const k = carbonOf(r).tot; if (k < ck - 1e-9) { c = r; ck = k; } } });
+    return c;
+  }
   function typeSets(sc) {
     const A = facList(sc); if (!A.length || !A.every((a) => facade(sc, a))) return null;
     const key = readKey() + "|" + A.map((a) => facade(sc, a).key).join(",");
@@ -3067,7 +3107,8 @@ self.onmessage=(e)=>{const m=e.data;
     // v16 phase 3: designs ranked by targets first (row.q: meeting every target, then the score; else closeness)
     A.forEach((a) => facade(sc, a).ok.forEach((r) => { const k = FS.SHARED.map((p) => r.dz[p]).join("|");
       const e = sets.get(k) || { shared: FS.SHARED.reduce((o, p) => { o[p] = r.dz[p]; return o; }, {}), per: {}, k4: SH4.map((p) => r.dz[p]).join("|") };
-      if (!e.per[a] || r.q > e.per[a].q) e.per[a] = r; sets.set(k, e); }));
+      e.cand = e.cand || {}; (e.cand[a] = e.cand[a] || []).push(r); sets.set(k, e); }));
+    sets.forEach((e) => A.forEach((a) => { if (e.cand && e.cand[a]) e.per[a] = pickTie(e.cand[a], (r) => r.q); }));
     const full = [...sets.values()].filter((e) => A.every((a) => e.per[a])).map((e) => Object.assign(e, { mean: A.reduce((s, a) => s + e.per[a].q, 0) / A.length, min: Math.min(...A.map((a) => e.per[a].q)) }));
     full.sort((x, y) => y.mean - x.mean || y.min - x.min);
     const v = { A, full }; st.cache["T" + sc] = { key, v }; return v;
@@ -3177,7 +3218,7 @@ self.onmessage=(e)=>{const m=e.data;
   function briefCore(sc) {
     const B = buildResult(sc); if (!B) return null;
     const A = B.A, o = scoreOpts(sc), meas = VARM(sc);
-    const bestAt = PRI.map((w) => A.map((a) => { let b = null, bd = 0; facade(sc, a).ok.forEach((r) => { const D = SC.score(r.m, Object.assign({}, o, { w })).q; if (D > bd) { bd = D; b = r; } }); return b; }));
+    const bestAt = PRI.map((w) => A.map((a) => pickTie(facade(sc, a).ok, (r) => SC.score(r.m, Object.assign({}, o, { w })).q)));
     const items = {}, allSw = {};
     meas.forEach((p) => {
       const chosen = A.map((a) => B.best.per[a].dz[p]);
@@ -4145,6 +4186,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   const reread = () => { if (st.fac) renderAll(); };
   // v16: parameter register and version notes, written into Method and limits from the register itself
   const CHANGES = [
+    ["v16, phase 3.2", "17 Nov 2026", "Faster runs: daylight only for the room types and orientations chosen, refinement daylight only for the fixed shading of the picks, and the search no longer extends the trade-off front from designs far from every target (largest shortfall above 100%). Carbon: the lowest-carbon design that meets every target is searched for after the front and shown with the packages; among designs within 0.01 in score, the one with less whole-life carbon is recommended."],
     ["v16, phase 3.1", "17 Nov 2026", "Other packages: every design that meets every target and differs in two or more measures, best score first, with the score gap shown (the 0.05 band is dropped). Overheating without cooling is named free-running performance (thermal autonomy); it is not a passive survivability check."],
     ["v16, phase 3", "17 Nov 2026", "Fixed scales instead of scales from the run: daylight target 40% useful daylight, comfort limit, energy target and limit per use. Designs that meet every target come first; when none does, the closest design is recommended and the page says so, with the shortfalls and what could close the gap. Verdict table per facade: daylight in words, DIN 4108-2, comfort, cooling, energy, carbon. Other packages that do about as well by other means. Scenarios: +2 °C climate and poor operation (half the blind hours, no night ventilation) for the recommended design and the packages. Carbon over 50 years from generic factors (embodied and operation, not scored). What the simulation does not judge is named on each decision card. Corrected: the edge note on window types."],
     ["v16, phase 2", "17 Nov 2026", "Window ventilation as openings: tilt or side-hung windows by day, tilt windows secured at night, or air across storeys; half the window area openable; air flow single-sided without wind (EN 16798-7); offices and schools checked against ASR A3.6. Two blind types, exterior and interior, with F_C and light transmittance editable; blinds by the DIN 4108-2 irradiance thresholds when the room air is above 23 °C, also for daylight (the DIN check uses the thresholds alone). Daylight scored as useful daylight (UDI): 300 to 3,000 lx for offices and schools, 100 to 2,000 lx for dwellings; daylight hours follow the DIN 4108-2 schedule. Lighting electricity with continuous dimming for offices and schools."],
@@ -4364,7 +4406,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     if (!st.fac || st.running || st.topping || !st.runDl || st.runDl === runKey4() || !workers.length || facCount() < facTotal()) return;
     st.topping = { key: runKey4(), pending: 0 };
     for (const sc of st.types) for (const a of facList(sc)) { const F = st.fac[sc][a]; if (!F) continue; st.topping.pending++;
-      queue.push({ kind: "topup", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, mode: st.mode, dlm: st.dlm, floor: st.floor, levels: levelsFor(sc, a), cap: CAP,
+      queue.push({ kind: "topup", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, rk: rankOpts(sc), mode: st.mode, dlm: st.dlm, floor: st.floor, levels: levelsFor(sc, a), cap: CAP,
         rows: F.rows.map((x) => ({ dz: x.dz, heat: x.r.heat, cool: x.r.cool })) } }); }
     wake();
   }
@@ -4461,14 +4503,16 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     }
     return out.length ? { a, txt: out.join("; ") } : null;
   }
+  // the design with the least whole-life carbon among those that meet every target at this facade (any building-wide measures)
+  function lowCarbonOf(sc, a) { const fa = facade(sc, a); if (!fa) return null; const m = fa.ok.filter((r) => r.t && r.t.all); return m.length ? m.reduce((b, r) => carbonOf(r).tot < carbonOf(b).tot ? r : b, m[0]) : null; }
   function packagesHtml(sc, a, rec) {
-    const P = packagesOf(sc, a, rec), meas = MEASURES(sc), Y = Register.val("carbon.years"); if (!P.length) return `<h3 class="v4k">Other packages at this facade</h3><p class="small">No other design ${rec.t.all ? "meets every target" : "comes as close to the targets"} while differing in two or more measures: the recommended design is the only way found to get there.</p>`;
-    const K0 = carbonOf(rec), scn = SCN();
+    const P = packagesOf(sc, a, rec), meas = MEASURES(sc), Y = Register.val("carbon.years"); if (!P.length && !(lowCarbonOf(sc, a) && lowCarbonOf(sc, a) !== rec)) return `<h3 class="v4k">Other packages at this facade</h3><p class="small">No other design ${rec.t.all ? "meets every target" : "comes as close to the targets"} while differing in two or more measures: the recommended design is the only way found to get there.</p>`;
+    const K0 = carbonOf(rec), scn = SCN(), lowC = lowCarbonOf(sc, a);
     const row = (nm, r) => { const K = carbonOf(r), d = r === rec ? null : delta(rec, r);
       const sx = scn.map(([sk]) => scenOf(sk, sc, a, r)).map((x) => x ? fmt(Math.round(x.m.C)) : "…").join(" / ");
-      return `<tr${r === rec ? ` class="rr"` : ""}><th scope="row">${nm}</th><td>${r === rec ? r.D.toFixed(2) : "−" + (rec.D - r.D).toFixed(2)}</td><td>${dlVal(r.m.S)}</td><td>${fmt(Math.round(r.m.C))}</td><td>${fmt(r.m.E)}</td><td>${fmt(Math.round(K.tot))} <small>(${fmt(Math.round(K.emb))} embodied)</small></td>${scn.length ? `<td>${sx}</td>` : ""}<td class="small">${d ? meas.filter((p) => r.dz[p] !== rec.dz[p]).map((p) => lcF(choice4(p, r.dz[p]))).join("; ") : "the recommended design"}</td></tr>`; };
+      return `<tr${r === rec ? ` class="rr"` : ""}><th scope="row">${nm}</th><td>${r === rec ? r.D.toFixed(2) : "−" + (rec.D - r.D).toFixed(2)}</td><td>${dlVal(r.m.S)}</td><td>${fmt(Math.round(r.m.C))}</td><td>${fmt(r.m.E)}</td><td>${fmt(Math.round(K.tot))} <small>(${fmt(Math.round(K.emb))} embodied)</small></td>${scn.length ? `<td>${sx}</td>` : ""}<td class="small">${d ? PKM.filter((p) => p !== "roof" && r.dz[p] !== rec.dz[p]).map((p) => lcF(choice4(p, r.dz[p]))).join("; ") : "the recommended design"}</td></tr>`; };
     return `<h3 class="v4k">Other packages at this facade</h3><p class="small">${rec.t.all ? `Designs that also meet every target, best score first (${cand0(sc, a, rec)} found, ${P.length} shown once near twins are left out)` : "Designs that come about as close to the targets"}, each different from the recommended one and from each other in at least two measures. The score gap is the drop in overall score (0 to 1) against the recommended design. A single swap on a decision card keeps everything else; these change several things at once.</p>
-      <div class="tw"><table class="cmp"><thead><tr><th>Design</th><th>Score${""}<br><small>gap</small></th><th>Daylight</th><th>Overheating, K·h/a</th><th>Energy, ${UE}</th><th>Carbon, kg CO₂e/m² over ${Y} years</th>${scn.length ? `<th>Overheating: ${scn.map((s) => s[1]).join(" / ")}</th>` : ""}<th>Differs in</th></tr></thead><tbody>${row("Recommended", rec)}${P.map((r, i) => row("Package " + String.fromCharCode(65 + i), r)).join("")}</tbody></table></div>`;
+      <div class="tw"><table class="cmp"><thead><tr><th>Design</th><th>Score${""}<br><small>gap</small></th><th>Daylight</th><th>Overheating, K·h/a</th><th>Energy, ${UE}</th><th>Carbon, kg CO₂e/m² over ${Y} years</th>${scn.length ? `<th>Overheating: ${scn.map((s) => s[1]).join(" / ")}</th>` : ""}<th>Differs in</th></tr></thead><tbody>${row("Recommended", rec)}${lowC && lowC !== rec ? row("Lowest carbon that meets every target", lowC) : ""}${P.filter((r) => r !== lowC).map((r, i) => row("Package " + String.fromCharCode(65 + i), r)).join("")}</tbody></table></div>${lowC === rec ? `<p class="small">The recommended design is also the design with the least whole-life carbon among those that meet every target.</p>` : lowC ? `<p class="small">Lowest carbon: ${fmt(Math.round(K0.tot - carbonOf(lowC).tot))} kg CO₂e/m² less over ${Y} years than the recommended design, for a score ${(rec.D - lowC.D).toFixed(2)} lower. It may differ in building-wide measures.</p>` : ""}`;
   }
 
   // ---- render

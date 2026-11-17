@@ -149,7 +149,8 @@ self.onmessage=(e)=>{const m=e.data;
     const eng = forEngine(st.wx);
     st.ctxWx = Object.assign({}, eng, G.solarPosition(eng.lat, eng.lon, eng.tz));
     st.ctx = S.context(st.ctxWx, st.use, { dims: st.dims, wallDepth: st.wall, coolSet: st.coolSet, gainOcc: gainNow(), fanW: st.fanW, blindCtl: st.blindCtl, blinds: JSON.parse(JSON.stringify(st.blinds)) }); st.gainRun = gainNow(); st.fanWRun = st.fanW; st.blindCtlRun = st.blindCtl; st.blindsRun = JSON.parse(JSON.stringify(st.blinds)); st.dinC = {}; dinPending.clear(); st.ctx.coolHi = coolHiNow(st.ctx); st.ctx.coolHiFan = coolHiFanNow(st.ctx, st.ctx.coolHi); st.coolKeyRun = coolKeyNow();
-    for (const sc of DLSC) for (const w of S.PARAMS.wwr) for (const f of S.PARAMS.fixed) queue.push({ kind: "dl", id: [sc, w + "|" + f], job: { scenario: sc, wwr: w, fixed: f } });
+    // v16 phase 3.2: daylight only for the room types and orientations of the run
+    for (const sc of DLSC.filter((d) => st.types.some((t) => dlScen(t) === d))) for (const w of S.PARAMS.wwr) for (const f of S.PARAMS.fixed) queue.push({ kind: "dl", id: [sc, w + "|" + f], job: { scenario: sc, wwr: w, fixed: f, azs: azsOf(sc) } });
     st.dlTotal = queue.length; st.facQueued = false;
     for (let k = 0; k < (st.wmode === "inline" ? 1 : NW); k++) {
       const w = makeWorker();
@@ -191,6 +192,9 @@ self.onmessage=(e)=>{const m=e.data;
   }
   const wake = () => workers.forEach((x) => { if (x.idle) feed(x); });
   // daylight readings of one facade: window ratio | outdoor shading -> glass transmittance key -> readings
+  const azsOf = (d) => [...new Set([].concat(...st.types.filter((t) => dlScen(t) === d).map(facList)))];
+  // ranking options sent to the search workers (targets first, priority settings, carbon): the targeted search uses them
+  const rankOpts = (sc) => ({ pri: PRI, target: targetNow(), upper: upperNow(), dlT: dlTNow(), maxOut: st.model === "din" ? null : st.maxOut, dinLim: dinRule() ? dinLim() : null, region: st.region, noC: !!st.coolClimate, nOcc: nOccNow(), model: st.model, dims: st.dims, cscen: sc === "cellular" ? "cellular" : "corner", grid: gridNow(), years: Register.val("carbon.years"), prune: Register.val("search.prune") });
   function dlTab(sc, a) { const T = st.dl[dlScen(sc)], o = {}; for (const k in T) o[k] = T[k][a]; return o; }
   // orientations searched: facade A of a room faces each direction the building has; a corner room needs its
   // second facade 90° clockwise to be one of the building's facades too
@@ -200,7 +204,7 @@ self.onmessage=(e)=>{const m=e.data;
     st.facQueued = true;
     const order = [st.scen].concat(st.types.filter((s) => s !== st.scen));
     for (const sc of order) for (const a of facList(sc)) {
-      queue.push({ kind: "fac", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, mode: st.mode, dlm: st.dlm, floor: st.floor, levels: effAllow(), nRandom: NRAND, rounds: ROUNDS, perRound: PERROUND, cap: CAP, seed: 11 + a + 17 * S.SCENARIOS.indexOf(sc) } });
+      queue.push({ kind: "fac", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, rk: rankOpts(sc), mode: st.mode, dlm: st.dlm, floor: st.floor, levels: effAllow(), nRandom: NRAND, rounds: ROUNDS, perRound: PERROUND, cap: CAP, seed: 11 + a + 17 * S.SCENARIOS.indexOf(sc) } });
     }
   }
   function addRows(sc, a, rows) {
@@ -240,22 +244,23 @@ self.onmessage=(e)=>{const m=e.data;
   function startRefine() {
     if (!st.fac || st.refine) return;
     // around the window size each of the 7 priority settings picks at that facade (and the building option's)
-    const coarse = st.allow.wwr || S.PARAMS.wwr, lo = Math.min(...coarse), hi = Math.max(...coarse), add = new Set(); st.wwrBy = {};
+    const coarse = st.allow.wwr || S.PARAMS.wwr, lo = Math.min(...coarse), hi = Math.max(...coarse), add = new Set(), addF = {}; st.wwrBy = {};
     for (const sc of st.types) { const B = buildResult(sc), o = scoreOpts(sc); for (const a of facList(sc)) { const fa = facade(sc, a); if (!fa) continue;
-      const picks = new Set(B && B.best.per[a] ? [B.best.per[a].dz.wwr] : []);
-      PRI.forEach((w) => { let b = null, bd = 0; fa.ok.forEach((r) => { const D = SC.score(r.m, Object.assign({}, o, { w })).D; if (D > bd) { bd = D; b = r; } }); if (b) picks.add(b.dz.wwr); });
+      const picks = new Set(B && B.best.per[a] ? [B.best.per[a].dz.wwr] : []), fx = (addF[dlScen(sc)] = addF[dlScen(sc)] || new Set());
+      if (B && B.best.per[a]) fx.add(B.best.per[a].dz.fixed);
+      PRI.forEach((w) => { const b = pickTie(fa.ok, (r) => SC.score(r.m, Object.assign({}, o, { w })).q); if (b) { picks.add(b.dz.wwr); fx.add(b.dz.fixed); } });
       const own = new Set(); picks.forEach((w0) => [-0.1, -0.05, 0.05, 0.1].forEach((d) => { const w = Math.round((w0 + d) * 100) / 100; if (w >= lo - 1e-9 && w <= hi + 1e-9 && !coarse.includes(w)) { own.add(w); add.add(w); } }));
       st.wwrBy[sc + a] = [...own]; } }
     st.wwrFine = [...add].sort((x, y) => x - y); st.refine = { phase: "dl", pending: 0, t0: performance.now() };
     if (!st.wwrFine.length) { st.refine.phase = "done"; scheduleRender(true); return; }
     const scs = [...new Set(st.types.map(dlScen))];
-    for (const sc of scs) for (const w of st.wwrFine) for (const f of S.PARAMS.fixed) { queue.push({ kind: "dl", id: [sc, w + "|" + f], job: { scenario: sc, wwr: w, fixed: f } }); st.dlTotal++; }
+    for (const sc of scs) for (const w of st.wwrFine) for (const f of addF[sc] || []) { queue.push({ kind: "dl", id: [sc, w + "|" + f], job: { scenario: sc, wwr: w, fixed: f, azs: azsOf(sc) } }); st.dlTotal++; }
     st.running = true; wake(); scheduleRender(true);
   }
   function refineSearch() {
     st.refine.phase = "search"; st.refine.dlSecs = (performance.now() - st.refine.t0) / 1000;
     for (const sc of st.types) for (const a of facList(sc)) { const F = st.fac[sc][a]; if (!F) continue; st.refine.pending++;
-      queue.push({ kind: "refine", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, mode: st.mode, dlm: st.dlm, floor: st.floor, levels: levelsFor(sc, a), meas: ["wwr", "fixed", "shading"], cap: CAP + 3000,
+      queue.push({ kind: "refine", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, rk: rankOpts(sc), mode: st.mode, dlm: st.dlm, floor: st.floor, levels: levelsFor(sc, a), meas: ["wwr", "fixed", "shading"], cap: CAP + 3000,
         rows: F.rows.map((x) => ({ dz: x.dz, heat: x.r.heat, cool: x.r.cool })) } }); }
     st.balCache = {}; st.cache = {};
   }
@@ -357,7 +362,7 @@ self.onmessage=(e)=>{const m=e.data;
   }
   function dlOf(sc, dz, a) {
     const r = st.dl && st.dl[dlScen(sc)][dz.wwr + "|" + dz.fixed];
-    return r ? r[a][DS.dlKey(st.ctx, dz)] || r[a][DS.tvKey(dz.uglass, dz.gglass)] : null;
+    return r && r[a] ? r[a][DS.dlKey(st.ctx, dz)] || r[a][DS.tvKey(dz.uglass, dz.gglass)] : null;
   }
   const dlScore = (sc, dz, a) => SC.daylight(dlOf(sc, dz, a), st.dlm, st.floor);
   const readKey = () => JSON.stringify([!!st.coolClimate, st.dinVer || 0, st.dlT, st.grid, st.mode, st.dlm, st.floor, st.model, st.cat, st.naFan, st.region, limitNow(), targetNow(), upperNow(), st.copH, st.copC, st.w, st.brush, Object.keys(st.excl).map((k) => [k, [...st.excl[k]]]), st.use]);
@@ -510,6 +515,14 @@ self.onmessage=(e)=>{const m=e.data;
      priorities; the background combination (startCombine) adds the options it needs to the archive. */
   // each set of building-wide measures with each facade's best design under it, for one room type
   const SH4 = ["opaque", "uglass", "gglass", "mass"]; // building-wide for every room type; the roof only on the top floor
+  /* v16 phase 3.2: the best by a rank function; among designs within 0.01 of it, in the same tier (meets every target /
+     meets the requirements / neither), the one with the least whole-life carbon (register rec.rule) */
+  function pickTie(rows, qf) {
+    let b = null, bq = -Infinity; const qs = rows.map((r) => { const q = qf(r); if (q > bq) { bq = q; b = r; } return q; });
+    if (!b) return null; let c = b, ck = carbonOf(b).tot;
+    rows.forEach((r, i) => { if (bq - qs[i] < 0.01 && Math.floor(qs[i]) === Math.floor(bq)) { const k = carbonOf(r).tot; if (k < ck - 1e-9) { c = r; ck = k; } } });
+    return c;
+  }
   function typeSets(sc) {
     const A = facList(sc); if (!A.length || !A.every((a) => facade(sc, a))) return null;
     const key = readKey() + "|" + A.map((a) => facade(sc, a).key).join(",");
@@ -518,7 +531,8 @@ self.onmessage=(e)=>{const m=e.data;
     // v16 phase 3: designs ranked by targets first (row.q: meeting every target, then the score; else closeness)
     A.forEach((a) => facade(sc, a).ok.forEach((r) => { const k = FS.SHARED.map((p) => r.dz[p]).join("|");
       const e = sets.get(k) || { shared: FS.SHARED.reduce((o, p) => { o[p] = r.dz[p]; return o; }, {}), per: {}, k4: SH4.map((p) => r.dz[p]).join("|") };
-      if (!e.per[a] || r.q > e.per[a].q) e.per[a] = r; sets.set(k, e); }));
+      e.cand = e.cand || {}; (e.cand[a] = e.cand[a] || []).push(r); sets.set(k, e); }));
+    sets.forEach((e) => A.forEach((a) => { if (e.cand && e.cand[a]) e.per[a] = pickTie(e.cand[a], (r) => r.q); }));
     const full = [...sets.values()].filter((e) => A.every((a) => e.per[a])).map((e) => Object.assign(e, { mean: A.reduce((s, a) => s + e.per[a].q, 0) / A.length, min: Math.min(...A.map((a) => e.per[a].q)) }));
     full.sort((x, y) => y.mean - x.mean || y.min - x.min);
     const v = { A, full }; st.cache["T" + sc] = { key, v }; return v;
@@ -628,7 +642,7 @@ self.onmessage=(e)=>{const m=e.data;
   function briefCore(sc) {
     const B = buildResult(sc); if (!B) return null;
     const A = B.A, o = scoreOpts(sc), meas = VARM(sc);
-    const bestAt = PRI.map((w) => A.map((a) => { let b = null, bd = 0; facade(sc, a).ok.forEach((r) => { const D = SC.score(r.m, Object.assign({}, o, { w })).q; if (D > bd) { bd = D; b = r; } }); return b; }));
+    const bestAt = PRI.map((w) => A.map((a) => pickTie(facade(sc, a).ok, (r) => SC.score(r.m, Object.assign({}, o, { w })).q)));
     const items = {}, allSw = {};
     meas.forEach((p) => {
       const chosen = A.map((a) => B.best.per[a].dz[p]);
@@ -1596,6 +1610,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   const reread = () => { if (st.fac) renderAll(); };
   // v16: parameter register and version notes, written into Method and limits from the register itself
   const CHANGES = [
+    ["v16, phase 3.2", "17 Nov 2026", "Faster runs: daylight only for the room types and orientations chosen, refinement daylight only for the fixed shading of the picks, and the search no longer extends the trade-off front from designs far from every target (largest shortfall above 100%). Carbon: the lowest-carbon design that meets every target is searched for after the front and shown with the packages; among designs within 0.01 in score, the one with less whole-life carbon is recommended."],
     ["v16, phase 3.1", "17 Nov 2026", "Other packages: every design that meets every target and differs in two or more measures, best score first, with the score gap shown (the 0.05 band is dropped). Overheating without cooling is named free-running performance (thermal autonomy); it is not a passive survivability check."],
     ["v16, phase 3", "17 Nov 2026", "Fixed scales instead of scales from the run: daylight target 40% useful daylight, comfort limit, energy target and limit per use. Designs that meet every target come first; when none does, the closest design is recommended and the page says so, with the shortfalls and what could close the gap. Verdict table per facade: daylight in words, DIN 4108-2, comfort, cooling, energy, carbon. Other packages that do about as well by other means. Scenarios: +2 °C climate and poor operation (half the blind hours, no night ventilation) for the recommended design and the packages. Carbon over 50 years from generic factors (embodied and operation, not scored). What the simulation does not judge is named on each decision card. Corrected: the edge note on window types."],
     ["v16, phase 2", "17 Nov 2026", "Window ventilation as openings: tilt or side-hung windows by day, tilt windows secured at night, or air across storeys; half the window area openable; air flow single-sided without wind (EN 16798-7); offices and schools checked against ASR A3.6. Two blind types, exterior and interior, with F_C and light transmittance editable; blinds by the DIN 4108-2 irradiance thresholds when the room air is above 23 °C, also for daylight (the DIN check uses the thresholds alone). Daylight scored as useful daylight (UDI): 300 to 3,000 lx for offices and schools, 100 to 2,000 lx for dwellings; daylight hours follow the DIN 4108-2 schedule. Lighting electricity with continuous dimming for offices and schools."],
@@ -1815,7 +1830,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     if (!st.fac || st.running || st.topping || !st.runDl || st.runDl === runKey4() || !workers.length || facCount() < facTotal()) return;
     st.topping = { key: runKey4(), pending: 0 };
     for (const sc of st.types) for (const a of facList(sc)) { const F = st.fac[sc][a]; if (!F) continue; st.topping.pending++;
-      queue.push({ kind: "topup", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, mode: st.mode, dlm: st.dlm, floor: st.floor, levels: levelsFor(sc, a), cap: CAP,
+      queue.push({ kind: "topup", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, rk: rankOpts(sc), mode: st.mode, dlm: st.dlm, floor: st.floor, levels: levelsFor(sc, a), cap: CAP,
         rows: F.rows.map((x) => ({ dz: x.dz, heat: x.r.heat, cool: x.r.cool })) } }); }
     wake();
   }
@@ -1912,14 +1927,16 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     }
     return out.length ? { a, txt: out.join("; ") } : null;
   }
+  // the design with the least whole-life carbon among those that meet every target at this facade (any building-wide measures)
+  function lowCarbonOf(sc, a) { const fa = facade(sc, a); if (!fa) return null; const m = fa.ok.filter((r) => r.t && r.t.all); return m.length ? m.reduce((b, r) => carbonOf(r).tot < carbonOf(b).tot ? r : b, m[0]) : null; }
   function packagesHtml(sc, a, rec) {
-    const P = packagesOf(sc, a, rec), meas = MEASURES(sc), Y = Register.val("carbon.years"); if (!P.length) return `<h3 class="v4k">Other packages at this facade</h3><p class="small">No other design ${rec.t.all ? "meets every target" : "comes as close to the targets"} while differing in two or more measures: the recommended design is the only way found to get there.</p>`;
-    const K0 = carbonOf(rec), scn = SCN();
+    const P = packagesOf(sc, a, rec), meas = MEASURES(sc), Y = Register.val("carbon.years"); if (!P.length && !(lowCarbonOf(sc, a) && lowCarbonOf(sc, a) !== rec)) return `<h3 class="v4k">Other packages at this facade</h3><p class="small">No other design ${rec.t.all ? "meets every target" : "comes as close to the targets"} while differing in two or more measures: the recommended design is the only way found to get there.</p>`;
+    const K0 = carbonOf(rec), scn = SCN(), lowC = lowCarbonOf(sc, a);
     const row = (nm, r) => { const K = carbonOf(r), d = r === rec ? null : delta(rec, r);
       const sx = scn.map(([sk]) => scenOf(sk, sc, a, r)).map((x) => x ? fmt(Math.round(x.m.C)) : "…").join(" / ");
-      return `<tr${r === rec ? ` class="rr"` : ""}><th scope="row">${nm}</th><td>${r === rec ? r.D.toFixed(2) : "−" + (rec.D - r.D).toFixed(2)}</td><td>${dlVal(r.m.S)}</td><td>${fmt(Math.round(r.m.C))}</td><td>${fmt(r.m.E)}</td><td>${fmt(Math.round(K.tot))} <small>(${fmt(Math.round(K.emb))} embodied)</small></td>${scn.length ? `<td>${sx}</td>` : ""}<td class="small">${d ? meas.filter((p) => r.dz[p] !== rec.dz[p]).map((p) => lcF(choice4(p, r.dz[p]))).join("; ") : "the recommended design"}</td></tr>`; };
+      return `<tr${r === rec ? ` class="rr"` : ""}><th scope="row">${nm}</th><td>${r === rec ? r.D.toFixed(2) : "−" + (rec.D - r.D).toFixed(2)}</td><td>${dlVal(r.m.S)}</td><td>${fmt(Math.round(r.m.C))}</td><td>${fmt(r.m.E)}</td><td>${fmt(Math.round(K.tot))} <small>(${fmt(Math.round(K.emb))} embodied)</small></td>${scn.length ? `<td>${sx}</td>` : ""}<td class="small">${d ? PKM.filter((p) => p !== "roof" && r.dz[p] !== rec.dz[p]).map((p) => lcF(choice4(p, r.dz[p]))).join("; ") : "the recommended design"}</td></tr>`; };
     return `<h3 class="v4k">Other packages at this facade</h3><p class="small">${rec.t.all ? `Designs that also meet every target, best score first (${cand0(sc, a, rec)} found, ${P.length} shown once near twins are left out)` : "Designs that come about as close to the targets"}, each different from the recommended one and from each other in at least two measures. The score gap is the drop in overall score (0 to 1) against the recommended design. A single swap on a decision card keeps everything else; these change several things at once.</p>
-      <div class="tw"><table class="cmp"><thead><tr><th>Design</th><th>Score${""}<br><small>gap</small></th><th>Daylight</th><th>Overheating, K·h/a</th><th>Energy, ${UE}</th><th>Carbon, kg CO₂e/m² over ${Y} years</th>${scn.length ? `<th>Overheating: ${scn.map((s) => s[1]).join(" / ")}</th>` : ""}<th>Differs in</th></tr></thead><tbody>${row("Recommended", rec)}${P.map((r, i) => row("Package " + String.fromCharCode(65 + i), r)).join("")}</tbody></table></div>`;
+      <div class="tw"><table class="cmp"><thead><tr><th>Design</th><th>Score${""}<br><small>gap</small></th><th>Daylight</th><th>Overheating, K·h/a</th><th>Energy, ${UE}</th><th>Carbon, kg CO₂e/m² over ${Y} years</th>${scn.length ? `<th>Overheating: ${scn.map((s) => s[1]).join(" / ")}</th>` : ""}<th>Differs in</th></tr></thead><tbody>${row("Recommended", rec)}${lowC && lowC !== rec ? row("Lowest carbon that meets every target", lowC) : ""}${P.filter((r) => r !== lowC).map((r, i) => row("Package " + String.fromCharCode(65 + i), r)).join("")}</tbody></table></div>${lowC === rec ? `<p class="small">The recommended design is also the design with the least whole-life carbon among those that meet every target.</p>` : lowC ? `<p class="small">Lowest carbon: ${fmt(Math.round(K0.tot - carbonOf(lowC).tot))} kg CO₂e/m² less over ${Y} years than the recommended design, for a score ${(rec.D - lowC.D).toFixed(2)} lower. It may differ in building-wide measures.</p>` : ""}`;
   }
 
   // ---- render

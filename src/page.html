@@ -254,7 +254,8 @@ self.onmessage=(e)=>{const m=e.data;
     st.wwrFine = [...add].sort((x, y) => x - y); st.refine = { phase: "dl", pending: 0, t0: performance.now() };
     if (!st.wwrFine.length) { st.refine.phase = "done"; scheduleRender(true); return; }
     const scs = [...new Set(st.types.map(dlScen))];
-    for (const sc of scs) for (const w of st.wwrFine) for (const f of addF[sc] || []) { queue.push({ kind: "dl", id: [sc, w + "|" + f], job: { scenario: sc, wwr: w, fixed: f, azs: azsOf(sc) } }); st.dlTotal++; }
+    // v16 phase 3.3: every fixed shading type again, so the finer window sizes do not favour the shading already picked
+    for (const sc of scs) for (const w of st.wwrFine) for (const f of S.PARAMS.fixed) { queue.push({ kind: "dl", id: [sc, w + "|" + f], job: { scenario: sc, wwr: w, fixed: f, azs: azsOf(sc) } }); st.dlTotal++; }
     st.running = true; wake(); scheduleRender(true);
   }
   function refineSearch() {
@@ -1610,6 +1611,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   const reread = () => { if (st.fac) renderAll(); };
   // v16: parameter register and version notes, written into Method and limits from the register itself
   const CHANGES = [
+    ["v16, phase 3.3", "18 Nov 2026", "Facade panel: buttons above the switches for the recommended design, the other packages, the lowest-carbon design and the best design under each priority; each sets all switches, with score gap and carbon on the button. Carbon added to the results beside the switches. Refinement daylight again for every fixed shading type, so the finer window sizes do not favour the shading already picked."],
     ["v16, phase 3.2", "17 Nov 2026", "Faster runs: daylight only for the room types and orientations chosen, refinement daylight only for the fixed shading of the picks, and the search no longer extends the trade-off front from designs far from every target (largest shortfall above 100%). Carbon: the lowest-carbon design that meets every target is searched for after the front and shown with the packages; among designs within 0.01 in score, the one with less whole-life carbon is recommended."],
     ["v16, phase 3.1", "17 Nov 2026", "Other packages: every design that meets every target and differs in two or more measures, best score first, with the score gap shown (the 0.05 band is dropped). Overheating without cooling is named free-running performance (thermal autonomy); it is not a passive survivability check."],
     ["v16, phase 3", "17 Nov 2026", "Fixed scales instead of scales from the run: daylight target 40% useful daylight, comfort limit, energy target and limit per use. Designs that meet every target come first; when none does, the closest design is recommended and the page says so, with the shortfalls and what could close the gap. Verdict table per facade: daylight in words, DIN 4108-2, comfort, cooling, energy, carbon. Other packages that do about as well by other means. Scenarios: +2 °C climate and poor operation (half the blind hours, no night ventilation) for the recommended design and the packages. Carbon over 50 years from generic factors (embodied and operation, not scored). What the simulation does not judge is named on each decision card. Corrected: the edge note on window types."],
@@ -1935,7 +1937,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const row = (nm, r) => { const K = carbonOf(r), d = r === rec ? null : delta(rec, r);
       const sx = scn.map(([sk]) => scenOf(sk, sc, a, r)).map((x) => x ? fmt(Math.round(x.m.C)) : "…").join(" / ");
       return `<tr${r === rec ? ` class="rr"` : ""}><th scope="row">${nm}</th><td>${r === rec ? r.D.toFixed(2) : "−" + (rec.D - r.D).toFixed(2)}</td><td>${dlVal(r.m.S)}</td><td>${fmt(Math.round(r.m.C))}</td><td>${fmt(r.m.E)}</td><td>${fmt(Math.round(K.tot))} <small>(${fmt(Math.round(K.emb))} embodied)</small></td>${scn.length ? `<td>${sx}</td>` : ""}<td class="small">${d ? PKM.filter((p) => p !== "roof" && r.dz[p] !== rec.dz[p]).map((p) => lcF(choice4(p, r.dz[p]))).join("; ") : "the recommended design"}</td></tr>`; };
-    return `<h3 class="v4k">Other packages at this facade</h3><p class="small">${rec.t.all ? `Designs that also meet every target, best score first (${cand0(sc, a, rec)} found, ${P.length} shown once near twins are left out)` : "Designs that come about as close to the targets"}, each different from the recommended one and from each other in at least two measures. The score gap is the drop in overall score (0 to 1) against the recommended design. A single swap on a decision card keeps everything else; these change several things at once.</p>
+    return `<h3 class="v4k">Other packages at this facade</h3><p class="small">Use the buttons above the switches to look at one. ${rec.t.all ? `Designs that also meet every target, best score first (${cand0(sc, a, rec)} found, ${P.length} shown once near twins are left out)` : "Designs that come about as close to the targets"}, each different from the recommended one and from each other in at least two measures. The score gap is the drop in overall score (0 to 1) against the recommended design. A single swap on a decision card keeps everything else; these change several things at once.</p>
       <div class="tw"><table class="cmp"><thead><tr><th>Design</th><th>Score${""}<br><small>gap</small></th><th>Daylight</th><th>Overheating, K·h/a</th><th>Energy, ${UE}</th><th>Carbon, kg CO₂e/m² over ${Y} years</th>${scn.length ? `<th>Overheating: ${scn.map((s) => s[1]).join(" / ")}</th>` : ""}<th>Differs in</th></tr></thead><tbody>${row("Recommended", rec)}${lowC && lowC !== rec ? row("Lowest carbon that meets every target", lowC) : ""}${P.filter((r) => r !== lowC).map((r, i) => row("Package " + String.fromCharCode(65 + i), r)).join("")}</tbody></table></div>${lowC === rec ? `<p class="small">The recommended design is also the design with the least whole-life carbon among those that meet every target.</p>` : lowC ? `<p class="small">Lowest carbon: ${fmt(Math.round(K0.tot - carbonOf(lowC).tot))} kg CO₂e/m² less over ${Y} years than the recommended design, for a score ${(rec.D - lowC.D).toFixed(2)} lower. It may differ in building-wide measures.</p>` : ""}`;
   }
 
@@ -2083,6 +2085,16 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const k = sc + a + FS.keyOf(dz); if (!wiPending.has(k) && workers.length) { wiPending.add(k); simulateOne(sc, a, dz).then(() => { wiPending.delete(k); scheduleRender(true); }, () => wiPending.delete(k)); }
     return null;
   }
+  /* v16 phase 3.3 (Giovanni, 18 November 2026): the designs worth comparing at this facade as buttons above the switches.
+     Each button sets every switch to that design; changing a switch afterwards makes it your own design. */
+  function designSet(sc, a, rec) {
+    const out = [["rec", "Recommended", rec, "the recommended design"]], seen = new Set([FS.keyOf(rec.dz)]);
+    const add = (id, lab, r, note) => { if (!r) return; const k = FS.keyOf(r.dz); if (seen.has(k)) return; seen.add(k); out.push([id, lab, r, note]); };
+    packagesOf(sc, a, rec).forEach((r, i) => add("p" + i, "Package " + String.fromCharCode(65 + i), r, rec.t.all ? "also meets every target" : "about as close to the targets"));
+    const lc = lowCarbonOf(sc, a); if (lc) add("lc", "Lowest carbon", lc, "least whole-life carbon among the designs that meet every target");
+    const PD = presetDesigns(sc); PRESETS.forEach(([k, nm]) => { const r = PD[k] && PD[k].best.per[a]; add("pr" + k, nm, r, "best with the priority " + nm.toLowerCase()); });
+    return out;
+  }
   function facPanelHtml(sc, B) {
     const a = st.fa, rec = B.best.per[a]; if (!rec) return "";
     const wi = st.wi && st.wi.sc === sc && st.wi.a === a ? st.wi : null, dz = wi ? wi.dz : rec.dz, cur = wi ? wiRow(sc, a, dz) : rec;
@@ -2092,6 +2104,10 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const flipTag = (p, v) => { if (!vNow || vNow === "wait" || v === dz[p] || !F) return ""; const x = F.byKey.get(FS.keyOf(Object.assign({}, dz, { [p]: v }))); if (!x) return "";
       const v2 = coolVerdict({ dz: x.dz, r: x.r }, sc, a).v; if (v2 === "wait" || v2 === vNow) return ""; return `<span class="flip${RANKV[v2] < RANKV[vNow] ? " gd" : ""}">${VSHORT[v2]}</span>`; };
     let h = `<div class="v4h"><h2>${orientLabel(sc, a)} ${sc === "cellular" ? "facade" : "facades"}, ${SCLAB[sc].toLowerCase()}</h2><span class="small">${wi ? "What if: your changes are in blue." : "The recommended design. Pick other choices to see their effect."} A label under a choice shows where it changes the cooling result.</span></div><div class="fpg">`;
+    const DS4 = designSet(sc, a, rec), kNow = FS.keyOf(dz);
+    h += `<div class="dsel" role="group" aria-label="Designs to compare at this facade">${DS4.map(([id, lab, r, note]) => { const on = FS.keyOf(r.dz) === kNow, K = carbonOf(r);
+      return `<button type="button" data-ds="${id}" aria-pressed="${on}" class="${on ? "on" : ""}${r.t && r.t.all ? "" : " miss"}" title="${cap(note)}"><b>${lab}</b><small>${id === "rec" ? r.D.toFixed(2) : (r.D - rec.D >= 0 ? "+" : "−") + Math.abs(r.D - rec.D).toFixed(2)} score · ${fmt(Math.round(K.tot))} kg</small></button>`; }).join("")}${DS4.some(([, , r]) => FS.keyOf(r.dz) === kNow) ? "" : `<button type="button" class="on wi" aria-pressed="true" disabled><b>Your design</b><small>changed by hand</small></button>`}</div>
+      <p class="small">Score: overall score from 0 to 1, against the recommended design. kg: whole-life carbon, kg CO₂e/m² over ${Register.val("carbon.years")} years. A design that does not meet every target is marked with a dashed border. Building-wide choices (glass, insulation, mass) of a design apply to every facade.</p>`;
     h += `<div class="sw">${meas.map((p) => { const L = LVa(p), it = core && core.items[p], k = it ? (it.tie ? 7 : it.k) : 7;
       return `<div class="swr"><div class="swh"><b>${NAME4[p]}</b><span class="small">${FS.SHARED.includes(p) ? "building-wide: every facade" : "this facade only"}${p === "wwr" && wwrRange(sc, a) ? `; ${rangeTxt(wwrRange(sc, a))} differ little` : ""}${(p === "dayAch" || p === "nightAch") && dz[p] ? `; ${openTxt(p, dz, sc)}` : ""}</span></div><div class="swo" role="group" aria-label="${NAME4[p]}">${L.map((v) => {
         const isRec = v === rec.dz[p], on = v === dz[p];
@@ -2106,6 +2122,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
       h += row("Daylight", dlVal(show.m.S), DLU[st.dlm].replace(/^[^,]*, %\s*/, ""), d && dlDelta(d.dS), d && d.dS > 0, d && Math.abs(d.dS) < 1)
         + row("Overheating", fmt(Math.round(show.m.C)), "K·h/a", d && `${d.dC > 0 ? "+" : "−"}${fmt(Math.round(Math.abs(d.dC)))} K·h/a`, d && d.dC < 0, d && Math.abs(d.dC) < 1)
         + row("Energy", fmt(show.m.E), UE, d && `${d.dE > 0 ? "+" : "−"}${fmt(Math.abs(d.dE))} ${UE}`, d && d.dE < 0, d && Math.abs(d.dE) < 0.1)
+        + (() => { const K = carbonOf(show), dK = wi ? K.tot - carbonOf(rec).tot : 0; return row("Carbon, " + Register.val("carbon.years") + " years", fmt(Math.round(K.tot)), "kg CO₂e/m²", d && `${dK > 0 ? "+" : "−"}${fmt(Math.round(Math.abs(dK)))} kg`, d && dK < 0, d && Math.abs(dK) < 5); })()
         + (() => { const xc = coolVerdict(show, sc, a), xr = wi ? coolVerdict(rec, sc, a) : null, chg = xr && xr.v !== xc.v && xc.v !== "wait" && xr.v !== "wait";
           return `<div class="fr"><span>Cooling</span><b><span class="cvd ${xc.v}">${VSHORT[xc.v]}</span> <small>peak ${fmt(xc.peak)} W/m²</small></b>${d ? `<span style="color:${!chg ? "var(--mute)" : RANKV[xc.v] < RANKV[xr.v] ? "var(--cool)" : "var(--warm)"}">${chg ? "was: " + VSHORT[xr.v].toLowerCase() : "no change"}</span>` : ""}</div>`; })();
       const c = show.r.cool; h += `<p class="small">${st.mode === "cool" ? `Delivered energy: heating ${fmt(c.qh / st.copH)}, cooling ${fmt((c.qcs != null ? c.qcs : c.qc) / st.copC)}, removing moisture ${fmt((c.ql || 0) / st.copC)}${c.fanE ? `, ceiling fans ${fmt(c.fanE)} (${fmt(c.fanH)} h at ${fmt(st.fanWRun)} W/m²)` : ""}${c.lightE ? `, lighting ${fmt(c.lightE)}` : ""} ${UE}.` : `Heating need ${fmt(show.r.heat.qh)} ${UE}, delivered ${fmt(show.m.E)} ${UE}.`}${show.short ? ` <span class="bad">Above the comfort limit of ${fmt(limitNow())} K·h/a.</span>` : ""}</p>`;
@@ -2136,6 +2153,9 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
       st.wi = FS.keyOf(dz) === FS.keyOf(rec.dz) ? null : { sc, a, dz }; if (st.sel && st.sel.auto) st.sel = null; renderAll();
     });
     const r = $("wireset"); if (r) r.onclick = () => { st.wi = null; if (st.sel && st.sel.auto) st.sel = null; renderAll(); };
+    const DS4 = designSet(sc, a, rec);
+    document.querySelectorAll("#v4fac .dsel button[data-ds]").forEach((b) => b.onclick = () => { const x = DS4.find((d) => d[0] === b.dataset.ds); if (!x) return;
+      st.wi = x[0] === "rec" ? null : { sc, a, dz: Object.assign({}, x[2].dz) }; if (st.sel && st.sel.auto) st.sel = null; renderAll(); });
     const dz = st.wi && st.wi.sc === sc && st.wi.a === a ? st.wi.dz : rec.dz, fm = fmapOf(sc, dz, a);
     if (fm) draw3d(fm, S.PARAMS.azimuth[a], "fp3d"); else $("fp3d").innerHTML = `<span class="c3wait">Drawing the room…</span>`;
   }

@@ -303,6 +303,8 @@ details.ev.in { margin-top: 14px }
 @media (max-width: 760px) { .fgrid1 { grid-template-columns: minmax(0, 1fr) } }
 .cool .ctt { font: 600 13px var(--f-body); fill: var(--ink) } .cool .cax { font: 11px var(--f-data); fill: var(--mute) } .cool .cg { stroke: var(--soft); stroke-width: 1 }
 .cool .cbi { fill: var(--cool); fill-opacity: .75 } .cool .cbo { fill: var(--warm); fill-opacity: .8 } .cool .ccap { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 5 3 } .cool .ccapt { font: 600 11px var(--f-body); fill: var(--ink) }
+/* v16 phase 3.4: progress panel */
+.runp .pb { display: inline-block; height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; vertical-align: middle; width: 160px; flex: 0 0 160px } .runp .pb i { display: block; height: 100%; background: var(--accent, var(--ink)); transition: width .4s } .runp .pb.big { display: block; width: 100%; height: 12px; margin: 6px 0 10px } .runp .pst { border-top: 1px solid var(--soft); padding: 8px 0 } .runp h3 { font-size: 13px; margin: 0 0 6px } .runp .prow { display: flex; align-items: center; gap: 10px; margin: 4px 0; font-size: 13px } .runp .prow > span:first-child { flex: 0 0 64px; font-weight: 600 } .runp .pfac { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0 6px 74px } .runp .pf { display: flex; align-items: center; gap: 6px; font-size: 12px } .runp .pf .pb { width: 70px; flex: 0 0 70px; height: 6px } .runp .pf.dn .pb i { background: var(--ok) }
 /* v16 phase 3.3: design buttons above the switches */
 .dsel { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px } .dsel button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; font: 600 12.5px var(--f-body); padding: 6px 10px; min-height: 40px; border-radius: 6px; border: 1.5px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; text-align: left } .dsel button small { font-weight: 400; font-size: 11px; color: var(--mute) } .dsel button.on { background: var(--ink); color: var(--panel); border-color: var(--ink) } .dsel button.on small { color: var(--panel) } .dsel button.wi { background: var(--cool); border-color: var(--cool) } .dsel button.miss { border-style: dashed }
 /* v16 phase 3: verdict */
@@ -411,6 +413,7 @@ details.ev.in { margin-top: 14px }
       <section class="v4s" id="v4prio"></section>
       <details class="fine" id="finedet"><summary>Fine-tune the priorities</summary><div class="fgrid1"><div id="tri"></div><div><p class="small" id="wtxt"></p><button id="weq" type="button" class="link">Equal weights</button>
         <p class="small">Click a small triangle: the closer to a corner, the more that result counts. The same triangle always gives the same weights.</p></div></div></details>
+      <section class="v4card runp" id="runp" hidden aria-live="polite"></section>
       <section class="v4s v4card" id="v5verd"></section>
       <section class="v4tiles" id="v4tiles"></section>
       <section class="v4s" id="v4dec"></section>

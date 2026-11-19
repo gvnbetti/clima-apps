@@ -1377,7 +1377,7 @@
     const vFloor = u.tHeat + (ctx.ventFloor != null ? ctx.ventFloor : VR.floor), ops = openings(ctx, c); // design runs: window air is reduced so that the room stays above this operative temperature
     const cL = [], eL = [], eLA = [];
     const arm = ctx.nightArm != null ? ctx.nightArm : VR.arm; let curMax = -99, lastMax = -99, wasPres = 0; // night ventilation armed after a warm day
-    const top = new Float32Array(8760), tair = new Float32Array(8760), bdown = keepHourly ? new Uint8Array(8760) : null, gOcc = ctx.gOcc != null ? ctx.gOcc : u.gainOcc;
+    const top = new Float32Array(8760), tair = new Float32Array(8760), bdown = keepHourly ? new Uint8Array(8760) : null, achH = keepHourly ? new Float32Array(8760) : null, bmask = keepHourly ? new Uint8Array(8760) : null, qIntH = keepHourly ? new Float32Array(8760) : null, gOcc = ctx.gOcc != null ? ctx.gOcc : u.gainOcc;
     const eHist = coolHi ? new Int16Array(CBINS) : null, eHistA = coolHi ? new Int16Array(CBINS) : null; let ePeak = 0, ePeakA = 0, cPeakVent = 0; // ceiling: load at its rating (10 K), fresh-air share at the peak
     let qHsum = 0, qCsum = 0, qLsum = 0, humid = 0, tmax = -99, cPeak = 0, latH = 0, cMax = 0, vHours = 0, ventHeat = 0;
     const cHist = coolHi ? new Int16Array(CBINS) : null; // hours of sensible cooling by load, CBIN W/m² floor per bin
@@ -1430,7 +1430,7 @@
       eng.commit(r); tAir = r.thAir; topPrev = r.thOp; if (rec && fanOn) { fanH++; fanMask[i] = 1; }
       if (pres[i]) { if (!wasPres) curMax = -99; if (r.thOp > curMax) curMax = r.thOp; } else if (wasPres) lastMax = curMax; wasPres = pres[i];
       if (rec) {
-        top[i] = r.thOp; tair[i] = r.thAir; if (r.thOp > tmax) tmax = r.thOp; if (bdown) { let m = mask, n = 0; while (m) { n += m & 1; m >>= 1; } bdown[i] = n; }
+        top[i] = r.thOp; tair[i] = r.thAir; if (r.thOp > tmax) tmax = r.thOp; if (bdown) { let m = mask, n = 0; while (m) { n += m & 1; m >>= 1; } bdown[i] = n; achH[i] = ach; bmask[i] = mask; qIntH[i] = p.qInt / Af; } // hourly record (validation)
         if (q > 0) { qHsum += q; if (ach > base + 1e-6 && !din) ventHeat++; } else qCsum -= q;
         if (cHist && q < 0) { const wm = -q / Af; cL.push([wm, Math.max(0, p.hVe * (p.thSup - r.thAir) / Af)]); if (wm > cMax) cMax = wm; cHist[Math.min(CBINS - 1, Math.floor(wm / CBIN))]++;
           /* chilled ceiling (register ceil.model): output q = cap10 * (dT / 10)^1.1, dT = room operative temperature minus mean water temperature; the water may not run
@@ -1460,7 +1460,7 @@
     // design peaks (v16): the 99th percentile of the occupied cooling hours, so that a Monday restart does not set the size
     if (cL.length) { cL.sort((a, b) => a[0] - b[0]); const k = cL.length < 100 ? cL.length - 1 : Math.min(cL.length - 1, Math.floor(VR.peak * cL.length)); cPeak = cL[k][0]; cPeakVent = cL[k][1]; }
     ePeak = pctl(eL, VR.peak); ePeakA = pctl(eLA, VR.peak);
-    return { top, tair: keepHourly ? tair : null, bdown, nWin: wins.length, heat: qHsum / 1000 / Af, cool: qCsum / 1000 / Af, fanH, fanE: fanH * fanW / 1000, fanMask, coolLat: qLsum / 1000 / Af, cHist, cPeak, cMax, latH, eHist, ePeak, ePeakMax: eL.length ? Math.max.apply(null, eL) : 0, eHistA, ePeakA, cPeakVent, humid, tmax, zone, shade: shd, dayOpen, nightOpen, gtotOk, ventHeat, vHours };
+    return { top, tair: keepHourly ? tair : null, bdown, achH, bmask, qIntH, winBits: wins.map((x) => [x.id, x.bit]), nWin: wins.length, heat: qHsum / 1000 / Af, cool: qCsum / 1000 / Af, fanH, fanE: fanH * fanW / 1000, fanMask, coolLat: qLsum / 1000 / Af, cHist, cPeak, cMax, latH, eHist, ePeak, ePeakMax: eL.length ? Math.max.apply(null, eL) : 0, eHistA, ePeakA, cPeakVent, humid, tmax, zone, shade: shd, dayOpen, nightOpen, gtotOk, ventHeat, vHours };
   }
   // free-running and heating-on, scored under every evaluation
   // ideal cooling in occupied hours to an hourly upper limit set by the page from the comfort model (ctx.coolHi; v6, 27 October
@@ -1861,7 +1861,7 @@
   /* Top-up after the daylight measure, minimum or comfort model changed: the designs already simulated are loaded
      (no new runs for them) and Pareto local search completes the front for the new choice. Returns the new designs. */
   function topUp(ctx, o) {
-    const E = evaluator(ctx, Object.assign({}, o, { onProgress: null })), top = o.scenario === "corner_top";
+    const E = evaluator(ctx, o), top = o.scenario === "corner_top"; // v16 phase 3.4: progress reported (refinement)
     const meas = (o.meas || ALL).filter((p) => p !== "roof" || top); // o.meas: only these measures are varied (window refinement)
     o.rows.forEach((x) => { const row = { dz: Object.assign({}, x.dz), heat: x.heat, cool: x.cool, dl: E.dlOf(x.dz) }; row.m = metrics(row, o); E.seen.set(keyOf(x.dz), row); E.arch.push(row); });
     const n0 = E.arch.length, anyA1 = E.arch.some((r) => r.m.A1);
@@ -1921,7 +1921,7 @@ self.onmessage=(e)=>{const m=e.data;
    if(t.kind==='dl') r=DaySweep.job(ctx,t.job);
    else if(t.kind==='fac') r=FacadeSearch.search(ctx,Object.assign(t.o,{onProgress:(n)=>postMessage({type:'prog',id:t.id,n})}));
    else if(t.kind==='swap') r=FacadeSearch.swaps(ctx,t.o);
-   else if(t.kind==='topup'||t.kind==='refine') r=FacadeSearch.topUp(ctx,t.o);
+   else if(t.kind==='topup'||t.kind==='refine') r=FacadeSearch.topUp(ctx,Object.assign({},t.o,{onProgress:(n)=>postMessage({type:'prog',id:t.id,n,k:'refine'})}));
    else if(t.kind==='din') r=Sweep.runDin(ctx,Object.assign({scenario:t.scenario,azimuth:t.azimuth,supply:'outdoor'},t.dz));
    else if(t.kind==='fmap') r=DaySweep.floorMap(ctx,t.scenario,t.wwr,t.fixed,t.az,t.tvk);
    else if(t.kind==='one') r=two(Object.assign({scenario:t.scenario,azimuth:t.azimuth,supply:'outdoor'},t.dz));

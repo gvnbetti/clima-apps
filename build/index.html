@@ -302,6 +302,8 @@ details.ev.in { margin-top: 14px }
 @media (max-width: 760px) { .fgrid1 { grid-template-columns: minmax(0, 1fr) } }
 .cool .ctt { font: 600 13px var(--f-body); fill: var(--ink) } .cool .cax { font: 11px var(--f-data); fill: var(--mute) } .cool .cg { stroke: var(--soft); stroke-width: 1 }
 .cool .cbi { fill: var(--cool); fill-opacity: .75 } .cool .cbo { fill: var(--warm); fill-opacity: .8 } .cool .ccap { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 5 3 } .cool .ccapt { font: 600 11px var(--f-body); fill: var(--ink) }
+/* v16 phase 3.4: progress panel */
+.runp .pb { display: inline-block; height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; vertical-align: middle; width: 160px; flex: 0 0 160px } .runp .pb i { display: block; height: 100%; background: var(--accent, var(--ink)); transition: width .4s } .runp .pb.big { display: block; width: 100%; height: 12px; margin: 6px 0 10px } .runp .pst { border-top: 1px solid var(--soft); padding: 8px 0 } .runp h3 { font-size: 13px; margin: 0 0 6px } .runp .prow { display: flex; align-items: center; gap: 10px; margin: 4px 0; font-size: 13px } .runp .prow > span:first-child { flex: 0 0 64px; font-weight: 600 } .runp .pfac { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0 6px 74px } .runp .pf { display: flex; align-items: center; gap: 6px; font-size: 12px } .runp .pf .pb { width: 70px; flex: 0 0 70px; height: 6px } .runp .pf.dn .pb i { background: var(--ok) }
 /* v16 phase 3.3: design buttons above the switches */
 .dsel { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px } .dsel button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; font: 600 12.5px var(--f-body); padding: 6px 10px; min-height: 40px; border-radius: 6px; border: 1.5px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; text-align: left } .dsel button small { font-weight: 400; font-size: 11px; color: var(--mute) } .dsel button.on { background: var(--ink); color: var(--panel); border-color: var(--ink) } .dsel button.on small { color: var(--panel) } .dsel button.wi { background: var(--cool); border-color: var(--cool) } .dsel button.miss { border-style: dashed }
 /* v16 phase 3: verdict */
@@ -410,6 +412,7 @@ details.ev.in { margin-top: 14px }
       <section class="v4s" id="v4prio"></section>
       <details class="fine" id="finedet"><summary>Fine-tune the priorities</summary><div class="fgrid1"><div id="tri"></div><div><p class="small" id="wtxt"></p><button id="weq" type="button" class="link">Equal weights</button>
         <p class="small">Click a small triangle: the closer to a corner, the more that result counts. The same triangle always gives the same weights.</p></div></div></details>
+      <section class="v4card runp" id="runp" hidden aria-live="polite"></section>
       <section class="v4s v4card" id="v5verd"></section>
       <section class="v4tiles" id="v4tiles"></section>
       <section class="v4s" id="v4dec"></section>
@@ -2045,7 +2048,7 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
     const vFloor = u.tHeat + (ctx.ventFloor != null ? ctx.ventFloor : VR.floor), ops = openings(ctx, c); // design runs: window air is reduced so that the room stays above this operative temperature
     const cL = [], eL = [], eLA = [];
     const arm = ctx.nightArm != null ? ctx.nightArm : VR.arm; let curMax = -99, lastMax = -99, wasPres = 0; // night ventilation armed after a warm day
-    const top = new Float32Array(8760), tair = new Float32Array(8760), bdown = keepHourly ? new Uint8Array(8760) : null, gOcc = ctx.gOcc != null ? ctx.gOcc : u.gainOcc;
+    const top = new Float32Array(8760), tair = new Float32Array(8760), bdown = keepHourly ? new Uint8Array(8760) : null, achH = keepHourly ? new Float32Array(8760) : null, bmask = keepHourly ? new Uint8Array(8760) : null, qIntH = keepHourly ? new Float32Array(8760) : null, gOcc = ctx.gOcc != null ? ctx.gOcc : u.gainOcc;
     const eHist = coolHi ? new Int16Array(CBINS) : null, eHistA = coolHi ? new Int16Array(CBINS) : null; let ePeak = 0, ePeakA = 0, cPeakVent = 0; // ceiling: load at its rating (10 K), fresh-air share at the peak
     let qHsum = 0, qCsum = 0, qLsum = 0, humid = 0, tmax = -99, cPeak = 0, latH = 0, cMax = 0, vHours = 0, ventHeat = 0;
     const cHist = coolHi ? new Int16Array(CBINS) : null; // hours of sensible cooling by load, CBIN W/m² floor per bin
@@ -2098,7 +2101,7 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
       eng.commit(r); tAir = r.thAir; topPrev = r.thOp; if (rec && fanOn) { fanH++; fanMask[i] = 1; }
       if (pres[i]) { if (!wasPres) curMax = -99; if (r.thOp > curMax) curMax = r.thOp; } else if (wasPres) lastMax = curMax; wasPres = pres[i];
       if (rec) {
-        top[i] = r.thOp; tair[i] = r.thAir; if (r.thOp > tmax) tmax = r.thOp; if (bdown) { let m = mask, n = 0; while (m) { n += m & 1; m >>= 1; } bdown[i] = n; }
+        top[i] = r.thOp; tair[i] = r.thAir; if (r.thOp > tmax) tmax = r.thOp; if (bdown) { let m = mask, n = 0; while (m) { n += m & 1; m >>= 1; } bdown[i] = n; achH[i] = ach; bmask[i] = mask; qIntH[i] = p.qInt / Af; } // hourly record (validation)
         if (q > 0) { qHsum += q; if (ach > base + 1e-6 && !din) ventHeat++; } else qCsum -= q;
         if (cHist && q < 0) { const wm = -q / Af; cL.push([wm, Math.max(0, p.hVe * (p.thSup - r.thAir) / Af)]); if (wm > cMax) cMax = wm; cHist[Math.min(CBINS - 1, Math.floor(wm / CBIN))]++;
           /* chilled ceiling (register ceil.model): output q = cap10 * (dT / 10)^1.1, dT = room operative temperature minus mean water temperature; the water may not run
@@ -2128,7 +2131,7 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
     // design peaks (v16): the 99th percentile of the occupied cooling hours, so that a Monday restart does not set the size
     if (cL.length) { cL.sort((a, b) => a[0] - b[0]); const k = cL.length < 100 ? cL.length - 1 : Math.min(cL.length - 1, Math.floor(VR.peak * cL.length)); cPeak = cL[k][0]; cPeakVent = cL[k][1]; }
     ePeak = pctl(eL, VR.peak); ePeakA = pctl(eLA, VR.peak);
-    return { top, tair: keepHourly ? tair : null, bdown, nWin: wins.length, heat: qHsum / 1000 / Af, cool: qCsum / 1000 / Af, fanH, fanE: fanH * fanW / 1000, fanMask, coolLat: qLsum / 1000 / Af, cHist, cPeak, cMax, latH, eHist, ePeak, ePeakMax: eL.length ? Math.max.apply(null, eL) : 0, eHistA, ePeakA, cPeakVent, humid, tmax, zone, shade: shd, dayOpen, nightOpen, gtotOk, ventHeat, vHours };
+    return { top, tair: keepHourly ? tair : null, bdown, achH, bmask, qIntH, winBits: wins.map((x) => [x.id, x.bit]), nWin: wins.length, heat: qHsum / 1000 / Af, cool: qCsum / 1000 / Af, fanH, fanE: fanH * fanW / 1000, fanMask, coolLat: qLsum / 1000 / Af, cHist, cPeak, cMax, latH, eHist, ePeak, ePeakMax: eL.length ? Math.max.apply(null, eL) : 0, eHistA, ePeakA, cPeakVent, humid, tmax, zone, shade: shd, dayOpen, nightOpen, gtotOk, ventHeat, vHours };
   }
   // free-running and heating-on, scored under every evaluation
   // ideal cooling in occupied hours to an hourly upper limit set by the page from the comfort model (ctx.coolHi; v6, 27 October
@@ -2529,7 +2532,7 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
   /* Top-up after the daylight measure, minimum or comfort model changed: the designs already simulated are loaded
      (no new runs for them) and Pareto local search completes the front for the new choice. Returns the new designs. */
   function topUp(ctx, o) {
-    const E = evaluator(ctx, Object.assign({}, o, { onProgress: null })), top = o.scenario === "corner_top";
+    const E = evaluator(ctx, o), top = o.scenario === "corner_top"; // v16 phase 3.4: progress reported (refinement)
     const meas = (o.meas || ALL).filter((p) => p !== "roof" || top); // o.meas: only these measures are varied (window refinement)
     o.rows.forEach((x) => { const row = { dz: Object.assign({}, x.dz), heat: x.heat, cool: x.cool, dl: E.dlOf(x.dz) }; row.m = metrics(row, o); E.seen.set(keyOf(x.dz), row); E.arch.push(row); });
     const n0 = E.arch.length, anyA1 = E.arch.some((r) => r.m.A1);
@@ -2683,7 +2686,7 @@ self.onmessage=(e)=>{const m=e.data;
    if(t.kind==='dl') r=DaySweep.job(ctx,t.job);
    else if(t.kind==='fac') r=FacadeSearch.search(ctx,Object.assign(t.o,{onProgress:(n)=>postMessage({type:'prog',id:t.id,n})}));
    else if(t.kind==='swap') r=FacadeSearch.swaps(ctx,t.o);
-   else if(t.kind==='topup'||t.kind==='refine') r=FacadeSearch.topUp(ctx,t.o);
+   else if(t.kind==='topup'||t.kind==='refine') r=FacadeSearch.topUp(ctx,Object.assign({},t.o,{onProgress:(n)=>postMessage({type:'prog',id:t.id,n,k:'refine'})}));
    else if(t.kind==='din') r=Sweep.runDin(ctx,Object.assign({scenario:t.scenario,azimuth:t.azimuth,supply:'outdoor'},t.dz));
    else if(t.kind==='fmap') r=DaySweep.floorMap(ctx,t.scenario,t.wwr,t.fixed,t.az,t.tvk);
    else if(t.kind==='one') r=two(Object.assign({scenario:t.scenario,azimuth:t.azimuth,supply:'outdoor'},t.dz));
@@ -2723,7 +2726,7 @@ self.onmessage=(e)=>{const m=e.data;
     st.dl = { cellular: {}, corner: {} }; st.fac = FAC(); st.prog = FAC(); st.build = {};
     AI.review = null; AI.chat = []; if (typeof renderReview === "function") { renderReview(); renderChat(); }
     st.coolClimate = null; if (st.wAuto) { st.w = EQW.slice(); st.wAuto = false; } st.zoom = {}; st.wwrFine = []; st.wwrBy = {}; st.refine = null; st.runDl = runKey4(); st.topping = null; st.wi = null; st.balCache = {}; st.fmap = {}; fmPending.clear(); st.evals = 0; st.dlDone = 0; st.running = true; st.sel = null; st.rate = null; st.autoT = st.autoU = null; st.cache = {};
-    st.scenR = {}; scenPending.clear(); st.scenLv = scenLevel();
+    st.scenR = {}; scenPending.clear(); st.scenLv = scenLevel(); st.tm = {}; st.nDin = 0; st.nScen = 0;
     const eng = forEngine(st.wx);
     st.ctxWx = Object.assign({}, eng, G.solarPosition(eng.lat, eng.lon, eng.tz));
     st.ctx = S.context(st.ctxWx, st.use, { dims: st.dims, wallDepth: st.wall, coolSet: st.coolSet, gainOcc: gainNow(), fanW: st.fanW, blindCtl: st.blindCtl, blinds: JSON.parse(JSON.stringify(st.blinds)) }); st.gainRun = gainNow(); st.fanWRun = st.fanW; st.blindCtlRun = st.blindCtl; st.blindsRun = JSON.parse(JSON.stringify(st.blinds)); st.dinC = {}; dinPending.clear(); st.ctx.coolHi = coolHiNow(st.ctx); st.ctx.coolHiFan = coolHiFanNow(st.ctx, st.ctx.coolHi); st.coolKeyRun = coolKeyNow();
@@ -2736,7 +2739,8 @@ self.onmessage=(e)=>{const m=e.data;
         if (gen !== st.gen) return;
         const m = e.data;
         if (m.type === "ready") w.ready = true;
-        if (m.type === "prog") { const [sc, a] = m.id; st.prog[sc][a] = m.n; scheduleRender(false); return; }
+        if (m.type === "prog") { const [sc, a] = m.id; if (m.k === "refine") { if (st.refine) (st.refine.prog = st.refine.prog || {})[sc + a] = m.n - ((st.refine.base || {})[sc + a] || 0); } else st.prog[sc][a] = m.n; scheduleRender(false); return; }
+        if (m.type === "done") tmDone(w, m.out);
         if (m.type === "done") m.out.forEach((o) => {
           if (o.kind === "dl") { st.dl[o.id[0]][o.id[1]] = o.r; st.dlDone++; }
           else if (o.kind === "fac") facDone(o.id[0], o.id[1], o.r);
@@ -2745,8 +2749,8 @@ self.onmessage=(e)=>{const m=e.data;
           else if (o.kind === "topup") topDone(o.id[0], o.id[1], o.r);
           else if (o.kind === "refine") refineDone(o.id[0], o.id[1], o.r);
           else if (o.kind === "fmap") { st.fmap[o.id] = o.r; fmPending.delete(o.id); scheduleRender(false); }
-          else if (o.kind === "din") { st.dinC[o.id] = o.r; st.dinVer = (st.dinVer || 0) + 1; dinPending.delete(o.id); scheduleRender(false); }
-          else if (o.kind === "scen") { st.scenR[o.id] = o.r; scenPending.delete(o.id); scheduleRender(false); }
+          else if (o.kind === "din") { st.nDin++; st.dinC[o.id] = o.r; st.dinVer = (st.dinVer || 0) + 1; dinPending.delete(o.id); scheduleRender(false); }
+          else if (o.kind === "scen") { st.nScen++; st.scenR[o.id] = o.r; scenPending.delete(o.id); scheduleRender(false); }
         });
         if (!st.facQueued && st.dlDone >= st.dlTotal) { queueFacades(); workers.forEach((x) => { if (x !== w && x.idle) feed(x); }); }
         if (st.refine && st.refine.phase === "dl" && st.dlDone >= st.dlTotal) refineSearch();
@@ -2765,7 +2769,7 @@ self.onmessage=(e)=>{const m=e.data;
       if (workers.every((x) => x.idle)) { if (st.running && st.facQueued) { st.running = false; st.elapsed = (performance.now() - t0) / 1000; } scheduleRender(true); }
       return;
     }
-    w.idle = false; w.postMessage({ type: "run", tasks: queue.splice(0, 1) });
+    const tk = queue.splice(0, 1); w.idle = false; w.tStart = performance.now(); w.tKind = tk[0].kind; w.postMessage({ type: "run", tasks: tk });
     scheduleRender(false);
   }
   const wake = () => workers.forEach((x) => { if (x.idle) feed(x); });
@@ -2829,7 +2833,7 @@ self.onmessage=(e)=>{const m=e.data;
       PRI.forEach((w) => { const b = pickTie(fa.ok, (r) => SC.score(r.m, Object.assign({}, o, { w })).q); if (b) { picks.add(b.dz.wwr); fx.add(b.dz.fixed); } });
       const own = new Set(); picks.forEach((w0) => [-0.1, -0.05, 0.05, 0.1].forEach((d) => { const w = Math.round((w0 + d) * 100) / 100; if (w >= lo - 1e-9 && w <= hi + 1e-9 && !coarse.includes(w)) { own.add(w); add.add(w); } }));
       st.wwrBy[sc + a] = [...own]; } }
-    st.wwrFine = [...add].sort((x, y) => x - y); st.refine = { phase: "dl", pending: 0, t0: performance.now() };
+    st.wwrFine = [...add].sort((x, y) => x - y); st.refine = { phase: "dl", pending: 0, t0: performance.now(), dl0: st.dlDone, base: {}, prog: {} };
     if (!st.wwrFine.length) { st.refine.phase = "done"; scheduleRender(true); return; }
     const scs = [...new Set(st.types.map(dlScen))];
     // v16 phase 3.3: every fixed shading type again, so the finer window sizes do not favour the shading already picked
@@ -2838,13 +2842,14 @@ self.onmessage=(e)=>{const m=e.data;
   }
   function refineSearch() {
     st.refine.phase = "search"; st.refine.dlSecs = (performance.now() - st.refine.t0) / 1000;
-    for (const sc of st.types) for (const a of facList(sc)) { const F = st.fac[sc][a]; if (!F) continue; st.refine.pending++;
+    for (const sc of st.types) for (const a of facList(sc)) { const F = st.fac[sc][a]; if (!F) continue; st.refine.pending++; st.refine.base[sc + a] = F.rows.length; st.refine.n = (st.refine.n || 0) + 1;
       queue.push({ kind: "refine", id: [sc, a], o: { scenario: sc, azimuth: S.PARAMS.azimuth[a], tab: dlTab(sc, a), key: evalKey(), fanOk: fanOkNow(), limit: limitNow(), copH: st.copH, copC: st.copC, rk: rankOpts(sc), mode: st.mode, dlm: st.dlm, floor: st.floor, levels: levelsFor(sc, a), meas: ["wwr", "fixed", "shading"], cap: CAP + 3000,
         rows: F.rows.map((x) => ({ dz: x.dz, heat: x.r.heat, cool: x.r.cool })) } }); }
     st.balCache = {}; st.cache = {};
   }
   function refineDone(sc, a, r) {
     const F = addRows(sc, a, r.rows); F.complete = r.complete !== false; st.evals += r.rows.length; st.refine.added = (st.refine.added || 0) + r.rows.length;
+    (st.refine.fin = st.refine.fin || {})[sc + a] = r.rows.length;
     if (--st.refine.pending <= 0) { st.refine.phase = "done"; st.refine.secs = (performance.now() - st.refine.t0) / 1000; st.balCache = {}; st.cache = {}; autoAnchors(); }
     scheduleRender(true);
   }
@@ -2980,7 +2985,9 @@ self.onmessage=(e)=>{const m=e.data;
     st.cache[sc + a] = out;
     /* v16 phase 3: in Germany the DIN 4108-2 check with the standard's conditions decides; the design run only estimates it.
        Once the search is done, the six best-ranked designs without the check are checked, so the ranking settles quickly. */
-    if (dinRule() && !st.running && workers.length) ok.filter((r) => !r.m.dinExact && r.t && r.t.din).sort((x, y) => y.q - x.q).slice(0, 6).forEach((r) => dinOf(sc, a, r.dz));
+    // v16 phase 3.4: the six best-ranked designs overall (checked or not); unchecked ones among them are checked. Earlier
+    // the six best unchecked ones were taken each time, which went on until every passing design was checked.
+    if (dinRule() && !st.running && workers.length) ok.slice().sort((x, y) => y.q - x.q).slice(0, 6).filter((r) => !r.m.dinExact && r.t && r.t.din).forEach((r) => dinOf(sc, a, r.dz));
     return out;
   }
 
@@ -3045,18 +3052,66 @@ self.onmessage=(e)=>{const m=e.data;
   const listJoin = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
   const wTxt = () => `daylight ${Math.round(st.w[0] * 100)}%, comfort ${Math.round(st.w[1] * 100)}%, energy ${Math.round(st.w[2] * 100)}%`;
 
+  /* ============================================================ v16 phase 3.4 (Giovanni, 18 November 2026): progress.
+     Each task is timed in the page (start when sent to a worker, end when its result comes back), per kind; the time
+     left is the work left, priced at the measured time per unit, divided by the workers. Units: a daylight variant,
+     a simulated design (two years), a DIN 4108-2 check, a scenario run. */
+  const TDEF = { dl: 4, fac: 0.09, refine: 0.09, topup: 0.09, din: 0.3, scen: 0.2 };
+  function tmDone(w, out) {
+    if (!w.tStart || !out || !out.length) return; const k = w.tKind, dt = (performance.now() - w.tStart) / 1000; w.tStart = 0;
+    const u = k === "fac" || k === "refine" || k === "topup" ? Math.max(1, (out[0].r && out[0].r.rows ? out[0].r.rows.length : 1) - (k === "refine" && st.refine ? (st.refine.base[out[0].id[0] + out[0].id[1]] || 0) : 0)) : out.length;
+    const T = st.tm[k] || (st.tm[k] = { n: 0, t: 0 }); T.n += u; T.t += dt;
+  }
+  const tPer = (k) => { const T = st.tm && st.tm[k]; return T && T.n >= 3 ? T.t / T.n : (k === "dl" ? TDEF.dl * Math.max(1, (st.ori || []).length) / 4 : TDEF[k] || 0.1); };
+  const nWork = () => Math.max(1, workers.length || 1);
+  const mmss = (s) => { s = Math.max(0, Math.round(s)); return s >= 90 ? `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")} s` : `${s} s`; };
+  // the run as stages with counts; est = designs per facade expected (finished facades' mean, else the planning figure)
+  function runState() {
+    const facs = [].concat(...st.types.map((sc) => facList(sc).map((a) => [sc, a]))), done = facs.filter(([sc, a]) => st.fac[sc][a] && st.fac[sc][a].done);
+    const fin = done.map(([sc, a]) => st.prog[sc][a] || 0), est = fin.length ? fin.reduce((s, x) => s + x, 0) / fin.length : PEREST;
+    let des = 0, desTot = 0; facs.forEach(([sc, a]) => { const n = st.prog[sc][a] || 0, isD = st.fac[sc][a] && st.fac[sc][a].done; des += n; desTot += isD ? n : Math.max(n * 1.05, est); });
+    const R = st.refine, dl1 = R ? R.dl0 : st.dlTotal, dlDone1 = Math.min(st.dlDone, dl1);
+    const s1 = { dl: [dlDone1, dl1], des: [des, Math.round(desTot)], fac: [done.length, facs.length], facs };
+    const s2 = st.refineWin ? (R ? { dl: [st.dlDone - R.dl0, st.dlTotal - R.dl0], des: [Object.values(R.prog || {}).reduce((s, x) => s + Math.max(0, x), 0), null], fac: [Object.keys(R.fin || {}).length, R.n || facs.length], phase: R.phase } : { wait: true }) : null;
+    const chk = { din: [st.nDin || 0, (st.nDin || 0) + dinPending.size], scen: [st.nScen || 0, (st.nScen || 0) + scenPending.size] };
+    // time left (CPU seconds over the workers)
+    let left = (s1.dl[1] - s1.dl[0]) * tPer("dl") + Math.max(0, s1.des[1] - s1.des[0]) * tPer("fac");
+    if (s2 && !s2.wait) left += Math.max(0, s2.dl[1] - s2.dl[0]) * tPer("dl") + (s2.phase !== "done" ? Math.max(0, (s2.fac[1] - s2.fac[0]) * est * 0.15 - s2.des[0]) * tPer("refine") : 0);
+    if (s2 && s2.wait) left += s1.facs.length * est * 0.15 * tPer("refine");
+    left += dinPending.size * tPer("din") + scenPending.size * tPer("scen");
+    const el = (performance.now() - t0) / 1000, busy = st.running || (R && R.phase !== "done") || dinPending.size || scenPending.size || st.topping;
+    return { s1, s2, chk, left: left / nWork(), el, busy, frac: el > 0 ? el / (el + left / nWork()) : 0 };
+  }
+  const pbar = (a, b, cls) => `<span class="pb${cls ? " " + cls : ""}"><i style="width:${(100 * Math.min(1, b ? a / b : 0)).toFixed(1)}%"></i></span>`;
+  function runPanelHtml() {
+    const S0 = runState(), s1 = S0.s1, s2 = S0.s2, nAz = (st.ori || []).length, E = (n) => n.toLocaleString("en-GB");
+    if (!S0.busy) return st.elapsed ? `<p class="small">Run finished in ${mmss(st.elapsed)}: ${E(s1.dl[1])} daylight variants, ${E(st.evals)} designs simulated (${E(2 * st.evals)} years), ${E(st.nDin || 0)} DIN 4108-2 checks, ${E(st.nScen || 0)} scenario runs, on ${nWork()} worker${nWork() > 1 ? "s" : ""}.${s2 && !s2.wait ? ` Finer window sizes: ${E(s2.dl[1])} daylight variants, ${E(st.refine.added || 0)} designs.` : ""}</p>` : "";
+    const pct = Math.round(100 * S0.frac);
+    let h = `<div class="v4h"><h2>Running: ${pct}%</h2><span class="small">${mmss(S0.el)} so far, about ${mmss(S0.left)} left on ${nWork()} worker${nWork() > 1 ? "s" : ""}. Results fill in below as facades finish.</span></div>${pbar(S0.frac, 1, "big")}`;
+    h += `<div class="pst"><h3>1. Search${s2 ? ", window sizes in 15% steps" : ""}</h3>
+      <div class="prow"><span>Daylight</span>${pbar(s1.dl[0], s1.dl[1])}<span class="small">${E(s1.dl[0])} of ${E(s1.dl[1])} room variants (window size × fixed shading, ${nAz} orientation${nAz > 1 ? "s" : ""} each)</span></div>
+      <div class="prow"><span>Designs</span>${pbar(s1.des[0], s1.des[1])}<span class="small">${E(s1.des[0])} of about ${E(s1.des[1])} simulated (heating and cooling year each); ${s1.fac[0]} of ${s1.fac[1]} facades finished</span></div>
+      <div class="pfac">${s1.facs.map(([sc, a]) => { const F = st.fac[sc][a], n = st.prog[sc][a] || 0, dn = F && F.done; return `<span class="pf${dn ? " dn" : ""}" title="${SCLAB[sc]} ${orientLabel(sc, a)}"><b>${orientLabel(sc, a)}</b> <small>${sc === "cellular" ? "cell" : sc === "corner" ? "corner" : "top"}</small>${pbar(n, dn ? n : Math.max(n * 1.05, s1.des[1] / Math.max(1, s1.facs.length)))}<small>${dn ? "done, " : ""}${E(n)}</small></span>`; }).join("")}</div>
+      <div class="prow"><span>Checks</span>${pbar(S0.chk.din[0] + S0.chk.scen[0], S0.chk.din[1] + S0.chk.scen[1])}<span class="small">${dinRule() ? `DIN 4108-2 with the standard's conditions: ${E(S0.chk.din[0])} of ${E(S0.chk.din[1])}; ` : ""}scenarios (+2 °C, poor operation): ${E(S0.chk.scen[0])} of ${E(S0.chk.scen[1])}. Queued once the search is done.</span></div>
+      <p class="small">Carbon needs no runs: it is calculated with each design.</p></div>`;
+    if (s2) h += `<div class="pst"><h3>2. Finer window sizes, in 5% steps</h3>${s2.wait ? `<p class="small">Starts when every facade is searched; about ${mmss(s1.facs.length * (s1.des[1] / Math.max(1, s1.facs.length)) * 0.15 * tPer("refine") / nWork())} more.</p>` : `
+      <div class="prow"><span>Daylight</span>${pbar(s2.dl[0], s2.dl[1])}<span class="small">${E(s2.dl[0])} of ${E(s2.dl[1])} room variants for the new window sizes (${st.wwrFine.map((x) => Math.round(x * 100) + "%").join(", ")})</span></div>
+      <div class="prow"><span>Designs</span>${pbar(s2.fac[0], s2.fac[1])}<span class="small">${s2.phase === "dl" ? "waits for daylight" : `${E(s2.des[0])} designs added; ${s2.fac[0]} of ${s2.fac[1]} facades finished`}</span></div>`}</div>`;
+    return h;
+  }
   // ------------------------------------------------------------ render
   function setStatus(t) { $("status").textContent = t; }
   function renderAll() {
     const units = st.dlTotal * 6 + facTotal() * PEREST;
     let evals = 0, prog = 0; if (st.prog) for (const sc of S.SCENARIOS) st.prog[sc].forEach((n, a) => { evals += n || 0; prog += st.fac && st.fac[sc][a] && st.fac[sc][a].done ? PEREST : Math.min(n || 0, 0.95 * PEREST); });
-    $("bar").style.width = (100 * Math.min(1, (st.dlDone * 6 + prog) / Math.max(1, units))).toFixed(1) + "%";
+    $("bar").style.width = (st.fac && st.tm ? 100 * runState().frac : 100 * Math.min(1, (st.dlDone * 6 + prog) / Math.max(1, units))).toFixed(1) + "%";
     const el = (performance.now() - t0) / 1000, nF = facTotal(), combining = st.types.some((sc) => st.build[sc] && !st.build[sc].done);
     if (st.stale) setStatus("Inputs changed. The results shown are for the previous inputs.");
-    else if (st.running) setStatus(st.dlDone < st.dlTotal ? `Daylight: ${st.dlDone} of ${st.dlTotal} room variants` : facCount() < nF ? `Facades: ${facCount()} of ${nF} searched, ${evals.toLocaleString("en-GB")} options, ${Math.round(el)} s` : `Combining the facades into the building, ${Math.round(el)} s`);
+    else if (st.running) { const R0 = runState(); setStatus(`${Math.round(100 * R0.frac)}%: ${st.dlDone < st.dlTotal ? `daylight ${st.dlDone} of ${st.dlTotal}` : `${evals.toLocaleString("en-GB")} designs, ${facCount()} of ${nF} facades finished`}; ${mmss(R0.el)} so far, about ${mmss(R0.left)} left`); }
     else if (st.fac) setStatus(`${nF} facades, ${st.evals.toLocaleString("en-GB")} options searched (${(2 * st.evals).toLocaleString("en-GB")} simulated years), ${Math.round(st.elapsed || el)} s on ${NW} workers`);
     if (st.running && !st.stale && st.wmode === "inline") $("status").textContent += " (running in the page: slower, and the page pauses while a facade is searched)";
     if (!st.fac) return;
+    if (st.tm) { const rp = runPanelHtml(); $("runp").innerHTML = rp; $("runp").hidden = !rp; }
     if (!facList(st.scen).includes(st.fa)) st.fa = facList(st.scen)[0];
     $("notes").innerHTML = notesHtml(); readingLine();
     maybeTopUp(); renderTypeTabs(); renderV4(); aiConn(); renderFacade();
@@ -4189,6 +4244,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   const reread = () => { if (st.fac) renderAll(); };
   // v16: parameter register and version notes, written into Method and limits from the register itself
   const CHANGES = [
+    ["v16, phase 3.4", "19 Nov 2026", "Progress: a panel at the top of the results while a run is on, with the share done, time so far and time left (from the measured time per daylight variant, per design and per check, over the workers), counts per stage (daylight variants, designs simulated, DIN checks and scenario runs) and a small bar per facade; the finer window sizes in 5% steps have their own block. The status line under Run gives the same in short."],
     ["v16, phase 3.3", "18 Nov 2026", "Facade panel: buttons above the switches for the recommended design, the other packages, the lowest-carbon design and the best design under each priority; each sets all switches, with score gap and carbon on the button. Carbon added to the results beside the switches. Refinement daylight again for every fixed shading type, so the finer window sizes do not favour the shading already picked."],
     ["v16, phase 3.2", "17 Nov 2026", "Faster runs: daylight only for the room types and orientations chosen, refinement daylight only for the fixed shading of the picks, and the search no longer extends the trade-off front from designs far from every target (largest shortfall above 100%). Carbon: the lowest-carbon design that meets every target is searched for after the front and shown with the packages; among designs within 0.01 in score, the one with less whole-life carbon is recommended."],
     ["v16, phase 3.1", "17 Nov 2026", "Other packages: every design that meets every target and differs in two or more measures, best score first, with the score gap shown (the 0.05 band is dropped). Overheating without cooling is named free-running performance (thermal autonomy); it is not a passive survivability check."],

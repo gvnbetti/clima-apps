@@ -133,7 +133,11 @@
     if (!ctx) return; const m = ctx.W0.meta, t = ctx.W0.dbt; let a = 0; for (let i = 0; i < t.length; i++) a += t[i];
     $("wxinfo").textContent = `${m.source || "EPW"}${m.country ? ", " + m.country : ""}; ${m.lat.toFixed(2)}°, ${m.lon.toFixed(2)}°; mean ${(a / t.length).toFixed(1)} °C`;
   }
+  // any failure while reading a file shows in the weather box, never silently
+  addEventListener("unhandledrejection", (e) => showErr("Something went wrong: " + (e.reason && e.reason.message || e.reason)));
+  addEventListener("error", (e) => { if (e.message) showErr("Something went wrong: " + e.message); });
   async function loadFile(file) {
+    $("wxinfo").textContent = `Reading ${file.name}`;
     try {
       const buf = new Uint8Array(await file.arrayBuffer());
       if (/\.zip$/i.test(file.name) || (buf[0] === 0x50 && buf[1] === 0x4b)) {

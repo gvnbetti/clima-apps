@@ -40,6 +40,12 @@ input[type=search]:focus { outline: 2px solid var(--accent); outline-offset: -1p
 .res button, .near button { display: flex; width: 100%; gap: 8px; align-items: baseline; text-align: left; font: 13px var(--f-body); color: var(--ink); background: none; border: 0; border-bottom: 1px solid var(--soft); padding: 7px 10px; cursor: pointer }
 .res button:hover, .near button:hover { background: var(--accent-soft) }
 .res small, .near small { color: var(--mute); font: 12px var(--f-data); margin-left: auto; white-space: nowrap }
+.res .rh { font: 500 10.5px/1 var(--f-data); text-transform: uppercase; letter-spacing: .08em; color: var(--mute); margin: 0; padding: 9px 10px 5px; background: var(--panel) }
+.res .rh.none { text-transform: none; letter-spacing: 0; font: 12px var(--f-body); padding: 6px 10px 9px }
+.res button.place { color: var(--accent); font-weight: 500 }
+.dot.pin { background: var(--ink); border-radius: 50% 50% 50% 0; transform: rotate(-45deg) }
+.leaflet-tile-pane { filter: grayscale(1) contrast(.85) brightness(1.06) }
+@media (prefers-color-scheme: dark) { .leaflet-tile-pane { filter: grayscale(1) invert(1) contrast(.8) brightness(.9) } }
 .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; transform: translateY(1px) }
 .site h2 { font: 600 19px/1.2 var(--f-disp); margin: 0 0 6px }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; margin: 0 0 10px }
@@ -85,8 +91,8 @@ input[type=search]:focus { outline: 2px solid var(--accent); outline-offset: -1p
     </div>
 
     <div class="grp">
-      <p class="lab">Find a station</p>
-      <input type="search" id="q" placeholder="City, airport or country code" autocomplete="off" aria-label="Search stations">
+      <p class="lab">Find a place or station</p>
+      <input type="search" id="q" placeholder="Place, city or station; Enter for places" autocomplete="off" aria-label="Search stations">
       <div class="res" id="res" hidden></div>
       <p class="hint" id="count" style="margin:6px 0 0">Loading stations</p>
     </div>
@@ -112,7 +118,7 @@ input[type=search]:focus { outline: 2px solid var(--accent); outline-offset: -1p
 
     <div class="grp foot">
       Weather files: Climate.OneBuilding.org (Lawrie and Crawley, TMYx and other sets; most files from NOAA ISD and ERA5) and the EnergyPlus weather collection (US DOE). The files keep their sources' terms.
-      Base map: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © <a href="https://carto.com/attributions">CARTO</a>.
+      Base map and place search: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (tiles and Nominatim).
       Station catalogue as in Macro Clima.
     </div>
   </aside>

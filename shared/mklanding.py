@@ -105,7 +105,7 @@ PREV = {'map': svgwrap(mp, 'Weather stations of the world, coloured by climate g
 
 CARDS = [
     ('map', 'Clima', 'Map', 'map/index.html', 'Finds the weather file.',
-     'Some 65,000 stations with typical-year weather files. Search a place or click the map; the nearest stations come with their elevation and climate type, and each file downloads in one click.',
+     'Some 30,000 weather stations with 67,000 typical-year files. Search a place or click the map; the nearest stations come with their elevation and climate type, and each file downloads in one click.',
      ['Typical years from recent periods', 'Nearest stations to any point', 'Climate type of each station']),
     ('macro', 'Macro', 'Clima', 'macro/index.html', 'Reads the weather file.',
      'What the climate asks of a building: temperature and humidity through the year, sun, wind, sky, rain, comfort and the strategies that suit it, with the climate at +1.5, +2 and +3 °C of global warming and the urban heat island.',
@@ -117,14 +117,14 @@ CARDS = [
      'What to build, facade by facade: window size, glazing, shading, ventilation, mass and fans searched against daylight, overheating, energy and whole-life carbon, with the DIN 4108-2 summer check.',
      ['Hourly ISO 52016-1 room model', 'Checked against EnergyPlus and Radiance', 'Packages that meet every target']),
 ]
-FLOW = [('map', 'Find'), ('macro', 'Read'), ('micro', 'Place'), ('room', 'Build')]
+FLOW = [('map', 'Map'), ('macro', 'Macro'), ('micro', 'Micro'), ('room', 'Room')]
 svg = lambda k, s: f'<svg width="{s}" height="{s}" viewBox="0 0 64 64" aria-hidden="true">{A.GLYPH[k].replace("4.5", "3")}</svg>'
 
 cards = ''.join(f'''
   <article class="card" id="{k}">
     <a class="cover" href="{p}">{PREV[k]}</a>
     <div class="body">
-      <h2>{svg(k, 46)}<span><span class="{'b' if a == 'Clima' else 'l'}">{a}</span> <span class="{'b' if b == 'Clima' else 'l'}">{b}</span></span></h2>
+      <h2>{svg(k, 40)}<span><span class="{'b' if a == 'Clima' else 'l'}">{a}</span> <span class="{'b' if b == 'Clima' else 'l'}">{b}</span></span></h2>
       <p class="what">{what}</p>
       <p>{text}</p>
       <ul>{''.join(f'<li>{x}</li>' for x in li)}</ul>
@@ -157,22 +157,22 @@ body {{ margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(
 .hero .sub {{ font-size: 20px; color: var(--mute); margin: 10px 0 0 }}
 .lede {{ grid-column: 1 / -1; max-width: 760px; font-size: 18px; margin: 8px 0 0 }}
 @media (max-width: 640px) {{ .hero {{ grid-template-columns: 1fr; padding-top: 40px; gap: 16px }} .hero .mark svg {{ width: 84px; height: 84px }} }}
-.flow {{ display: flex; align-items: center; gap: 0; margin: 12px 0 56px; flex-wrap: wrap }}
+.flow {{ display: flex; align-items: center; gap: 0; margin: 12px auto 48px; flex-wrap: wrap; max-width: 940px }}
 .step {{ display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 600 15px var(--f-disp); letter-spacing: .02em; text-transform: uppercase; padding: 6px 4px }}
 .step:hover span {{ color: var(--accent) }}
 .arr {{ flex: 1; min-width: 28px; height: 1px; background: var(--line); margin: 0 14px; position: relative }}
 .arr::after {{ content: ""; position: absolute; right: -1px; top: -4px; border: 4.5px solid transparent; border-left: 7px solid var(--line); border-right: 0 }}
-.cards {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px }}
+.cards {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 940px; margin: 0 auto }}
 @media (max-width: 860px) {{ .cards {{ grid-template-columns: 1fr }} }}
 .card {{ background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; scroll-margin-top: 20px }}
 .cover {{ display: block; background: #f6f6f3; border-bottom: 1px solid var(--line) }}
 .pv {{ display: block; width: 100%; height: auto }}
 .pv .t, .pv text {{ font: 10.5px "IBM Plex Mono", monospace; fill: {MUTE} }}
-.body {{ padding: 22px 26px 26px; display: flex; flex-direction: column; flex: 1 }}
-.body h2 {{ display: flex; align-items: center; gap: 14px; margin: 0 0 6px; font-size: 30px; letter-spacing: -.01em; line-height: 1 }}
+.body {{ padding: 18px 22px 22px; display: flex; flex-direction: column; flex: 1 }}
+.body h2 {{ display: flex; align-items: center; gap: 12px; margin: 0 0 6px; font-size: 26px; letter-spacing: -.01em; line-height: 1 }}
 .body h2 .b {{ font-weight: 600 }} .body h2 .l {{ font-weight: 300 }}
 .what {{ font: 500 13px var(--f-data); text-transform: uppercase; letter-spacing: .07em; color: var(--accent); margin: 4px 0 10px }}
-.body p {{ margin: 0 0 12px }}
+.body p {{ margin: 0 0 12px; font-size: 15px }}
 .body ul {{ margin: 0 0 18px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px }}
 .body li {{ font-size: 13px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; color: var(--mute) }}
 .go {{ margin-top: auto; align-self: flex-start; color: #fff; background: var(--accent); text-decoration: none; font-weight: 500; padding: 9px 16px; border-radius: 6px }}
@@ -196,7 +196,7 @@ footer {{ padding: 22px 0 48px; font-size: 13px; color: var(--mute) }}
   <p class="lede">Four tools that carry one weather file from the map to the window. Find the file, read what the climate asks for, test outdoor spaces, then size the room and its facade. Everything runs in your browser.</p>
 </header>
 <main class="wrap">
-  <nav class="flow" aria-label="The four steps">{flow}</nav>
+  <nav class="flow" aria-label="The four apps">{flow}</nav>
   <div class="cards">{cards}</div>
   <section class="facts">
     <div><h3>Checked</h3><p>Room Clima's hourly model is compared with EnergyPlus 24.2 in 216 cases and its daylight with Radiance. Scripts and results are in the <a href="https://github.com/gvnbetti/clima-apps/tree/main/room/validation">repository</a>.</p></div>

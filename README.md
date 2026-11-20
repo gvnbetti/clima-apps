@@ -4,7 +4,7 @@ Four browser tools for climate analysis and design guidance at the early stage o
 
 | App | What it does | Folder | Published as |
 | --- | --- | --- | --- |
-| Clima Map | Finds a weather file: about 65,000 stations on a map, nearest stations to any point, one-click download | `map/` | GitHub Pages only (map tiles) |
+| Clima Map | Finds a weather file: about 30,000 stations and 67,000 files on a map, nearest stations to any point, one-click download | `map/` | GitHub Pages only (map tiles) |
 | Macro Clima | Climate analysis of a weather file: comfort, solar, wind, future climate, urban heat island | `macro/` | Claude artifact (multi-file) |
 | Micro Clima | Site and street-scale climate: outdoor comfort, shading, heat island, future climate | `micro/` | Claude artifact (single file) |
 | Room Clima | Room and facade guidance: searches window size, glazing, shading, ventilation, mass and fans against daylight, comfort, energy and carbon targets; DIN 4108-2 summer check | `room/` | Claude artifact, v16 |
@@ -85,4 +85,4 @@ so the bundled DIN result is indicative. For a formal check, load the TRY file f
 - IBM Plex fonts (SIL Open Font License 1.1), bundled in Room Clima.
 - JSZip 3.10.1 (MIT or GPLv3, used under MIT), bundled in Room Clima; loaded from cdnjs in Micro Clima.
 - fflate (MIT), loaded from jsDelivr in Macro Clima.
-- Leaflet 1.9.4 (BSD-2-Clause), bundled in Clima Map. Base map tiles: OpenStreetMap contributors and CARTO.
+- Leaflet 1.9.4 (BSD-2-Clause), bundled in Clima Map. Base map tiles and place search: OpenStreetMap contributors (tile.openstreetmap.org, Nominatim).

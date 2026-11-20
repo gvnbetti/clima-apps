@@ -19,8 +19,9 @@
   // ------------------------------------------------------------ map
   const dark = matchMedia("(prefers-color-scheme: dark)").matches;
   const map = L.map("map", { worldCopyJump: true, minZoom: 2, maxZoom: 16, zoomControl: true }).setView([30, 10], 3);
-  L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark ? "dark_all" : "light_all"}/{z}/{x}/{y}{r}.png`, {
-    subdomains: "abcd", maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © <a href="https://carto.com/attributions">CARTO</a>' }).addTo(map);
+  // OpenStreetMap standard tiles (no key); toned down to the apps' greys by a CSS filter on the tile pane
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
 
   let cat = null, P0 = null, sel = null, selMark = null, probe = null;
   const color = {};
@@ -96,12 +97,12 @@
     history.replaceState(null, "", "#" + encodeURIComponent(s[2]));
   }
 
-  function nearby(lat, lon) {
+  function nearby(lat, lon, label) {
     const list = []; for (let i = 0; i < cat.sites.length; i++) { const s = cat.sites[i]; if (!show[P0.g[i]]) continue; list.push([km(lat, lon, s[0], s[1]), i]); }
     list.sort((a, b) => a[0] - b[0]); const top = list.slice(0, 8);
     if (probe) probe.remove(); probe = L.circleMarker([lat, lon], { radius: 5, color: css("--ink"), weight: 2, fillOpacity: 0, interactive: false }).addTo(map);
     $("near").hidden = false;
-    $("near").innerHTML = `<p class="lab">Nearest stations to ${deg(lat, "N", "S")}, ${deg(lon, "E", "W")}</p>` +
+    $("near").innerHTML = `<p class="lab">Nearest stations to ${label ? esc(label) : deg(lat, "N", "S") + ", " + deg(lon, "E", "W")}</p>` +
       top.map(([d, i]) => { const s = cat.sites[i]; return `<button type="button" data-i="${i}"><span class="dot" style="background:${color[grp(s[4])]}"></span>${esc(s[2])}<small>${d < 10 ? d.toFixed(1) : Math.round(d)} km${s[3] != null && s[3] !== "" ? " · " + Math.round(s[3]) + " m" : ""}</small></button>`; }).join("") +
       `<p class="hint" style="margin:6px 0 0">Prefer a station with similar surroundings and elevation: a coastal airport and an inland city a few kilometres apart can differ more than the distance suggests.</p>`;
   }
@@ -110,15 +111,38 @@
   // ------------------------------------------------------------ search
   let norm = null;
   const fold = (x) => x.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[._-]+/g, " ");
-  $("q").addEventListener("input", () => {
-    const q = fold($("q").value.trim()), box = $("res"); if (!cat || q.length < 2) { box.hidden = true; return; }
+  let qTimer = null, lastPlaces = null;
+  function stationHits(q) {
     const hit = []; for (let i = 0; i < norm.length && hit.length < 400; i++) { const k = norm[i].indexOf(q); if (k >= 0) hit.push([k === 0 || norm[i][k - 1] === " " ? 0 : 1, norm[i].length, i]); }
-    hit.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-    box.hidden = !hit.length;
-    box.innerHTML = hit.slice(0, 40).map(([, , i]) => { const s = cat.sites[i]; return `<button type="button" data-i="${i}"><span class="dot" style="background:${color[grp(s[4])]}"></span>${esc(s[2])}<small>${esc(s[4] || "")} · ${s[5].length}</small></button>`; }).join("");
+    return hit.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, 25).map((h) => h[2]);
+  }
+  function renderResults() {
+    const raw = $("q").value.trim(), q = fold(raw), box = $("res"); if (!cat || q.length < 2) { box.hidden = true; return; }
+    const st = stationHits(q); let h = "";
+    if (lastPlaces && lastPlaces.q === raw) {
+      h += `<p class="rh">Places</p>` + (lastPlaces.list.length ? lastPlaces.list.map((p, k) => `<button type="button" data-p="${k}"><span class="dot pin"></span>${esc(p.name)}<small>${esc(p.kind)}</small></button>`).join("") : `<p class="rh none">${lastPlaces.err ? "Place search did not answer. Try again in a moment." : "No place found."}</p>`);
+    } else h += `<button type="button" class="place" data-search="1">Search places named “${esc(raw)}” <small>Enter</small></button>`;
+    h += `<p class="rh">Stations</p>` + (st.length ? st.map((i) => { const s = cat.sites[i]; return `<button type="button" data-i="${i}"><span class="dot" style="background:${color[grp(s[4])]}"></span>${esc(s[2])}<small>${esc(s[4] || "")} · ${s[5].length}</small></button>`; }).join("") : `<p class="rh none">No station name matches.</p>`);
+    box.innerHTML = h; box.hidden = false;
+  }
+  async function searchPlaces() {
+    const raw = $("q").value.trim(); if (raw.length < 2) return;
+    lastPlaces = { q: raw, list: [] }; $("res").querySelector(".place") && ($("res").querySelector(".place").textContent = "Searching places");
+    try {
+      const r = await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=en&q=" + encodeURIComponent(raw));
+      const j = await r.json();
+      lastPlaces.list = j.map((x) => ({ name: x.display_name.split(", ").slice(0, 3).join(", "), kind: (x.addresstype || x.type || "").replace(/_/g, " "), lat: +x.lat, lon: +x.lon }));
+    } catch (e) { lastPlaces.list = []; lastPlaces.err = true; }
+    renderResults();
+  }
+  $("q").addEventListener("input", () => { clearTimeout(qTimer); qTimer = setTimeout(renderResults, 120); });
+  $("q").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); searchPlaces(); } });
+  $("res").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.search) { searchPlaces(); return; }
+    if (b.dataset.p != null) { const p = lastPlaces.list[+b.dataset.p]; map.setView([p.lat, p.lon], 10); nearby(p.lat, p.lon, p.name); $("res").hidden = true; return; }
+    if (b.dataset.i != null) { select(+b.dataset.i, true); $("res").hidden = true; }
   });
-  $("q").addEventListener("keydown", (e) => { if (e.key === "Enter") { const b = $("res").querySelector("button"); if (b) b.click(); } });
-  $("res").addEventListener("click", (e) => { const b = e.target.closest("button[data-i]"); if (!b) return; select(+b.dataset.i, true); $("res").hidden = true; });
 
   // ------------------------------------------------------------ legend
   function legend() {
@@ -133,7 +157,15 @@
     const b64 = js.slice(js.indexOf('"') + 1, js.lastIndexOf('"')), bin = atob(b64), buf = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
     const txt = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
-    const c = JSON.parse(txt); c.sites = c.sites.filter((s) => Math.abs(s[0]) <= 90 && Math.abs(s[1]) <= 180 && s[5] && s[5].length);
+    const c = JSON.parse(txt), byKey = new Map();
+    // the catalogue lists some stations once per source folder: merge entries with the same name within about 2 km
+    for (const s of c.sites) {
+      if (!(Math.abs(s[0]) <= 90 && Math.abs(s[1]) <= 180 && s[5] && s[5].length)) continue;
+      const k = s[2] + "|" + Math.round(s[0] * 50) + "|" + Math.round(s[1] * 50), o = byKey.get(k);
+      if (!o) byKey.set(k, [s[0], s[1], s[2], s[3], s[4], s[5].slice()]);
+      else { for (const f of s[5]) if (!o[5].some((g) => g[1] === f[1])) o[5].push(f); if (!o[4] && s[4]) o[4] = s[4]; if (o[3] == null) o[3] = s[3]; }
+    }
+    c.sites = [...byKey.values()];
     const n = c.sites.length, x = new Float64Array(n), y = new Float64Array(n), g = new Array(n);
     for (let i = 0; i < n; i++) { const s = c.sites[i], la = Math.max(-85, Math.min(85, s[0])) * rad; x[i] = (s[1] + 180) / 360; y[i] = (1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2; g[i] = grp(s[4]); }
     cat = c; P0 = { x, y, g }; norm = c.sites.map((s) => fold(s[2]));

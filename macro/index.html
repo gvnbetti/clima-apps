@@ -175,7 +175,7 @@ table.t td.r, table.t th.r { text-align: right; font-family: var(--f-data) }
         <select id="bundled" aria-label="Bundled weather files"></select>
         <button class="btn" id="openmap">Find a station on the map</button>
         <label class="drop" id="drop" tabindex="0">Drop an EPW or a OneBuilding ZIP here, or click to choose
-          <input type="file" id="file" accept=".epw,.zip" hidden></label>
+          <input type="file" id="file" accept=".epw,.zip,application/zip,application/octet-stream,text/plain" hidden></label>
         <div class="err" id="loaderr" hidden></div>
       </div>
       <div class="grp">
@@ -242,7 +242,7 @@ table.t td.r, table.t th.r { text-align: right; font-family: var(--f-data) }
     <div id="mapinfo" class="hint">Drag to move, scroll or pinch to zoom, click a dot to see its files. The station files come from Climate.OneBuilding.Org. This page cannot download them itself, so each one opens as a link: save the ZIP, then drop it in the box at the left.</div>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+<script src="vendor/fflate-0.8.2/index.js"></script>
 <script src="core.js"></script>
 <script src="anchors.js"></script>
 <script src="kit.js"></script>

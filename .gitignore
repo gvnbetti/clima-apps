@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
+# local EnergyPlus and Radiance runs
+runs/
+ref/
+*.mtx
+*.npy
+# standard texts are kept outside the repository
+*.pdf

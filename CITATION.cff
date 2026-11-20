@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use these tools or their validation, please cite them as below."
+title: "Clima apps: Macro Clima, Micro Clima and Room Clima"
+authors:
+  - family-names: Betti
+    given-names: Giovanni
+license: MIT
+repository-code: "https://github.com/gvnbetti/clima-apps"
+url: "https://gvnbetti.github.io/clima-apps/"
+date-released: 2026-11-20

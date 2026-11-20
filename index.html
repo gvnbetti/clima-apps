@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clima apps</title>
+<meta name="description" content="Three browser tools for climate analysis and design guidance at the early stage of architectural projects.">
+<style>
+  :root { --ink: #1c1c1a; --mute: #6b6a65; --line: #d9d7d0; --bg: #f7f6f2; --accent: #2f5d50; }
+  @media (prefers-color-scheme: dark) { :root { --ink: #ecebe6; --mute: #a3a29c; --line: #3a3a37; --bg: #161615; --accent: #8fc3b2; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 64px 24px 48px; }
+  h1 { font-size: 30px; font-weight: 600; margin: 0 0 12px; letter-spacing: -0.01em; }
+  p.lead { color: var(--mute); margin: 0 0 40px; }
+  a.app { display: block; padding: 22px 0; border-top: 1px solid var(--line); color: inherit; text-decoration: none; }
+  a.app:last-of-type { border-bottom: 1px solid var(--line); }
+  a.app h2 { font-size: 20px; font-weight: 600; margin: 0 0 4px; color: var(--accent); }
+  a.app:hover h2 { text-decoration: underline; }
+  a.app p { margin: 0; }
+  footer { margin-top: 40px; font-size: 14px; color: var(--mute); }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Clima apps</h1>
+  <p class="lead">Climate analysis and design guidance for the early stage of architectural projects. Everything runs in the browser. Nothing leaves it unless you use the optional AI assistant with your own API key.</p>
+
+  <a class="app" href="macro/index.html">
+    <h2>Macro Clima</h2>
+    <p>Reads a weather file: comfort, sun, wind, future climate and urban heat island.</p>
+  </a>
+  <a class="app" href="micro/index.html">
+    <h2>Micro Clima</h2>
+    <p>Site and street scale: outdoor comfort, shading, surfaces and heat island.</p>
+  </a>
+  <a class="app" href="room/build/index.html">
+    <h2>Room Clima</h2>
+    <p>Room and facade: searches window size, glazing, shading, ventilation, mass and fans against daylight, comfort, energy and whole-life carbon targets, with the DIN 4108-2 summer check.</p>
+  </a>
+
+  <footer>
+    Giovanni Betti. Code under MIT, documentation and validation under CC BY 4.0.
+    Source, validation and notes: <a href="https://github.com/gvnbetti/clima-apps">github.com/gvnbetti/clima-apps</a>.
+    Bundled weather: TMYx (Lawrie and Crawley, climate.onebuilding.org) and TMY3 (NREL).
+  </footer>
+</main>
+</body>
+</html>

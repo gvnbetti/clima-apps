@@ -1,20 +1,20 @@
-/* Macro Clima: page logic. Loading, the reading, chart cards, filter, exports, station map, explorer, Claude Inspection. */
+/* Macro Clima: page logic. Loading, the reading, chart cards, filter, exports, explorer, Claude Inspection. */
 (function () {
   "use strict";
   const C = window.Clima, K = window.K, S = window.Sections, fmt = K.fmt, esc = K.esc, N = C.N;
   const $ = (id) => document.getElementById(id);
   const BUNDLED = [
-    ["data/epw/DEU_BE_Berlin-Tegel.AP.103820_TMYx.epw.txt", "Berlin, Germany", "Berlin-Tegel Airport, Germany"],
-    ["data/epw/GBR_ENG_London.Wea.Ctr-St.James.Park.037700_TMYx.epw.txt", "London, UK", "London St James's Park, UK"],
-    ["data/epw/RUS_MOS_Moscow-Bibirevo.276120_TMYx.epw.txt", "Moscow, Russia", "Moscow-Bibirevo, Russia"],
-    ["data/epw/ESP_MD_Madrid.WS.082200_TMYx.epw.txt", "Madrid, Spain", "Madrid, Spain"],
-    ["data/epw/ITA_LZ_Rome.162400_TMYx.epw.txt", "Rome, Italy", "Rome, Italy"],
-    ["data/epw/EGY_QH_Cairo.Intl.AP.623660_TMYx.epw.txt", "Cairo, Egypt", "Cairo International Airport, Egypt"],
-    ["data/epw/ARE_DU_Dubai.Intl.AP.411940_TMYx.epw.txt", "Dubai, UAE", "Dubai International Airport, UAE"],
-    ["data/epw/IND_MH_Mumbai-Shivaji.Intl.AP.430030_TMYx.epw.txt", "Mumbai, India", "Mumbai Chhatrapati Shivaji Airport, India"],
-    ["data/epw/SGP_SG_Singapore-Changi.Intl.AP.486980_Custom.epw.txt", "Singapore", "Singapore Changi Airport"],
-    ["data/epw/CHN_SH_Shanghai-Hongqiao.Intl.AP.583670_TMYx.epw.txt", "Shanghai, China", "Shanghai Hongqiao Airport, China"],
-    ["data/epw/MEX_CMX_Ciudad.Mexico.Central.766800_TMYx.epw.txt", "Mexico City, Mexico", "Mexico City Central, Mexico"]];
+    ["data/epw/DEU_BE_Berlin-Tegel.AP.103820_TMYx.epw.txt", "Berlin, Germany", "Berlin-Tegel Airport, Germany", "Cfb"],
+    ["data/epw/GBR_ENG_London.Wea.Ctr-St.James.Park.037700_TMYx.epw.txt", "London, UK", "London St James's Park, UK", "Cfb"],
+    ["data/epw/RUS_MOS_Moscow-Bibirevo.276120_TMYx.epw.txt", "Moscow, Russia", "Moscow-Bibirevo, Russia", "Dfb"],
+    ["data/epw/ESP_MD_Madrid.WS.082200_TMYx.epw.txt", "Madrid, Spain", "Madrid, Spain", "Csa"],
+    ["data/epw/ITA_LZ_Rome.162400_TMYx.epw.txt", "Rome, Italy", "Rome, Italy", "Csa"],
+    ["data/epw/EGY_QH_Cairo.Intl.AP.623660_TMYx.epw.txt", "Cairo, Egypt", "Cairo International Airport, Egypt", "BWh"],
+    ["data/epw/ARE_DU_Dubai.Intl.AP.411940_TMYx.epw.txt", "Dubai, UAE", "Dubai International Airport, UAE", "BWh"],
+    ["data/epw/IND_MH_Mumbai-Shivaji.Intl.AP.430030_TMYx.epw.txt", "Mumbai, India", "Mumbai Chhatrapati Shivaji Airport, India", "Am"],
+    ["data/epw/SGP_SG_Singapore-Changi.Intl.AP.486980_Custom.epw.txt", "Singapore", "Singapore Changi Airport", "Af"],
+    ["data/epw/CHN_SH_Shanghai-Hongqiao.Intl.AP.583670_TMYx.epw.txt", "Shanghai, China", "Shanghai Hongqiao Airport, China", "Cfa"],
+    ["data/epw/MEX_CMX_Ciudad.Mexico.Central.766800_TMYx.epw.txt", "Mexico City, Mexico", "Mexico City Central, Mexico", "Cwb"]];
   const st = { fut: 0, uhi: { on: false, preset: "urban", svf: 0.6, fveg: 0.2 }, range: "local", scaleOv: {}, axisOv: {}, hdd: 15, cdd: 18, gtz: false, adm: "en2", filter: { m1: 1, m2: 12, h1: 0, h2: 23 }, ui: {}, nv: { tMin: 10, tMax: 24, dpMax: 16 }, cc: JSON.parse(JSON.stringify(C.CC_DEFAULT)), ccSel: new Set(["comfort", "internal", "solarLow", "fan", "natVent", "mass"]), ex: { v: "dbt", x: "dbt", y: "rh", c: "ghi", fv: "ws", fmin: "", fmax: "" }, insp: null };
   let ctx = null, catalogue = null, catPromise = null;
   const files = []; // the data model holds several files; the page shows the first. Comparison will use the second.
@@ -32,7 +32,7 @@
     ctx = makeCtx(P.W, X, name, label); ctx.W0 = W; ctx.uhi = P.uhi; ctx.fut = P.fut;
     console.log("processed in", Math.round(performance.now() - t0), "ms");
     st.insp = null;
-    render(); uhiSync(); futSync();
+    render(); uhiSync(); futSync(); wxInfo();
   }
   // urban heat island (Theeuwes et al. 2017, as in Micro Clima): raise air temperature, hold vapour pressure
   function prepWeather(W0, level, withUhi) {
@@ -119,15 +119,28 @@
     return catPromise;
   }
   async function loadBundled(i) { const [url, label, nice] = BUNDLED[i]; $("main").innerHTML = `<div class="loading">Loading ${esc(label)}</div>`; const r = await fetch(url); const t = await r.text(); await loadText(t, url.split("/").pop().replace(/\.txt$/, ""), nice); }
+  const UPL = []; // files the user loaded in this session, listed after the bundled ones as in Micro and Room Clima
+  function fillWx(sel) {
+    $("bundled").innerHTML = BUNDLED.map((b, i) => `<option value="${i}">${esc(b[1])} (${b[3]})</option>`).join("") + UPL.map((u, k) => `<option value="u${k}">${esc(u.label)}</option>`).join("");
+    if (sel != null) $("bundled").value = sel;
+  }
+  function addUpload(text, name) {
+    const ok = !!ctx && ctx.name === name; if (!ok) return;
+    const m = ctx.W0.meta, kg = ctx.site && ctx.site.kg ? ` (${ctx.site.kg})` : "";
+    UPL.push({ text, name, label: (m.city || name.replace(/\.epw$/i, "")).replace(/[._]+/g, " ").trim() + kg }); fillWx("u" + (UPL.length - 1));
+  }
+  function wxInfo() {
+    if (!ctx) return; const m = ctx.W0.meta, t = ctx.W0.dbt; let a = 0; for (let i = 0; i < t.length; i++) a += t[i];
+    $("wxinfo").textContent = `${m.source || "EPW"}${m.country ? ", " + m.country : ""}; ${m.lat.toFixed(2)}°, ${m.lon.toFixed(2)}°; mean ${(a / t.length).toFixed(1)} °C`;
+  }
   async function loadFile(file) {
     try {
       const buf = new Uint8Array(await file.arrayBuffer());
       if (/\.zip$/i.test(file.name) || (buf[0] === 0x50 && buf[1] === 0x4b)) {
         const z = window.fflate.unzipSync(buf); const k = Object.keys(z).find((n) => /\.epw$/i.test(n));
         if (!k) { showErr("The ZIP holds no EPW file."); return; }
-        await loadText(new TextDecoder("windows-1252").decode(z[k]), k.split("/").pop());
-      } else await loadText(new TextDecoder("windows-1252").decode(buf), file.name);
-      $("bundled").value = "";
+        const text = new TextDecoder("windows-1252").decode(z[k]), name = k.split("/").pop(); await loadText(text, name); addUpload(text, name);
+      } else { const text = new TextDecoder("windows-1252").decode(buf); await loadText(text, file.name); addUpload(text, file.name); }
     } catch (e) { showErr("The file could not be read: " + e.message); }
   }
 
@@ -901,8 +914,8 @@
   }
 
   function initControls() {
-    $("bundled").innerHTML = `<option value="">Choose a bundled file</option>` + BUNDLED.map((b, i) => `<option value="${i}">${esc(b[1])}</option>`).join("");
-    $("bundled").addEventListener("change", (e) => { if (e.target.value !== "") loadBundled(+e.target.value); });
+    fillWx();
+    $("bundled").addEventListener("change", (e) => { const v = e.target.value; if (v[0] === "u") { const u = UPL[+v.slice(1)]; loadText(u.text, u.name); } else loadBundled(+v); });
     const mo = C.MONTHS.map((m, k) => `<option value="${k + 1}">${m}</option>`).join(""), ho = Array.from({ length: 24 }, (_, h) => `<option value="${h}">${String(h).padStart(2, "0")}:00</option>`).join("");
     $("m1").innerHTML = mo; $("m2").innerHTML = mo; $("h1").innerHTML = ho; $("h2").innerHTML = Array.from({ length: 24 }, (_, h) => `<option value="${h}">${String(h + 1).padStart(2, "0")}:00</option>`).join("");
     $("m1").value = 1; $("m2").value = 12; $("h1").value = 0; $("h2").value = 23;
@@ -924,59 +937,12 @@
     $("windkmh").addEventListener("change", () => { K.U.wind = $("windkmh").checked ? "kmh" : "ms"; unitApply(); });
     $("gtz").addEventListener("change", () => { st.gtz = $("gtz").checked; st.gtzTouched = true; if (ctx) refreshSummaries(); });
     const drop = $("drop"), file = $("file");
-    drop.addEventListener("click", (e) => { if (e.target !== file) file.click(); });
-    drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); file.click(); } });
     file.addEventListener("change", () => { if (file.files[0]) loadFile(file.files[0]); file.value = ""; });
     ["dragover", "dragenter"].forEach((n) => drop.addEventListener(n, (e) => { e.preventDefault(); drop.classList.add("over"); }));
     ["dragleave", "drop"].forEach((n) => drop.addEventListener(n, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
     drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
     document.addEventListener("dragover", (e) => e.preventDefault()); document.addEventListener("drop", (e) => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files[0]; if (f && !drop.contains(e.target)) loadFile(f); });
-    $("openmap").addEventListener("click", openMap); $("mapclose").addEventListener("click", () => ($("mapmodal").hidden = true));
-    $("mapmodal").addEventListener("click", (e) => { if (e.target.id === "mapmodal") $("mapmodal").hidden = true; });
     $("inspect").addEventListener("click", inspect);
-  }
-
-  /* ---------------- station map (no tiles: the page may not load remote images) ---------------- */
-  let world = null, mv = { lon: 10, lat: 30, z: 3 }, sel = null;
-  async function openMap() {
-    $("mapmodal").hidden = false; const cv = $("map");
-    await catalogueReady();
-    if (!world) { try { const r = await fetch("data/world.json"); const j = await r.json(); world = { land: dec(j.land), borders: dec(j.borders) }; } catch (e) { world = { land: [], borders: [] }; } }
-    if (ctx) { mv.lon = ctx.W.meta.lon; mv.lat = ctx.W.meta.lat; mv.z = 8; }
-    sizeMap(); drawMap();
-    if (!cv._wired) wireMap(cv);
-  }
-  function dec(b64) { const bin = atob(b64), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); const a = new Int16Array(u8.buffer), out = []; let i = 0; while (i < a.length) { const n = a[i++], r = new Float32Array(n * 2); for (let k = 0; k < n * 2; k++) r[k] = a[i++] / 100; out.push(r); } return out; }
-  function sizeMap() { const cv = $("map"), r = cv.getBoundingClientRect(), d = devicePixelRatio || 1; cv.width = r.width * d; cv.height = r.height * d; }
-  const kx = () => Math.cos(Math.max(-70, Math.min(70, mv.lat)) * Math.PI / 180);
-  const proj = (lon, lat, cv) => { const d = devicePixelRatio || 1; return [cv.width / 2 + (lon - mv.lon) * mv.z * kx() * d, cv.height / 2 - (lat - mv.lat) * mv.z * d]; };
-  const unproj = (x, y, cv) => { const d = devicePixelRatio || 1; return [mv.lon + (x * d - cv.width / 2) / (mv.z * kx() * d), mv.lat - (y * d - cv.height / 2) / (mv.z * d)]; };
-  function drawMap() {
-    const cv = $("map"), g = cv.getContext("2d"), cs = getComputedStyle(document.documentElement), d = devicePixelRatio || 1;
-    g.fillStyle = cs.getPropertyValue("--bg"); g.fillRect(0, 0, cv.width, cv.height);
-    const path = (r, close) => { g.beginPath(); for (let k = 0; k < r.length; k += 2) { const [x, y] = proj(r[k], r[k + 1], cv); if (k) g.lineTo(x, y); else g.moveTo(x, y); } if (close) g.closePath(); };
-    g.fillStyle = cs.getPropertyValue("--soft"); for (const r of world.land) { path(r, true); g.fill(); }
-    g.strokeStyle = cs.getPropertyValue("--line"); g.lineWidth = 1; for (const r of world.borders) { path(r, false); g.stroke(); }
-    g.fillStyle = cs.getPropertyValue("--accent"); g.globalAlpha = mv.z > 6 ? 0.85 : 0.55; const sz = Math.max(1.5, Math.min(5, mv.z / 3)) * d;
-    for (const s of catalogue.sites) { const [x, y] = proj(s[1], s[0], cv); if (x < -5 || y < -5 || x > cv.width + 5 || y > cv.height + 5) continue; g.fillRect(x - sz / 2, y - sz / 2, sz, sz); }
-    g.globalAlpha = 1;
-    if (sel) { const [x, y] = proj(sel[1], sel[0], cv); g.strokeStyle = cs.getPropertyValue("--warm"); g.lineWidth = 2.5 * d; g.beginPath(); g.arc(x, y, 7 * d, 0, 7); g.stroke(); }
-  }
-  function wireMap(cv) {
-    cv._wired = true; let drag = null, moved = false;
-    cv.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, lon: mv.lon, lat: mv.lat }; moved = false; cv.setPointerCapture(e.pointerId); });
-    cv.addEventListener("pointermove", (e) => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) moved = true; mv.lon = drag.lon - dx / (mv.z * kx()); mv.lat = Math.max(-85, Math.min(85, drag.lat + dy / mv.z)); drawMap(); });
-    cv.addEventListener("pointerup", (e) => { const was = drag; drag = null; if (was && !moved) pick(e); });
-    cv.addEventListener("wheel", (e) => { e.preventDefault(); const r = cv.getBoundingClientRect(), [lo, la] = unproj(e.clientX - r.left, e.clientY - r.top, cv); const f = e.deltaY < 0 ? 1.25 : 0.8; mv.z = Math.max(2, Math.min(400, mv.z * f)); const [lo2, la2] = unproj(e.clientX - r.left, e.clientY - r.top, cv); mv.lon += lo - lo2; mv.lat += la - la2; drawMap(); }, { passive: false });
-    addEventListener("resize", () => { if (!$("mapmodal").hidden) { sizeMap(); drawMap(); } });
-    $("mapsearch").addEventListener("input", () => { const q = $("mapsearch").value.trim().toLowerCase(), box = $("mapresults"); if (q.length < 2) { box.hidden = true; return; } const res = catalogue.sites.filter((s) => s[2].toLowerCase().includes(q)).sort((a, b) => (b[2].toLowerCase().startsWith(q) - a[2].toLowerCase().startsWith(q))).slice(0, 40); box.hidden = !res.length; box.innerHTML = res.map((s, k) => `<div data-k="${catalogue.sites.indexOf(s)}">${esc(s[2])} · ${s[4] || ""} · ${s[5].length} file${s[5].length > 1 ? "s" : ""}</div>`).join(""); });
-    $("mapresults").addEventListener("click", (e) => { const d = e.target.closest("div[data-k]"); if (!d) return; const s = catalogue.sites[+d.dataset.k]; mv.lon = s[1]; mv.lat = s[0]; mv.z = Math.max(mv.z, 40); showSite(s); $("mapresults").hidden = true; });
-  }
-  function pick(e) { const cv = $("map"), r = cv.getBoundingClientRect(), d = devicePixelRatio || 1, px = (e.clientX - r.left) * d, py = (e.clientY - r.top) * d; let best = null, bd = (10 * d) ** 2; for (const s of catalogue.sites) { const [x, y] = proj(s[1], s[0], cv), q = (x - px) ** 2 + (y - py) ** 2; if (q < bd) { bd = q; best = s; } } if (best) showSite(best); }
-  function showSite(s) {
-    sel = s; drawMap();
-    const url = (f) => catalogue.hosts[catalogue.dirs[f[0]][0]] + catalogue.dirs[f[0]][1] + "/" + f[1];
-    $("mapinfo").innerHTML = `<b>${esc(s[2])}</b> · ${fmt(Math.abs(s[0]), 2)}° ${s[0] >= 0 ? "N" : "S"}, ${fmt(Math.abs(s[1]), 2)}° ${s[1] >= 0 ? "E" : "W"} · ${s[3] != null ? fmt(s[3]) + " m" : ""} · Köppen ${esc(s[4] || "–")}${S.KOPPEN[s[4]] ? ", " + S.KOPPEN[s[4]] : ""}<br>${s[5].map((f) => `<a href="${esc(url(f))}" target="_blank" rel="noopener">${esc(f[2] || f[1])}</a>`).join(" · ")}<br><span class="hint">Open a link to download the ZIP, then drop it in the box at the left. The page cannot fetch files from other sites itself.</span>`;
   }
 
   /* ---------------- Claude Inspection ---------------- */
@@ -1014,6 +980,6 @@ ${JSON.stringify(facts, (k, v) => (typeof v === "number" ? +v.toFixed(2) : v))}`
   K.axisOv = st.axisOv;
   initControls();
   catalogueReady();
-  loadBundled(0).then(() => ($("bundled").value = "0"));
+  loadBundled(0).then(() => fillWx("0"));
   window.__clima = { st, get ctx() { return ctx; }, loadText };
 })();

@@ -51,7 +51,9 @@ select { width: 100% }
 .row { display: flex; gap: 6px; align-items: center }
 .row > * { flex: 1 }
 .row label { flex: 0 0 auto; font-size: 12px; color: var(--mute) }
-.drop { border: 1px dashed var(--border, var(--line)); border-radius: 4px; padding: 10px; text-align: center; color: var(--mute); font-size: 12px; cursor: pointer }
+.drop { border: 1px dashed var(--line); border-radius: 4px; padding: 8px; font-size: 12.5px; color: var(--mute); text-align: center }
+.drop label { color: var(--accent); cursor: pointer; text-decoration: underline }
+.small { font-size: 12px; color: var(--mute); line-height: 1.4 }
 .drop.over { border-color: var(--accent); color: var(--accent) }
 .err { color: var(--warm); font-size: 12px }
 /* main */
@@ -105,10 +107,6 @@ table.t td.r, table.t th.r { text-align: right; font-family: var(--f-data) }
 .modal .box { background: var(--panel); border-radius: 8px; width: min(1180px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px }
 .modal .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap }
 .modal .bar h2 { font: 600 18px var(--f-disp); margin: 0; flex: 1 }
-#mapwrap { position: relative; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--bg); touch-action: none }
-#map { display: block; width: 100%; height: min(60vh, 560px); cursor: grab }
-#mapinfo { font-size: 13px }
-#mapinfo a { color: var(--accent) }
 .results { max-height: 180px; overflow: auto; border: 1px solid var(--soft); border-radius: 4px }
 .results div { padding: 4px 8px; cursor: pointer; font-size: 13px }
 .results div:hover { background: var(--accent-soft) }
@@ -171,12 +169,10 @@ table.t td.r, table.t th.r { text-align: right; font-family: var(--f-data) }
   <div class="grid">
     <aside id="aside">
       <div class="grp">
-        <div class="lab">Weather file</div>
-        <select id="bundled" aria-label="Bundled weather files"></select>
-        <button class="btn" id="openmap">Find a station on the map</button>
-        <label class="drop" id="drop" tabindex="0">Drop an EPW or a OneBuilding ZIP here, or click to choose
-          <input type="file" id="file" accept=".epw,.zip,application/zip,application/octet-stream,text/plain" hidden></label>
-        <div class="err" id="loaderr" hidden></div>
+        <span class="lab">Weather</span>
+        <select id="bundled" aria-label="Weather file"></select>
+        <div class="drop" id="drop">Drop an EPW file here or <label for="file">choose one</label><input id="file" type="file" accept=".epw,.zip,application/zip,application/octet-stream,text/plain" hidden></div>
+        <span class="small" id="wxinfo"></span><span class="err" id="loaderr" hidden></span>
       </div>
       <div class="grp">
         <div class="lab">Filter for the charts</div>
@@ -234,14 +230,6 @@ table.t td.r, table.t th.r { text-align: right; font-family: var(--f-data) }
 <div id="scrim" hidden></div>
 <aside id="guide" aria-label="Guide" aria-hidden="true"></aside>
 <div id="rangepop" hidden><div class="lab" id="rpTitle">Range</div><div class="row"><label>Min</label><input type="number" step="any" id="rpLo"><label>Max</label><input type="number" step="any" id="rpHi"></div><div class="row"><button class="btn small primary" id="rpApply">Apply</button><button class="btn small" id="rpReset">Automatic</button><button class="btn small" id="rpClose">Close</button></div></div>
-<div class="modal" id="mapmodal" hidden>
-  <div class="box">
-    <div class="bar"><h2>Find a station</h2><input type="text" id="mapsearch" placeholder="Search by name, e.g. Berlin" style="flex:1;min-width:200px"><button class="btn" id="mapclose">Close</button></div>
-    <div class="results" id="mapresults" hidden></div>
-    <div id="mapwrap"><canvas id="map"></canvas></div>
-    <div id="mapinfo" class="hint">Drag to move, scroll or pinch to zoom, click a dot to see its files. The station files come from Climate.OneBuilding.Org. This page cannot download them itself, so each one opens as a link: save the ZIP, then drop it in the box at the left.</div>
-  </div>
-</div>
 <script src="vendor/fflate-0.8.2/index.js"></script>
 <script src="core.js"></script>
 <script src="anchors.js"></script>

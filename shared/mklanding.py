@@ -202,7 +202,7 @@ footer {{ padding: 22px 0 48px; font-size: 13px; color: var(--mute) }}
   <nav class="flow" aria-label="The four apps">{flow}</nav>
   <div class="cards">{cards}</div>
   <section class="facts">
-    <div><h3>Checked</h3><p>Every model is checked against an established tool: the room model against EnergyPlus and ASHRAE Standard 140, daylight against Radiance, outdoor comfort against Ladybug, and the climate calculations against pvlib, pythermalcomfort and the IPCC Atlas data. Reports and scripts are in the <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation">repository</a>.</p></div>
+    <div><h3>Checked</h3><p>Every model is checked against an established tool: the room model against EnergyPlus and ASHRAE Standard 140, daylight against Radiance, outdoor comfort against Ladybug, and the climate calculations against pvlib, pythermalcomfort and the IPCC Atlas data. See the <a href="validation.html">validation page</a> for the results and their limits.</p></div>
     <div><h3>Weather</h3><p>Typical-year files from Climate.OneBuilding.org (Lawrie and Crawley) and the EnergyPlus collection. Future climate from the IPCC AR6 Atlas. Your own EPW files work in every app and never leave your computer.</p></div>
     <div><h3>Open</h3><p>Code under the MIT licence, notes and validation under CC BY 4.0. Source, history and citation on <a href="https://github.com/gvnbetti/clima-toolbox">GitHub</a>.</p></div>
   </section>

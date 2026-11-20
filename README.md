@@ -33,6 +33,7 @@ shared/       mkmods.py: generates room/src/climamods.js from Macro Clima, so al
               weather record; addbar.py: the Clima Toolbox bar at the top of every app (rerun after
               editing it: map, macro, micro, and room/src/shell.html, then rebuild Room);
               mklanding.py: writes index.html, previews drawn from the repository's data;
+              mkvalidation.py: writes validation.html from validation/README.md;
               fonts/ (IBM Plex, OFL), icons/ (the five logos)
 docs/         methods/: what each app computes, with its models, assumptions and sources
 validation/   verification and validation of every model, by model: reports, scripts and results

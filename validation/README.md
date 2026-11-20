@@ -14,6 +14,18 @@ results; the scripts that produce them; and the result files they write. Every s
 | Urban heat island | Macro, Micro, Room Clima | Theeuwes et al. 2017, independent implementation | identical within 0.0001 K (Macro, Room); Micro within 0.03 K at night | `urban-heat-island/` |
 | Outdoor comfort | Micro Clima | pvlib, pythermalcomfort, exact solutions; Ladybug Tools | UTCI and SolarCal identical; sun within 0.4°; ranking of 70 designs 0.97 against Ladybug | `outdoor-comfort/` |
 
+## Known limits
+- Future climate: the shipped table differs from the reconstructed calculation by 0.05 K on average and up to about
+  0.5 K in single months; monthly mean shifts are up to 0.18 K off after morphing; sky infrared rises by 10.4 W/m²
+  where pyepwmorph gives 12.8 W/m². Corrections are under review.
+- Micro Clima computes the urban heat island with its own sun position: up to 0.77 K apart from Macro Clima in at most
+  2.2 % of hours, around sunrise and sunset.
+- Room Clima's hourly model is tuned to its own rooms: in the Standard 140 test box it reaches 32 of 44 ranges and
+  overestimates cooling by 12.7 %.
+- Not yet checked independently: the Givoni-Milne strategy zones of Macro Clima, and the German national annex comfort
+  band (DIN EN 16798-1/NA), for which no open reference exists.
+- Daylight blinds are modelled as a diffusing layer; the angle dependence of venetian slats is not modelled.
+
 Verification checks that the code computes the model it claims to. Validation compares the model with another
 established model. Neither compares the tools with measured buildings or outdoor spaces; that is beyond the scope of
 these studies.

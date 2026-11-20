@@ -757,8 +757,8 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
     "carbon.mass": { v: { light: 0, medium: 15, heavy: 45, vheavy: 60 }, unit: "kg CO₂e per m² of floor, against light construction", status: "assumption", src: "Rough generic values: masonry walls; concrete slab exposed instead of a timber slab with a suspended ceiling. The least certain factor", text: "Thermal mass class: extra material against a light construction" },
     "carbon.fan": { v: { unit: 35, area: 12, life: 15 }, unit: "kg CO₂e per fan, m² of floor per fan, years", status: "assumption", src: "Generic value for a ceiling fan with motor", text: "Ceiling fans with replacements over 50 years" },
     "carbon.night": { v: { window: 15, storey: 5, life: 20 }, unit: "kg CO₂e per facade (tilt restrictor and actuator), per m² floor (vents across storeys), years", status: "assumption", src: "Generic values", text: "Night ventilation hardware with replacements over 50 years" },
-    "blind.ext": { v: { fc: "DIN 4108-2 Table 7", tau: 0.10 }, unit: "F_C, light transmittance", status: "assumption", src: "F_C: DIN 4108-2 Table 7 row 3.2.1 (0.25; 0.30 with solar control glass). Light transmittance: assumption", text: "Exterior blind (venetian blind at 45°): solar factor and daylight let through when down. Both editable" },
-    "blind.int": { v: { fc: "DIN 4108-2 Table 7", tau: 0.25 }, unit: "F_C, light transmittance", status: "assumption", src: "F_C: DIN 4108-2 Table 7 row 2.1 (0.70 double, 0.65 triple and solar control glass). Light transmittance: assumption", text: "Interior blind (white): solar factor and daylight let through when down. Both editable" },
+    "blind.ext": { v: { fc: "DIN 4108-2 Table 7", tau: 0.10, direct: 0.01 }, unit: "F_C, light transmittance (total, of which straight through)", status: "assumption", src: "F_C: DIN 4108-2 Table 7 row 3.2.1 (0.25; 0.30 with solar control glass). Light: assumption, decision of 20 November 2026 (blind as a diffusing layer with a faint direct part; the angle dependence of the slats is not modelled)", text: "Exterior blind (venetian blind at 45°): solar factor, and the daylight it lets through when down: 0.10 in all, 0.01 of it straight through (the sun keeps its direction), the rest scattered evenly. Both editable" },
+    "blind.int": { v: { fc: "DIN 4108-2 Table 7", tau: 0.25, direct: 0.03, rho: 0.6 }, unit: "F_C, light transmittance (total, of which straight through), reflectance", status: "assumption", src: "F_C: DIN 4108-2 Table 7 row 2.1 (0.70 double, 0.65 triple and solar control glass). Light: assumption, decision of 20 November 2026 (white fabric with about 3 % open area)", text: "Interior blind (white fabric): solar factor, and the daylight it lets through when down: 0.25 in all, 0.03 of it straight through the open weave, the rest scattered evenly; reflectance 0.6. Both editable" },
     "dl.udi": { v: { nonres: [300, 3000], res: [100, 2000] }, unit: "lx", status: "decision", src: "Decision of 17 November 2026; 100 to 2,000 lx after Nabil and Mardaljevic 2005", text: "Daylight score: share of the floor and of the hours with useful daylight, 300 to 3,000 lx for offices and schools over their occupied hours, 100 to 2,000 lx for dwellings over daylight hours, with blinds as operated" },
     "dl.light": { v: { lpd: 6, target: { office: 500, school: 300 } }, unit: "W/m², lx", status: "assumption", src: "Targets as DIN V 18599-10 and EN 12464-1 (office 500 lx, classroom 300 lx); LED power density an assumption", text: "Lighting electricity, offices and schools only: continuous dimming against the daylight at each point of the floor, in occupied hours. Not counted for dwellings, as in DIN V 18599" },
     "run.fan.power": { v: 1.5, unit: "W/m² of floor", status: "assumption", src: "DC ceiling fans at about 0.9 m/s (v12)", text: "Ceiling fan power while running" },
@@ -920,7 +920,7 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
   /* Trace a ray. Returns {sky: true, w, d} (escaped; w = product of glass transmittances), {patch, w} or {facade, w}.
      T: glass transmittance as a function of incidence cosine. */
   function trace(R, px, py, pz, dx, dy, dz, T) {
-    let w = 1, skip = -1;
+    let w = 1, skip = -1, g0 = -1; // g0: index (in R.G) of the first glass the ray crosses from inside to outside
     for (let guard = 0; guard < 6; guard++) {
       let best = Infinity, bi = -1, ba = 0, bb = 0, bc = 0;
       for (let i = 0; i < R.G.length; i++) {
@@ -934,12 +934,13 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
         const b = hx * r.v[0] + hy * r.v[1] + hz * r.v[2]; if (b < 0 || b > r.Lv) continue;
         best = s; bi = i; ba = a; bb = b; bc = Math.abs(den);
       }
-      if (bi < 0) return { sky: true, w };
+      if (bi < 0) return { sky: true, w, g0 };
       const r = R.G[bi];
-      if (r.kind === "glass") { w *= T(bc) * r.tf; if (!(w > 0)) return { patch: -1, w: 0 }; px += best * dx; py += best * dy; pz += best * dz; skip = bi; continue; }
-      if (r.kind === "facade") return { facade: r.fac, w };
+      if (r.kind === "glass") { if (g0 < 0 && dx * r.n[0] + dy * r.n[1] + dz * r.n[2] > 0) g0 = bi;
+        w *= T(bc) * r.tf; if (!(w > 0)) return { patch: -1, w: 0, g0 }; px += best * dx; py += best * dy; pz += best * dz; skip = bi; continue; }
+      if (r.kind === "facade") return { facade: r.fac, w, g0 };
       const i = Math.min(r.nu - 1, Math.max(0, Math.floor(ba / r.Lu * r.nu))), j = Math.min(r.nv - 1, Math.max(0, Math.floor(bb / r.Lv * r.nv)));
-      return { patch: r.base + i * r.nv + j, w };
+      return { patch: r.base + i * r.nv + j, w, g0 };
     }
     return { patch: -1, w: 0 };
   }
@@ -968,22 +969,38 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
     const nsS = opt.raysSensor || 64, nsP = opt.raysPatch || 32; // strata per side
     const Fs = new Float64Array(nS * nP), DCd = new Float64Array(nS * NP), Gs = new Float64Array(nS * nF);
     const Fp = new Float64Array(nP * nP), Ep = new Float64Array(nP * NP), Gp = new Float64Array(nP * nF);
-    const shoot = (p, n, ns, seed, onSky, onPatch, onFac) => {
+    // v16 blinds as diffusing layers: each glass also acts as a uniform diffuse source; Ws, Wp: light at sensors and patches
+    // per unit exitance of each glass (rays leaving the room through it, cosine-weighted, so each counts 1/N)
+    const GL = []; R.G.forEach((r, i) => { if (r.kind === "glass") GL.push(i); }); const nG = GL.length, gIdx = {}; GL.forEach((gi, k) => { gIdx[gi] = k; });
+    const Ws = new Float64Array(nS * nG), Wp = new Float64Array(nP * nG);
+    const shoot = (p, n, ns, seed, onSky, onPatch, onFac, onGlass) => {
       const [u, v] = frame(n), r = rng(seed), N = ns * ns, w = PI / N;
       for (let i = 0; i < ns; i++) for (let j = 0; j < ns; j++) {
         const u1 = (i + r()) / ns, u2 = (j + r()) / ns, st = Math.sqrt(u1), ct = Math.sqrt(1 - u1), ph = 2 * PI * u2;
         const cx = st * Math.cos(ph), cy = st * Math.sin(ph);
         const dx = u[0] * cx + v[0] * cy + n[0] * ct, dy = u[1] * cx + v[1] * cy + n[1] * ct, dz = u[2] * cx + v[2] * cy + n[2] * ct;
         const h = trace(R, p[0], p[1], p[2], dx, dy, dz, T);
+        if (onGlass && h.g0 >= 0) onGlass(gIdx[h.g0], 1 / N);
         if (h.sky) { const [X, Y, Z] = toWorld(dx, dy, dz); onSky(patchOf(S, X, Y, Z), w * h.w); }
         else if (h.facade != null) onFac(h.facade, w * h.w);
         else if (h.patch >= 0) onPatch(h.patch, h.w / N);
       }
     };
-    c.sensors.forEach((s, k) => shoot(s, [0, 0, 1], nsS, 7919 * (k + 1), (q, x) => { DCd[k * NP + q] += x; }, (j, x) => { Fs[k * nP + j] += x; }, (f, x) => { Gs[k * nF + f] += x; }));
+    c.sensors.forEach((s, k) => shoot(s, [0, 0, 1], nsS, 7919 * (k + 1), (q, x) => { DCd[k * NP + q] += x; }, (j, x) => { Fs[k * nP + j] += x; }, (f, x) => { Gs[k * nF + f] += x; }, (g, x) => { Ws[k * nG + g] += x; }));
     R.P.forEach((P, k) => {
       const e = 1e-6, p = add(P.p, P.n, e);
-      shoot(p, P.n, nsP, 104729 * (k + 1), (q, x) => { Ep[k * NP + q] += x; }, (j, x) => { Fp[k * nP + j] += x; }, (f, x) => { Gp[k * nF + f] += x; });
+      shoot(p, P.n, nsP, 104729 * (k + 1), (q, x) => { Ep[k * NP + q] += x; }, (j, x) => { Fp[k * nP + j] += x; }, (f, x) => { Gp[k * nF + f] += x; }, P.kind === "room" ? (g, x) => { Wp[k * nG + g] += x; } : null);
+    });
+    // light arriving at each glass, facing outward: just inside it (through the glass: on an interior blind) and just outside
+    // it (on an exterior blind); 3 x 3 points per glass, sky and ground patches plus the facade, sun added per hour
+    const nsW = opt.raysWindow || 24, WP = [], DWin = new Float64Array(nG * NP), DWout = new Float64Array(nG * NP), FWin = new Float64Array(nG * NP), FWout = new Float64Array(nG * NP);
+    GL.forEach((gi, g) => {
+      const r = R.G[gi]; WP.push([]);
+      for (const side of [-1, 1]) for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) {
+        const p = add(add(add(r.o, r.u, (a + 0.5) * r.Lu / 3), r.v, (b + 0.5) * r.Lv / 3), r.n, side * 1e-4), D = side < 0 ? DWin : DWout, Fa = side < 0 ? FWin : FWout;
+        WP[g].push({ p, side });
+        shoot(p, r.n, nsW, 7907 * (gi + 1) + 31 * (3 * a + b) + (side > 0 ? 17 : 0), (q, x) => { D[g * NP + q] += x / 9; }, () => {}, (f, x) => { for (let q = 0; q < NP; q++) Fa[g * NP + q] += x / 9 * facL[f][q]; });
+      }
     });
     for (let k = 0; k < nP; k++) for (let f = 0; f < nF; f++) { const g = Gp[k * nF + f]; if (g) for (let q = 0; q < NP; q++) Ep[k * NP + q] += g * facL[f][q]; }
     // K = Fs (I - diag(rho) F)^-1 : solve A^T K^T = Fs^T with A = I - diag(rho) F
@@ -997,7 +1014,12 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
       for (let k = 0; k < nS; k++) { const g = X[j * nS + k] * rho; if (!g) continue; const o = k * NP, e = j * NP; for (let q = 0; q < NP; q++) DCi[o + q] += g * Ep[e + q]; } }
     for (let k = 0; k < nS; k++) for (let f = 0; f < nF; f++) { const g = Gs[k * nF + f]; if (g) for (let q = 0; q < NP; q++) DCi[k * NP + q] += g * facL[f][q]; }
     const DCs = new Float64Array(nS * NP); for (let i = 0; i < DCs.length; i++) DCs[i] = DCd[i] + DCi[i];
-    return { S, R, T, nS, NP, nP, DCs, DCi, rot, toWorld, sensors: c.sensors, room: c };
+    // a glass as a diffuse source: seen directly from the sensors, plus interreflected through the room surfaces
+    const WD = new Float64Array(nS * nG);
+    for (let k = 0; k < nS; k++) for (let g = 0; g < nG; g++) { let v = Ws[k * nG + g]; for (let j = 0; j < nP; j++) { const rho = R.P[j].rho; if (rho) v += X[j * nS + k] * rho * Wp[j * nG + g]; } WD[k * nG + g] = v; }
+    const glass = GL.map((gi, g) => ({ n: R.G[gi].n, pts: WP[g] }));
+    for (let i = 0; i < DWin.length; i++) { DWin[i] += FWin[i]; DWout[i] += FWout[i]; }
+    return { S, R, T, nS, NP, nP, DCs, DCi, rot, toWorld, sensors: c.sensors, room: c, nG, WD, glass, DWin, DWout, FWin, FWout };
   }
   function solve(A, B, n, m) { // Gaussian elimination with partial pivoting, A n x n (row-major), B n x m, in place
     for (let c = 0; c < n; c++) {
@@ -1108,6 +1130,33 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
     return { E, Es, nH };
   }
 
+  /* Light arriving at each glass of the room per hour (lux on the plane of the glass, facing out): Ein just inside the glass
+     (what reaches an interior blind), Eout just outside it (what reaches an exterior blind). Sky and ground from the
+     patches, facade light from the facade luminance, sun traced from each of the 3 x 3 points of the glass. */
+  function windowLight(dc, sk, hours) {
+    const { NP, nG, DWin, DWout, FWin, FWout, glass, R } = dc, nH = hours.length, Ein = new Float32Array(nG * nH), Eout = new Float32Array(nG * nH);
+    const rot = dc.rot, cr = Math.cos(rot), sr = Math.sin(rot);
+    for (let t = 0; t < nH; t++) {
+      const i = hours[t], o = i * NP;
+      if (!(sk.L[o] > 0) && !(sk.Edn[i] > 0)) continue;
+      const X = sk.sun[3 * i], Y = sk.sun[3 * i + 1], Z = sk.sun[3 * i + 2], lx = X * cr - Y * sr, ly = X * sr + Y * cr, lz = Z;
+      for (let g = 0; g < nG; g++) {
+        let ei = 0, eo = 0; const r = g * NP;
+        for (let p = 0; p < NP; p++) { const L = sk.L[o + p]; ei += DWin[r + p] * L; eo += DWout[r + p] * L; }
+        for (let q = 0; q < 4; q++) { const w = sk.sunW[4 * i + q]; if (w) { const pq = sk.sunP[4 * i + q]; ei += FWin[r + pq] * w; eo += FWout[r + pq] * w; } }
+        const n = glass[g].n, ci = lx * n[0] + ly * n[1] + lz * n[2];
+        if (sk.Edn[i] > 0 && lz > 0 && ci > 0) for (const P of glass[g].pts) {
+          const h = trace(R, P.p[0], P.p[1], P.p[2], lx, ly, lz, dc.T);
+          if (h.sky) { const e = sk.Edn[i] * h.w * ci / 9; if (P.side < 0) ei += e; else eo += e; }
+        }
+        Ein[g * nH + t] = ei; Eout[g * nH + t] = eo;
+      }
+    }
+    return { Ein, Eout, nH };
+  }
+  // hemispherical (diffuse) transmittance of the glass: 2 x integral of T(cos) cos sin over the incidence angle
+  function glassDiffuse(tau) { const T = glassT(tau); let s = 0; const n = 900; for (let k = 0; k < n; k++) { const th = (k + 0.5) / n * PI / 2; s += T(Math.cos(th)) * Math.cos(th) * Math.sin(th); } return 2 * s * (PI / 2) / n; }
+
   // ------------------------------------------------------------------ metrics (IES LM-83, UDI, EN 17037)
   function metrics(il, nS, opt) {
     opt = opt || {};
@@ -1129,7 +1178,7 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
   }
   function occupiedHours() { const h = []; for (let i = 0; i < 8760; i++) { const k = i % 24; if (k >= 8 && k < 18) h.push(i); } return h; }
 
-  const api = { skyPatches, patchOf, glassT, tnOf, geometry, makeRoom, trace, coefficients, skies, illuminance, metrics, en17037, occupiedHours };
+  const api = { skyPatches, patchOf, glassT, tnOf, glassDiffuse, geometry, makeRoom, trace, coefficients, skies, illuminance, windowLight, metrics, en17037, occupiedHours };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Daylight = api;
 })(typeof window !== "undefined" ? window : globalThis);
 
@@ -1898,8 +1947,8 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
   // v16 phase 2: two blind types, exterior and interior; F_C and light transmittance editable through ctx.blinds
   const SHADES = {
     none: { label: "No blinds", fc: { double: 1, triple: 1, sc: 1 }, dR: 0, tau: 1 },
-    exterior: { label: "Exterior blind", fc: FC.venetian, dR: 0.10, tau: RV("blind.ext").tau },
-    interior: { label: "Interior blind", fc: FC.interior, dR: 0, tau: RV("blind.int").tau },
+    exterior: { label: "Exterior blind", fc: FC.venetian, dR: 0.10, tau: RV("blind.ext").tau, direct: RV("blind.ext").direct / RV("blind.ext").tau, outside: true },
+    interior: { label: "Interior blind", fc: FC.interior, dR: 0, tau: RV("blind.int").tau, direct: RV("blind.int").direct / RV("blind.int").tau, outside: false },
   };
   // fixed outdoor shading on the outer face of the wall (glass 10 cm behind the inner face); overhang at the window head, fins at the jambs
   const FIXED = {
@@ -2003,7 +2052,8 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
   function shadeOf(ctx, c) {
     const key = SHADE_LEVELS[ctx.useKey][c.shading], sh = SHADES[key];
     const col = colOf(c.uglass, c.gglass), ov = ctx.blinds && ctx.blinds[key];
-    return { key, label: sh.label, fc: ov && ov.fc != null ? ov.fc : sh.fc[col], dR: sh.dR, tau: ov && ov.tau != null ? ov.tau : sh.tau };
+    const tau = ov && ov.tau != null ? ov.tau : sh.tau; // light through a lowered blind: a share straight through, the rest diffuse
+    return { key, label: sh.label, fc: ov && ov.fc != null ? ov.fc : sh.fc[col], dR: sh.dR, tau, tauDir: tau * (sh.direct || 0), tauDif: tau * (1 - (sh.direct || 0)), outside: !!sh.outside };
   }
   /* window openings for ventilation (v16 phase 2): per window of the room, the openable sash area (half the window area,
      frame included) and the sash height; effective area for tilt (C_k at 10°) or fully open side-hung windows */
@@ -2282,10 +2332,27 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
   // job: {scenario: "cellular"|"corner", wwr, fixed}; returns per orientation index: {tvKey: readings}
   /* job: {scenario: "cellular"|"corner", wwr, fixed}; returns per orientation index: {tvKey: readings without blinds,
      tvKey|interior, tvKey|exterior: readings with blinds as operated}. The hours with blinds down come from a heated run of a
-     reference room (register dl.blindRef), so daylight and the thermal runs use the same rule; when down, daylight from that
-     window is scaled by the blind's light transmittance (the windows of a corner room count half each). The EN 17037
+     reference room (register dl.blindRef), so daylight and the thermal runs use the same rule; when down, the blind lets a
+     small share through straight and scatters the rest evenly (withBlind). The EN 17037
      minimum (A1) is always read without blinds. */
   const KEEP = ["a100", "a300", "a500", "a750", "en", "A1"];
+  /* daylight with blinds lowered for a share f of the windows each hour (decision of 20 November 2026): the light of the
+     clear windows times (1 - f (1 - tauDir)), plus f times the blind's diffuse transmittance times the light arriving at
+     the blind, re-emitted evenly from the glass (DL coefficient WD). Exterior blind: light just outside the glass, then
+     the glass's diffuse transmittance; interior blind: light just inside the glass. A corner room counts both windows
+     half when one is down. */
+  function withBlind(dc, il, wl, fx, nS, nH) {
+    const sh = fx.sh, f = fx.down, E = new Float32Array(nS * nH), Es = new Float32Array(nS * nH), src = sh.outside ? wl.Eout : wl.Ein;
+    const tgd = sh.outside ? DL.glassDiffuse(TAU0) : 1, nG = dc.nG;
+    for (let t = 0; t < nH; t++) {
+      const ft = f[t], keep = 1 - ft * (1 - sh.tauDir);
+      for (let k = 0; k < nS; k++) {
+        let ed = 0; if (ft > 0) for (let g = 0; g < nG; g++) ed += dc.WD[k * nG + g] * src[g * nH + t];
+        E[k * nH + t] = il.E[k * nH + t] * keep + ft * sh.tauDif * tgd * ed; Es[k * nH + t] = il.Es[k * nH + t] * keep;
+      }
+    }
+    return { E, Es };
+  }
   function job(ctx, j, opt) {
     opt = opt || FAST;
     SKY1 = SKY1 || DL.skyPatches(1);
@@ -2298,13 +2365,13 @@ window.CLIMA_REGIONS = [{"id":"GIC","name":"Greenland/Iceland","type":"Land","ri
       // blind hours from a heated run of the reference room with this window, orientation and blind type (same rule as the design runs)
       const facOf = (lv) => {
         const d = Object.assign({ scenario: j.scenario === "corner_top" ? "corner" : j.scenario, azimuth: az, wwr: j.wwr, fixed: j.fixed, shading: lv, fans: 0, supply: "outdoor", roof: "standard" }, BREF);
-        const sim = S.simulate(ctx, d, "heat", true), tau = S.shadeOf(ctx, d).tau;
-        return Float32Array.from(H.all, (i) => 1 - sim.bdown[i] / sim.nWin * (1 - tau));
+        const sim = S.simulate(ctx, d, "heat", true), sh = S.shadeOf(ctx, d);
+        return { down: Float32Array.from(H.all, (i) => sim.bdown[i] / sim.nWin), sh };
       };
-      const fx = { interior: facOf(1), exterior: facOf(2) };
+      const fx = { interior: facOf(1), exterior: facOf(2) }, wl = DL.windowLight(dc, sk, H.all), nH = H.all.length;
       for (const tk of Object.keys(TV)) {
         const r0 = readings(il.E, il.Es, nS, H, TV[tk] / TAU0, tb, null, band, light); res[tk] = r0;
-        for (const k of ["interior", "exterior"]) { const r = readings(il.E, il.Es, nS, H, TV[tk] / TAU0, tb, fx[k], band, light); KEEP.forEach((x) => { r[x] = r0[x]; }); r.passA = r.A1 && r.A2 && r.A3; res[tk + "|" + k] = r; }
+        for (const k of ["interior", "exterior"]) { const b = withBlind(dc, il, wl, fx[k], nS, nH); const r = readings(b.E, b.Es, nS, H, TV[tk] / TAU0, tb, null, band, light); KEEP.forEach((x) => { r[x] = r0[x]; }); r.passA = r.A1 && r.A2 && r.A3; res[tk + "|" + k] = r; }
       }
       out.push(res);
     }

@@ -1,12 +1,14 @@
-"""v16 EnergyPlus check, step 2: the three room types with the same constructions, windows, reveal and outdoor shading
-as the 24 October check (rooms_energyplus.py), now with the v16 operation imposed hour by hour from the app's own run:
+"""Room types, step 2: EnergyPlus 24.2 models of the cases written by dump.js: the same constructions, windows, reveal and
+outdoor shading as the app, with the app's operation imposed hour by hour from its own run:
 air change (window openings by EN 16798-7, base air), blind state per window (switchable glazing: SHGC g x F_C,
-U with the blind's added resistance), internal gains (100% convective). Free-running and heating on."""
+U with the blind's added resistance), internal gains (100% convective). Free-running and heated.
+Usage: python3 ep_run.py   (NP=2 parallel runs)"""
 import json, math, os, subprocess, sys
 import pandas as pd
 from multiprocessing import Pool
-EP = '/home/claude/ep_dl/EnergyPlus-24.2.0-94a887817b-Linux-Ubuntu22.04-x86_64/energyplus'
-R = '/home/claude/epz16'
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'lib'))
+from paths import WORK, EPLUS as EP, WX
+R = os.path.join(WORK, 'room_types')
 CASES = json.load(open(f'{R}/cases.json'))
 RSI, RSE = 0.13, 0.04
 def idf(c, heat, d):
@@ -102,7 +104,7 @@ def run(args):
     bits = dict(c['winBits']); m = js['mask']
     pd.DataFrame({'ach': js['ach'], 'gain': js['q'], 'bA': [1 if (x & bits.get('win_A', 0)) else 0 for x in m], 'bB': [1 if (x & bits.get('win_B', 0)) else 0 for x in m]}).to_csv(f"{d}/sched.csv", index=False, header=False)
     open(f"{d}/in.idf", "w").write(idf(c, heat, d))
-    r = subprocess.run([EP, '-r', '-w', f"{R}/wx/{c['wx']}.epw", '-d', d, f'{d}/in.idf'], capture_output=True, text=True)
+    r = subprocess.run([EP, '-r', '-w', os.path.join(WX, f"app_{c['wx']}.epw"), '-d', d, f'{d}/in.idf'], capture_output=True, text=True)
     if r.returncode or not os.path.exists(f"{d}/eplusout.csv"):
         open(f"{d}/FAILED", "w").write(open(f"{d}/eplusout.err").read()[-4000:] if os.path.exists(f"{d}/eplusout.err") else r.stderr[-2000:]); return
     df = pd.read_csv(f"{d}/eplusout.csv"); cols = df.columns
@@ -110,7 +112,7 @@ def run(args):
     q = df[[k for k in cols if 'Heating Energy' in k][0]].sum() / 3.6e6 / (c['dims'][0] * c['dims'][1]) if heat else 0
     json.dump({"top": top, "qh": q}, open(res, "w"))
     for f in os.listdir(d):
-        if f not in ("res.json", "in.idf", "eplusout.err"): os.remove(os.path.join(d, f))
+        if f not in ("res.json",): os.remove(os.path.join(d, f))
 if __name__ == "__main__":
     only = sys.argv[1:]
     jobs = [(c, h) for c in CASES for h in (False, True) if not only or c['id'] in only]

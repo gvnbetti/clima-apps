@@ -28,14 +28,15 @@ room/         Room Clima v16
   build/        built app as published
   edits/        scripted edits used to make each phase (history of changes)
   tests/        Node harness (h16.js) and checks; pw/ browser tests (Playwright, headless Chrome)
-  validation/   EnergyPlus 24.2 and Radiance checks of v16, scripts and results
 shared/       mkmods.py: generates room/src/climamods.js from Macro Clima, so all three apps share the
               future-climate and urban-heat-island modifiers; wxrecord.py: turns an EPW file into a bundled
               weather record; addbar.py: the Clima Studio bar at the top of every app (rerun after
               editing it: map, macro, micro, and room/src/shell.html, then rebuild Room);
               mklanding.py: writes index.html, previews drawn from the repository's data;
               fonts/ (IBM Plex, OFL), icons/ (the five logos)
-docs/         notes and links
+docs/         methods/: what each app computes, with its models, assumptions and sources
+validation/   verification and validation of every model, by model: reports, scripts and results
+              (thermal, daylight, climate reading, future climate, urban heat island, outdoor comfort)
 ```
 
 ## Build and test Room Clima
@@ -48,8 +49,11 @@ node tests/modcheck.js                # shared modifiers against Macro Clima
 python3 tests/pw/p2.py build          # browser run, Mannheim south office (needs Playwright and Chrome)
 ```
 
-Validation (`room/validation/`): `ep16_dump.js` then `ep16_run.py` then `ep16_analyse.py` (EnergyPlus 24.2);
-`rad_dump.js` then `rad_run.py` then `rad_analyse.py` (Radiance through pyradiance). Paths at the top of each script.
+## Validation
+
+`validation/README.md` summarises every study: what is compared, against which reference, on which base cases, and
+with what result. Each folder has its own report and the scripts to rerun it. The methods of the apps are described
+in `docs/methods/`.
 
 ## Shared code
 

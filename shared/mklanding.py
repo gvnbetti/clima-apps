@@ -203,7 +203,7 @@ footer {{ padding: 22px 0 48px; font-size: 13px; color: var(--mute) }}
     <div><h3>Weather</h3><p>Typical-year files from Climate.OneBuilding.org (Lawrie and Crawley) and the EnergyPlus collection. Future climate from the IPCC AR6 Atlas. Your own EPW files work in every app and never leave your computer.</p></div>
     <div><h3>Open</h3><p>Code under the MIT licence, notes and validation under CC BY 4.0. Source, history and citation on <a href="https://github.com/gvnbetti/clima-apps">GitHub</a>.</p></div>
   </section>
-  <footer>Giovanni Betti, Berlin. The apps are drafts in active development; check results that matter against a detailed simulation. The optional AI assistant in Micro and Room Clima uses your own Anthropic API key.</footer>
+  <footer><a href="about.html">About</a> · <a href="impressum.html">Impressum</a> · <a href="impressum.html#datenschutz">Datenschutz</a><br>Giovanni Betti, Berlin. The apps are drafts in active development; check results that matter against a detailed simulation. The optional AI assistant in Micro and Room Clima uses your own Anthropic API key. Visits are counted without cookies.</footer>
 </main>
 </body>
 </html>

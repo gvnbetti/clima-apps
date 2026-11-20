@@ -30,14 +30,20 @@ CSS = '''<style>
 .csb-apps{display:flex;gap:2px;flex-wrap:wrap}
 .csb-apps a{padding:5px 9px;color:var(--csb-mute)}.csb-apps a:hover{color:var(--csb-ink);background:var(--csb-on)}
 .csb-apps a[aria-current]{color:var(--csb-ink);background:var(--csb-on);font-weight:600}
-.csb-src{margin-left:auto;color:var(--csb-mute);font-size:12px;padding:5px 4px}.csb-src:hover{color:var(--csb-ink)}
-@media (max-width:720px){.csb-apps a span,.csb .csb-src{display:none}.csb-apps a{padding:5px 7px}}
+.csb-right{margin-left:auto;display:flex;gap:2px 14px;flex-wrap:wrap}
+.csb-right a{color:var(--csb-mute);font-size:12px;padding:5px 2px}.csb-right a:hover{color:var(--csb-ink)}
+@media (max-width:720px){.csb-apps a span,.csb .csb-src{display:none}.csb-apps a{padding:5px 7px}.csb-right{gap:10px}}
 </style>'''
+
+# visitor count: GoatCounter, no cookies; only on the public site (not in Claude artifacts or local copies)
+COUNT = ('<script>(function(){if(!/(^|\\.)github\\.io$/.test(location.hostname))return;var s=document.createElement("script");s.async=true;'
+         's.setAttribute("data-goatcounter","https://climastudio.goatcounter.com/count");s.src="' + BASE + 'shared/goatcounter-count.js";document.head.appendChild(s)})();</script>')
 
 def bar(cur):
     apps = ''.join(f'<a href="{BASE}{p}" title="{n}: {d}"{" aria-current=page" if k == cur else ""}>{svg(k, 20)}<span>{n}</span></a>' for k, n, p, d in APPS)
     return (f'<!-- clima-studio-bar -->{CSS}<nav class="csb" aria-label="Clima Studio apps"><a class="csb-home" href="{BASE}">{svg("studio", 24)}<b>Clima</b><span>Studio</span></a>'
-            f'<span class="csb-apps">{apps}</span><a class="csb-src" href="https://github.com/gvnbetti/clima-apps">Source and validation</a></nav><!-- /clima-studio-bar -->')
+            f'<span class="csb-apps">{apps}</span><span class="csb-right"><a class="csb-src" href="https://github.com/gvnbetti/clima-apps">Source and validation</a>'
+            f'<a href="{BASE}about.html">About</a><a href="{BASE}impressum.html">Impressum</a></span></nav>{COUNT}<!-- /clima-studio-bar -->')
 
 if __name__ == '__main__':
     a = sys.argv[1:]

@@ -85,4 +85,5 @@ so the bundled DIN result is indicative. For a formal check, load the TRY file f
 - IBM Plex fonts (SIL Open Font License 1.1), bundled in Room Clima.
 - JSZip 3.10.1 (MIT or GPLv3, used under MIT), bundled in Room Clima; loaded from cdnjs in Micro Clima.
 - fflate (MIT), loaded from jsDelivr in Macro Clima.
+- GoatCounter count.js (ISC), self-hosted in shared/ for the cookieless visitor count.
 - Leaflet 1.9.4 (BSD-2-Clause), bundled in Clima Map. Base map tiles and place search: OpenStreetMap contributors (tile.openstreetmap.org, Nominatim).

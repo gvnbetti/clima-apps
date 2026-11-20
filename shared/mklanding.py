@@ -156,6 +156,7 @@ body {{ margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(
 .hero h1 b {{ font-weight: 600 }}
 .hero .sub {{ font-size: 20px; color: var(--mute); margin: 10px 0 0 }}
 .lede {{ grid-column: 1 / -1; max-width: 760px; font-size: 18px; margin: 8px 0 0 }}
+.lede p {{ margin: 0 0 12px }}
 @media (max-width: 640px) {{ .hero {{ grid-template-columns: 1fr; padding-top: 40px; gap: 16px }} .hero .mark svg {{ width: 84px; height: 84px }} }}
 .flow {{ display: flex; align-items: center; gap: 0; margin: 12px auto 48px; flex-wrap: wrap; max-width: 940px }}
 .step {{ display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 600 15px var(--f-disp); letter-spacing: .02em; text-transform: uppercase; padding: 6px 4px }}
@@ -191,9 +192,11 @@ footer {{ padding: 22px 0 48px; font-size: 13px; color: var(--mute) }}
   <div class="mark">{svg('studio', 120)}</div>
   <div>
     <h1><b>Clima</b> Studio</h1>
-    <p class="sub">Climate, place and room. Open tools for early design.</p>
+    <p class="sub">Bringing climate into architectural design.</p>
   </div>
-  <p class="lede">Four tools that carry one weather file from the map to the window. Find the file, read what the climate asks for, test outdoor spaces, then size the room and its facade. Everything runs in your browser.</p>
+  <div class="lede"><p>Clima Studio is a collection of free, open-source tools for exploring the relationship between climate, place and architecture.</p>
+  <p>Start by finding a weather file for your location. Understand the climate and explore future and urban climate scenarios. Analyse outdoor comfort and test different configurations. Then move indoors to explore how room dimensions, facade design and building configurations influence energy, thermal comfort and daylight.</p>
+  <p>All tools run directly in your browser.</p></div>
 </header>
 <main class="wrap">
   <nav class="flow" aria-label="The four apps">{flow}</nav>

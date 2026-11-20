@@ -21,6 +21,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(-
 .hero h1 b { font-weight: 600 }
 .hero .sub { font-size: 20px; color: var(--mute); margin: 10px 0 0 }
 .lede { grid-column: 1 / -1; max-width: 760px; font-size: 18px; margin: 8px 0 0 }
+.lede p { margin: 0 0 12px }
 @media (max-width: 640px) { .hero { grid-template-columns: 1fr; padding-top: 40px; gap: 16px } .hero .mark svg { width: 84px; height: 84px } }
 .flow { display: flex; align-items: center; gap: 0; margin: 12px auto 48px; flex-wrap: wrap; max-width: 940px }
 .step { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 600 15px var(--f-disp); letter-spacing: .02em; text-transform: uppercase; padding: 6px 4px }
@@ -70,9 +71,11 @@ footer { padding: 22px 0 48px; font-size: 13px; color: var(--mute) }
   <div class="mark"><svg width="120" height="120" viewBox="0 0 64 64" aria-hidden="true"><path d="M4 44H60M8 44A24 24 0 0 1 56 44M15 44A17 17 0 0 1 49 44M22 44A10 10 0 0 1 42 44" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="44" cy="23.22" r="5" fill="#d9762b"/></svg></div>
   <div>
     <h1><b>Clima</b> Studio</h1>
-    <p class="sub">Climate, place and room. Open tools for early design.</p>
+    <p class="sub">Bringing climate into architectural design.</p>
   </div>
-  <p class="lede">Four tools that carry one weather file from the map to the window. Find the file, read what the climate asks for, test outdoor spaces, then size the room and its facade. Everything runs in your browser.</p>
+  <div class="lede"><p>Clima Studio is a collection of free, open-source tools for exploring the relationship between climate, place and architecture.</p>
+  <p>Start by finding a weather file for your location. Understand the climate and explore future and urban climate scenarios. Analyse outdoor comfort and test different configurations. Then move indoors to explore how room dimensions, facade design and building configurations influence energy, thermal comfort and daylight.</p>
+  <p>All tools run directly in your browser.</p></div>
 </header>
 <main class="wrap">
   <nav class="flow" aria-label="The four apps"><a href="#map" class="step"><svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="#d9762b"/><path d="M32 58C29 53 24 48 24 43A8 8 0 0 1 40 43C40 48 35 53 32 58Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Map</span></a><span class="arr" aria-hidden="true"></span><a href="#macro" class="step"><svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="#d9762b"/><path d="M4 34H60M14 43H50M24 52H40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Macro</span></a><span class="arr" aria-hidden="true"></span><a href="#micro" class="step"><svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="#d9762b"/><path d="M6 56H58M24 48V56M42 49V56" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="41" r="7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="42" cy="45" r="3" fill="currentColor"/></svg><span>Micro</span></a><span class="arr" aria-hidden="true"></span><a href="#room" class="step"><svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="#d9762b"/><path d="M50 43V38H14V56H50V51" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Room</span></a></nav>

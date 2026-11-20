@@ -1,4 +1,4 @@
-"""Writes the landing page (index.html at the repository root) for Clima Studio.
+"""Writes the landing page (index.html at the repository root) for Clima Toolbox.
 The four previews are drawn from real data in the repository: the station catalogue (Clima Map), the Berlin weather
 file (Macro Clima), the Rome weather file (Micro Clima) and the sun angles of Mannheim (Room Clima).
 Usage: python3 shared/mklanding.py   (from the repository root)"""
@@ -138,9 +138,9 @@ page = f'''<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Clima Studio: open climate tools for early design</title>
+<title>Clima Toolbox: open climate tools for early design</title>
 <meta name="description" content="Four browser tools that carry one weather file from the map to the window: Clima Map, Macro Clima, Micro Clima and Room Clima.">
-<link rel="icon" href="shared/icons/studio.svg" type="image/svg+xml">
+<link rel="icon" href="shared/icons/toolbox.svg" type="image/svg+xml">
 <link rel="stylesheet" href="shared/fonts/fonts.css">
 <style>
 :root {{ --bg: #f1f2ef; --panel: #fbfbf9; --ink: {INK}; --mute: {MUTE}; --line: {LINE}; --soft: {SOFT}; --accent: {ACC}; --sun: {SUN};
@@ -191,10 +191,10 @@ footer {{ padding: 22px 0 48px; font-size: 13px; color: var(--mute) }}
 <header class="wrap hero">
   <div class="mark">{svg('studio', 120)}</div>
   <div>
-    <h1><b>Clima</b> Studio</h1>
+    <h1><b>Clima</b> Toolbox</h1>
     <p class="sub">Bringing climate into architectural design.</p>
   </div>
-  <div class="lede"><p>Clima Studio is a collection of free, open-source tools for exploring the relationship between climate, place and architecture.</p>
+  <div class="lede"><p>Clima Toolbox is a collection of free, open-source tools for exploring the relationship between climate, place and architecture.</p>
   <p>Start by finding a weather file for your location. Understand the climate and explore future and urban climate scenarios. Analyse outdoor comfort and test different configurations. Then move indoors to explore how room dimensions, facade design and building configurations influence energy, thermal comfort and daylight.</p>
   <p>All tools run directly in your browser.</p></div>
 </header>
@@ -202,9 +202,9 @@ footer {{ padding: 22px 0 48px; font-size: 13px; color: var(--mute) }}
   <nav class="flow" aria-label="The four apps">{flow}</nav>
   <div class="cards">{cards}</div>
   <section class="facts">
-    <div><h3>Checked</h3><p>Every model is checked against an established tool: the room model against EnergyPlus and ASHRAE Standard 140, daylight against Radiance, outdoor comfort against Ladybug, and the climate calculations against pvlib, pythermalcomfort and the IPCC Atlas data. Reports and scripts are in the <a href="https://github.com/gvnbetti/clima-apps/tree/main/validation">repository</a>.</p></div>
+    <div><h3>Checked</h3><p>Every model is checked against an established tool: the room model against EnergyPlus and ASHRAE Standard 140, daylight against Radiance, outdoor comfort against Ladybug, and the climate calculations against pvlib, pythermalcomfort and the IPCC Atlas data. Reports and scripts are in the <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation">repository</a>.</p></div>
     <div><h3>Weather</h3><p>Typical-year files from Climate.OneBuilding.org (Lawrie and Crawley) and the EnergyPlus collection. Future climate from the IPCC AR6 Atlas. Your own EPW files work in every app and never leave your computer.</p></div>
-    <div><h3>Open</h3><p>Code under the MIT licence, notes and validation under CC BY 4.0. Source, history and citation on <a href="https://github.com/gvnbetti/clima-apps">GitHub</a>.</p></div>
+    <div><h3>Open</h3><p>Code under the MIT licence, notes and validation under CC BY 4.0. Source, history and citation on <a href="https://github.com/gvnbetti/clima-toolbox">GitHub</a>.</p></div>
   </section>
   <footer><a href="about.html">About</a> · <a href="impressum.html">Impressum</a> · <a href="impressum.html#datenschutz">Datenschutz</a><br>Giovanni Betti, Berlin. The apps are drafts in active development; check results that matter against a detailed simulation. The optional AI assistant in Micro and Room Clima uses your own Anthropic API key. Visits are counted without cookies.</footer>
 </main>

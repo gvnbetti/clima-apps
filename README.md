@@ -1,4 +1,4 @@
-# Clima Studio (clima-apps)
+# Clima Toolbox (clima-toolbox)
 
 Four browser tools for climate analysis and design guidance at the early stage of architectural projects.
 
@@ -9,7 +9,7 @@ Four browser tools for climate analysis and design guidance at the early stage o
 | Micro Clima | Site and street-scale climate: outdoor comfort, shading, heat island, future climate | `micro/` | Claude artifact (single file) |
 | Room Clima | Room and facade guidance: searches window size, glazing, shading, ventilation, mass and fans against daylight, comfort, energy and carbon targets; DIN 4108-2 summer check | `room/` | Claude artifact, v16 |
 
-Live: https://gvnbetti.github.io/clima-apps/ (the apps run in the browser; nothing leaves it unless you use the optional AI assistant with your own API key).
+Live: https://gvnbetti.github.io/clima-toolbox/ (the apps run in the browser; nothing leaves it unless you use the optional AI assistant with your own API key).
 
 Code under the MIT licence (`LICENSE`); documentation, notes and validation results under CC BY 4.0
 (`LICENSE-docs.md`). To cite, see `CITATION.cff`.
@@ -30,7 +30,7 @@ room/         Room Clima v16
   tests/        Node harness (h16.js) and checks; pw/ browser tests (Playwright, headless Chrome)
 shared/       mkmods.py: generates room/src/climamods.js from Macro Clima, so all three apps share the
               future-climate and urban-heat-island modifiers; wxrecord.py: turns an EPW file into a bundled
-              weather record; addbar.py: the Clima Studio bar at the top of every app (rerun after
+              weather record; addbar.py: the Clima Toolbox bar at the top of every app (rerun after
               editing it: map, macro, micro, and room/src/shell.html, then rebuild Room);
               mklanding.py: writes index.html, previews drawn from the repository's data;
               fonts/ (IBM Plex, OFL), icons/ (the five logos)

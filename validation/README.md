@@ -1,4 +1,4 @@
-# Validation of the Clima Studio tools
+# Validation of the Clima Toolbox tools
 
 Every model in the apps is checked against an established tool, an open reference implementation, a published test or
 an exact solution. Each folder holds a report (`README.md`) with the base cases, the assumptions, the reference and the

@@ -1,10 +1,10 @@
-"""Inserts (or replaces) the Clima Studio bar at the top of an app page: the umbrella mark, the four apps and a link to
+"""Inserts (or replaces) the Clima Toolbox bar at the top of an app page: the umbrella mark, the four apps and a link to
 the source. The block sits between two marker comments right after <body>, so running this again replaces it.
 Links are absolute, so the bar also works where an app runs as a Claude artifact.
 Usage: python3 addbar.py <app id: map|macro|micro|room> <html file> [...more pairs]"""
 import sys, re, pathlib
 
-BASE = 'https://gvnbetti.github.io/clima-apps/'
+BASE = 'https://gvnbetti.github.io/clima-toolbox/'
 INK, SUN = 'currentColor', '#d9762b'
 ARC = f'<path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="{INK}" stroke-width="4.5" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="{SUN}"/>'
 S = f'fill="none" stroke="{INK}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"'
@@ -37,12 +37,12 @@ CSS = '''<style>
 
 # visitor count: GoatCounter, no cookies; only on the public site (not in Claude artifacts or local copies)
 COUNT = ('<script>(function(){if(!/(^|\\.)github\\.io$/.test(location.hostname))return;var s=document.createElement("script");s.async=true;'
-         's.setAttribute("data-goatcounter","https://climastudio.goatcounter.com/count");s.src="' + BASE + 'shared/goatcounter-count.js";document.head.appendChild(s)})();</script>')
+         's.setAttribute("data-goatcounter","https://climatoolbox.goatcounter.com/count");s.src="' + BASE + 'shared/goatcounter-count.js";document.head.appendChild(s)})();</script>')
 
 def bar(cur):
     apps = ''.join(f'<a href="{BASE}{p}" title="{n}: {d}"{" aria-current=page" if k == cur else ""}>{svg(k, 20)}<span>{n}</span></a>' for k, n, p, d in APPS)
-    return (f'<!-- clima-studio-bar -->{CSS}<nav class="csb" aria-label="Clima Studio apps"><a class="csb-home" href="{BASE}">{svg("studio", 24)}<b>Clima</b><span>Studio</span></a>'
-            f'<span class="csb-apps">{apps}</span><span class="csb-right"><a class="csb-src" href="https://github.com/gvnbetti/clima-apps">Source and validation</a>'
+    return (f'<!-- clima-studio-bar -->{CSS}<nav class="csb" aria-label="Clima Toolbox apps"><a class="csb-home" href="{BASE}">{svg("studio", 24)}<b>Clima</b><span>Toolbox</span></a>'
+            f'<span class="csb-apps">{apps}</span><span class="csb-right"><a class="csb-src" href="https://github.com/gvnbetti/clima-toolbox">Source and validation</a>'
             f'<a href="{BASE}about.html">About</a><a href="{BASE}impressum.html">Impressum</a></span></nav>{COUNT}<!-- /clima-studio-bar -->')
 
 if __name__ == '__main__':

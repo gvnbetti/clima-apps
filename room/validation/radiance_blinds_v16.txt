@@ -1,0 +1,34 @@
+Glass light transmittance 0.7; useful daylight 300 to 3,000 lx, office weekdays 7 to 18; blind hours from the app's reference room
+room  city      blind     |  UDI app Radiance   diff | <300 app    Rad | >3000 app    Rad | blind hours
+S35   mannheim  none      |     56.0     55.0   +1.0 |     38.1   38.5 |       5.9    6.5 |    0%
+S35   mannheim  interior  |     38.1     45.0   -6.9 |     57.7   51.8 |       4.2    3.2 |   30%
+S35   mannheim  exterior  |     32.7     35.6   -2.9 |     63.8   61.2 |       3.5    3.2 |   29%
+S35   bologna   none      |     69.8     68.2   +1.6 |     22.8   23.4 |       7.4    8.4 |    0%
+S35   bologna   interior  |     45.4     54.5   -9.1 |     49.1   40.9 |       5.5    4.6 |   39%
+S35   bologna   exterior  |     38.0     42.6   -4.6 |     57.1   52.8 |       4.9    4.7 |   38%
+S35   dubai     none      |     81.3     79.9   +1.4 |     13.7   14.3 |       5.0    5.9 |    0%
+S35   dubai     interior  |     44.4     59.7  -15.3 |     52.7   39.5 |       2.8    0.8 |   59%
+S35   dubai     exterior  |     31.2     41.3  -10.1 |     66.8   58.5 |       2.0    0.2 |   59%
+S65   mannheim  none      |     59.0     58.4   +0.6 |     26.2   26.3 |      14.9   15.4 |    0%
+S65   mannheim  interior  |     56.2     61.9   -5.7 |     34.7   31.1 |       9.0    7.0 |   33%
+S65   mannheim  exterior  |     43.7     51.0   -7.3 |     48.8   42.8 |       7.5    6.2 |   31%
+S65   bologna   none      |     66.6     65.8   +0.8 |     13.9   14.0 |      19.5   20.2 |    0%
+S65   bologna   interior  |     63.1     69.9   -6.8 |     25.0   20.3 |      11.9    9.8 |   44%
+S65   bologna   exterior  |     45.2     55.9  -10.7 |     44.5   35.4 |      10.3    8.7 |   42%
+S65   dubai     none      |     79.4     79.1   +0.3 |      5.0    5.0 |      15.6   15.9 |    0%
+S65   dubai     interior  |     73.1     80.8   -7.7 |     20.3   14.9 |       6.6    4.3 |   59%
+S65   dubai     exterior  |     45.9     63.6  -17.7 |     48.9   35.0 |       5.2    1.4 |   58%
+W50   mannheim  none      |     61.3     60.9   +0.4 |     31.9   31.8 |       6.8    7.3 |    0%
+W50   mannheim  interior  |     58.2     62.1   -3.9 |     37.7   35.4 |       4.0    2.6 |   18%
+W50   mannheim  exterior  |     53.0     54.9   -1.9 |     44.5   42.8 |       2.4    2.2 |   17%
+W50   bologna   none      |     72.7     72.1   +0.6 |     18.3   18.2 |       9.0    9.7 |    0%
+W50   bologna   interior  |     68.6     73.5   -4.9 |     26.3   23.6 |       5.0    2.9 |   26%
+W50   bologna   exterior  |     60.1     64.1   -4.0 |     37.0   33.7 |       2.9    2.2 |   26%
+W50   dubai     none      |     80.6     79.8   +0.8 |      7.5    7.4 |      11.9   12.8 |    0%
+W50   dubai     interior  |     72.7     82.0   -9.3 |     22.1   15.8 |       5.2    2.1 |   45%
+W50   dubai     exterior  |     56.4     65.7   -9.3 |     41.3   33.7 |       2.2    0.6 |   45%
+none     : UDI app minus Radiance mean +0.8 points, range +0.3 to +1.6
+interior : UDI app minus Radiance mean -7.7 points, range -15.3 to -3.9
+exterior : UDI app minus Radiance mean -7.6 points, range -17.7 to -1.9
+interior : UDI change from the blind, app -11.9 points, Radiance -3.3 points
+exterior : UDI change from the blind, app -24.5 points, Radiance -16.0 points

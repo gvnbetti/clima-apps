@@ -1,0 +1,464 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta charset="utf-8">
+<title>Room Clima v16</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a working instrument. Narrow setup column at left, results at right; one column on phones.
+   Ground: cool limestone grey; ink: blue-black; accent: deep fir green for the chosen option;
+   warm brick only as a semantic "above limit" signal. */
+:root {
+  --bg: #f1f2ef; --panel: #fbfbf9; --ink: #18201f; --mute: #5b6663; --line: #d6dad5; --soft: #e6e9e4;
+  --accent: #23614f; --accent-soft: #d5e6df; --warm: #b2452c; --warm-soft: #f3dcd4; --ok: #2f6b3c; --band: rgba(35,97,79,.14); --cool: #3f6f9a; --sun: #a87613; --out: #8b9592; --sea: #dfe6e6; --landfill: #f7f7f3; --border: #c3cac6; --dot: rgba(35,97,79,.55);
+  --f-disp: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif; --f-body: "IBM Plex Sans", system-ui, sans-serif; --f-data: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #131817; --panel: #1a201f; --ink: #e7ebe8; --mute: #9aa5a1; --line: #2f3836; --soft: #232b29;
+  --accent: #6cc0a3; --accent-soft: #1f3a32; --warm: #e5856b; --warm-soft: #3d2620; --ok: #82c68f; --band: rgba(108,192,163,.16); --cool: #7fb0dc; --sun: #e0b04f; --out: #6f7a77; --sea: #0e1413; --landfill: #222a28; --border: #3a4542; --dot: rgba(108,192,163,.6); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #131817; --panel: #1a201f; --ink: #e7ebe8; --mute: #9aa5a1; --line: #2f3836; --soft: #232b29;
+  --accent: #6cc0a3; --accent-soft: #1f3a32; --warm: #e5856b; --warm-soft: #3d2620; --ok: #82c68f; --band: rgba(108,192,163,.16); --cool: #7fb0dc; --sun: #e0b04f; --out: #6f7a77; --sea: #0e1413; --landfill: #222a28; --border: #3a4542; --dot: rgba(108,192,163,.6); color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--f-body); }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; margin-bottom: 14px }
+h1 { font: 600 26px/1.1 var(--f-disp); letter-spacing: .01em; margin: 0 }
+.tag { color: var(--mute); font-size: 13px }
+.draft { font: 500 11px/1 var(--f-data); text-transform: uppercase; letter-spacing: .08em; color: var(--warm); border: 1px solid currentColor; padding: 4px 6px; border-radius: 3px }
+.grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; align-items: start }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr) } }
+aside { position: sticky; top: env(safe-area-inset-top, 0px); max-height: calc(100vh - 16px); overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px }
+@media (max-width: 900px) { aside { position: static; max-height: none; overflow: visible } }
+.grp { display: flex; flex-direction: column; gap: 6px }
+.lab { font: 500 11px/1.2 var(--f-data); text-transform: uppercase; letter-spacing: .08em; color: var(--mute) }
+select, .seg button, .ghost { font: 14px var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 7px 8px; width: 100% }
+select:focus-visible, button:focus-visible, input:focus-visible, tr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); border-radius: 4px; overflow: hidden }
+.seg button { border: 0; border-radius: 0; cursor: pointer; background: transparent; padding: 7px 4px }
+.seg button + button { border-left: 1px solid var(--line) }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--panel); font-weight: 600 }
+.drop { border: 1px dashed var(--line); border-radius: 4px; padding: 8px; font-size: 12.5px; color: var(--mute); text-align: center }
+.drop.over { border-color: var(--accent); color: var(--accent) }
+.drop label { color: var(--accent); cursor: pointer; text-decoration: underline }
+.small { font-size: 12px; color: var(--mute) }
+.err { color: var(--warm); font-size: 12px }
+.chk { display: flex; gap: 8px; align-items: flex-start; font-size: 13px }
+.chk input { margin-top: 3px; accent-color: var(--accent) }
+.off { opacity: .45 }
+.progress { height: 4px; background: var(--soft); border-radius: 2px; overflow: hidden }
+#bar { height: 100%; width: 0; background: var(--accent); transition: width .3s }
+#status { font: 12px var(--f-data); color: var(--mute); font-variant-numeric: tabular-nums }
+.ghost { width: auto; cursor: pointer; background: transparent }
+.primary { font: 600 15px var(--f-body); color: var(--panel); background: var(--accent); border: 0; border-radius: 4px; padding: 10px; cursor: pointer; width: 100% }
+.primary.stale { box-shadow: 0 0 0 3px var(--accent-soft) }
+.colh { font: 600 13px var(--f-data); text-transform: uppercase; letter-spacing: .08em; color: var(--ink); margin: 0 }
+.reading { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px }
+.reading .sub { margin: 2px 0 10px }
+.rgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 20px }
+#empty { color: var(--mute); font-size: 14px; padding: 28px 0 }
+main { display: flex; flex-direction: column; gap: 26px; min-width: 0 }
+#notes p { margin: 0 0 6px; font-size: 13px; color: var(--mute); border-left: 3px solid var(--warm); padding-left: 10px }
+#notes:empty { display: none }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
+@media (max-width: 1100px) { .cards { grid-template-columns: minmax(0, 1fr) } }
+.card { text-align: left; font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; cursor: pointer; display: grid; grid-template-columns: 1fr; gap: 6px }
+.card.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent) }
+@media (max-width: 1100px) and (min-width: 560px) { .card { grid-template-columns: 200px minmax(0, 1fr); align-items: center } .cardhead { grid-column: 1 / -1 } }
+.cardhead { display: flex; justify-content: space-between; gap: 8px; align-items: baseline }
+.sc { font: 600 17px var(--f-disp) }
+.scd { font-size: 12px; color: var(--mute) }
+.compass { width: 100%; max-width: 220px; justify-self: center }
+.ring { fill: none; stroke: var(--line) }
+.compass .spoke { stroke: var(--accent); stroke-width: 9; stroke-linecap: round }
+.compass .spoke.bad { stroke: var(--warm) }
+.az { font: 11px var(--f-data); fill: var(--mute) }
+.big { font: 600 26px/1.1 var(--f-disp); font-variant-numeric: tabular-nums }
+.big small { display: block; font: 12px var(--f-body); color: var(--mute) }
+.sent { margin: 6px 0; font-size: 13.5px }
+.din { margin: 0; font-size: 12.5px; color: var(--mute) }
+.pill { display: inline-block; font: 500 11px/1 var(--f-data); padding: 3px 6px; border-radius: 10px; margin-left: 4px }
+.pill.ok { background: var(--accent-soft); color: var(--ok) }
+.pill.no { background: var(--warm-soft); color: var(--warm) }
+.wait { color: var(--mute); font-style: italic }
+h2 { font: 600 19px/1.2 var(--f-disp); margin: 0 0 4px; text-wrap: balance }
+h3 { font: 500 11px/1.2 var(--f-data); text-transform: uppercase; letter-spacing: .08em; color: var(--mute); margin: 0 0 8px }
+.sub { margin: 0 0 10px; color: var(--mute); font-size: 13px; max-width: 70ch }
+.tw { overflow-x: auto }
+table { border-collapse: collapse; width: 100% }
+th { font: 500 11px var(--f-data); text-transform: uppercase; letter-spacing: .06em; color: var(--mute); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap }
+td { padding: 8px; border-bottom: 1px solid var(--soft); vertical-align: top }
+#tbody tr { cursor: pointer }
+#tbody tr:hover, #tbody tr.on { background: var(--accent-soft) }
+.o { font: 600 13px var(--f-data); white-space: nowrap }
+.num { font-family: var(--f-data); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap }
+td.bad { color: var(--warm) }
+.combo { min-width: 300px }
+.chip { display: inline-block; font-size: 12px; background: var(--soft); border-radius: 3px; padding: 1px 6px; margin: 0 4px 4px 0 }
+.fx { width: 100%; max-width: 640px }
+.pn { font: 13px var(--f-body); fill: var(--ink) }
+.rng { stroke: var(--line); stroke-width: 6; stroke-linecap: round }
+.dot { fill: var(--out) }
+.dotb { fill: var(--accent) }
+.lv { font: 11px var(--f-data); fill: var(--accent) }
+.ax { font: 11px var(--f-data); fill: var(--mute) }
+#detail { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px }
+#detail:empty { display: none }
+.dgrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; margin-top: 10px; max-width: 980px }
+@media (max-width: 1000px) { .dgrid { grid-template-columns: minmax(0, 1fr) } }
+.week { width: 100% }
+line.grid { stroke: var(--soft) }
+.band { fill: var(--band) }
+.top { fill: none; stroke: var(--accent); stroke-width: 1.8 }
+.out { fill: none; stroke: var(--out); stroke-width: 1; stroke-dasharray: 3 2 }
+.refl { stroke: var(--warm); stroke-dasharray: 5 3 }
+.legend { font-size: 12px; color: var(--mute); display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center }
+.k { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 4px }
+.k.top { background: var(--accent) } .k.out { background: var(--out) } .k.band { background: var(--band); height: 10px }
+.mini td, .mini th { padding: 5px 6px; font-size: 12.5px }
+.kv { font-size: 13px; color: var(--mute) }
+.kv b, .energy b { color: var(--ink); font-family: var(--f-data) }
+.energy { font-size: 13px }
+.method { font-size: 13px; color: var(--mute); max-width: 80ch }
+.method p { margin: 0 0 8px }
+
+.loc { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start }
+@media (max-width: 1100px) { .loc { grid-template-columns: minmax(0, 1fr) } }
+.mapbox { position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--sea) }
+#map { display: block; width: 100%; height: 360px; touch-action: none; cursor: grab }
+#map:active { cursor: grabbing }
+@media (max-width: 600px) { #map { height: 280px } }
+.search { position: absolute; top: 10px; left: 10px; right: 56px; max-width: 420px }
+#q { width: 100%; font: 15px var(--f-body); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 9px 10px; box-shadow: 0 1px 4px rgba(0,0,0,.12) }
+#qlist { list-style: none; margin: 4px 0 0; padding: 4px 0; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 4px 14px rgba(0,0,0,.14); max-height: 300px; overflow-y: auto }
+#qlist li { padding: 6px 10px; cursor: pointer; display: flex; flex-direction: column }
+#qlist li span { font-size: 12px; color: var(--mute) }
+#qlist li[aria-selected="true"], #qlist li:hover { background: var(--accent-soft) }
+#qlist li.none { cursor: default; color: var(--mute); font-size: 13px }
+.zoom { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 4px }
+.zoom button { width: 34px; height: 34px; font: 600 18px var(--f-body); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; cursor: pointer }
+#maptip { position: absolute; pointer-events: none; background: var(--ink); color: var(--panel); font-size: 12px; padding: 3px 7px; border-radius: 3px; white-space: nowrap }
+.mapfoot { position: absolute; left: 10px; bottom: 8px; right: 10px; display: flex; justify-content: space-between; gap: 10px; font: 11px var(--f-data); color: var(--mute); pointer-events: none; flex-wrap: wrap }
+.mapfoot span { background: var(--panel); padding: 2px 6px; border-radius: 3px; opacity: .92 }
+#stcard { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; font-size: 13px }
+.sth { font: 600 17px var(--f-disp); text-transform: none; letter-spacing: 0; color: var(--ink); margin: 0 }
+.stm { color: var(--mute); margin: 2px 0 10px; font-size: 12.5px }
+.step { margin: 8px 0 4px } .step b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: var(--panel); font-size: 11px; margin-right: 4px }
+.eds { margin: 0; padding-left: 18px; max-height: 170px; overflow-y: auto } .eds li { margin: 2px 0 } .eds a { color: var(--accent) } .ed { font: 11px var(--f-data); color: var(--mute) }
+.hint { color: var(--mute); font-size: 12.5px; margin: 6px 0 }
+input[type=number] { font: 14px var(--f-data); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 6px; width: 100% }
+.room3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px } .room3 label { font-size: 12px; color: var(--mute); display: flex; flex-direction: column; gap: 2px }
+.inl { font-size: 13px; display: flex; align-items: center; gap: 8px } .inl select { width: auto }
+.link { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit }
+.none { fill: var(--warm) }
+.pcbox { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 4px; overflow-x: auto; overflow-y: hidden; scrollbar-gutter: stable }
+#pctip { position: fixed }
+.tip { position: absolute; z-index: 5; max-width: 300px; background: var(--ink); color: var(--panel); font-size: 12px; line-height: 1.45; padding: 6px 9px; border-radius: 4px; pointer-events: none }
+#pc { display: block; touch-action: none; cursor: crosshair }
+.pcfoot { font-size: 13px; color: var(--mute); margin: 8px 0 14px } .pcfoot b { color: var(--ink); font-family: var(--f-data) }
+.shares { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px 18px }
+.shh { font: 600 12px var(--f-body); margin-bottom: 3px }
+.sh { display: grid; grid-template-columns: 76px minmax(0, 1fr) 34px; gap: 6px; align-items: center; font-size: 12px }
+.shl { color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis } .shv { font: 11px var(--f-data); color: var(--mute); text-align: right }
+.shb { height: 6px; background: var(--soft); border-radius: 3px; overflow: hidden } .shb i { display: block; height: 100%; background: var(--accent) }
+.ftab td { vertical-align: top } .pcell { min-width: 380px }
+.pstart, .pstep, .pbest { font: inherit; color: inherit; text-align: left; cursor: pointer; border: 1px solid var(--line); border-radius: 4px; background: var(--panel) }
+.pstart { font-size: 13px; padding: 4px 8px; margin-bottom: 5px; display: block } .pstep { font-size: 12px; padding: 3px 7px; background: var(--accent-soft); border-color: transparent }
+.pbest { font-size: 13px; padding: 6px 9px; display: block; min-width: 200px } .pbest.on, .pstart:hover, .pstep:hover, .pbest:hover { border-color: var(--accent) }
+.pbest b, .pstart b, .pstep b { font-family: var(--f-data) } .good { color: var(--ok); font-family: var(--f-data) } span.bad, .small.bad { color: var(--warm) }
+.meas td { vertical-align: middle } .meas select { width: auto; padding: 3px 6px; font-size: 13px }
+.rule { font-size: 13px; margin: 0 0 10px }
+.card { cursor: pointer } .card .open { font-size: 13px; margin-top: 4px } .pstart { font-size: 13px; margin-bottom: 4px } .pstart b, .pstep b { font-family: var(--f-data) }
+.psteps { display: flex; flex-wrap: wrap; gap: 4px } .pstep { font-size: 12px; background: var(--accent-soft); border-radius: 3px; padding: 2px 6px }
+.pbar { display: block; width: 120px; height: 6px; background: var(--soft); border-radius: 3px; margin: 4px 0 } .pbar i { display: block; height: 100% }
+.pbar i.pa { background: var(--out) } .pbar i.pb { background: var(--accent) }
+td.why { color: var(--mute); font-size: 13px }
+.pathctl { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; max-width: 820px }
+.steps li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 3px; border-left: 3px solid var(--line); padding-left: 10px }
+.stl { font-size: 13.5px } .stv { font-size: 12.5px; color: var(--mute) } .stv b { color: var(--ink); font-family: var(--f-data) }
+.stb svg { width: 100%; max-width: 360px; height: 12px; display: block } .pa { fill: var(--out) } .pb { fill: var(--accent) }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px } @media (max-width: 900px) { .two { grid-template-columns: minmax(0, 1fr) } }
+.cv canvas { display: block }
+.kvt td:first-child { width: 55% } .kvt td.num { text-align: left; white-space: normal }
+.plan { width: 100%; max-width: 320px }
+.r3d { width: 100%; max-width: 420px; touch-action: none; cursor: grab; display: block }
+.r3d .w3 { fill: var(--soft); fill-opacity: .35; stroke: var(--border); stroke-width: .8 }
+.r3d .o3 { fill: var(--soft); fill-opacity: .55; stroke: var(--border); stroke-width: .8 }
+.r3d .t3 { fill: var(--border); stroke: var(--border); stroke-width: .6 }
+.r3d .r3 { fill: var(--out); fill-opacity: .45; stroke: var(--border); stroke-width: .6 }
+.r3d .g3 { fill: var(--cool); fill-opacity: .3; stroke: var(--cool); stroke-width: .8 }
+.r3d .d3 { fill: var(--ink); fill-opacity: .55; stroke: var(--ink); stroke-width: .6 }
+.r3d .f3 { fill: var(--panel); stroke: var(--border); stroke-width: .8 } .r3d .c3 { fill: var(--accent); stroke: none }
+.r3d .n3 { stroke: var(--mute); stroke-width: 1.2 } .r3d .n3h { fill: var(--mute) } .r3d .n3t { font: 600 11px var(--f-data); fill: var(--mute) } .room { fill: none; stroke: var(--ink); stroke-width: 1.5 } .cellu { fill: var(--accent) } .exc { fill: none; stroke: var(--warm); stroke-width: 1.4 } .win { stroke: var(--ink); stroke-width: 5 }
+.k.exc { width: 10px; height: 10px; border: 1.5px solid var(--warm); border-radius: 50%; background: none } .k.refl { background: var(--warm) }
+.wsel { fill: var(--accent-soft) } .ray { stroke-width: 5; stroke-linecap: round } .hit { fill: transparent; cursor: pointer } .hit:hover { fill: var(--soft); fill-opacity: .5 } .az.on { fill: var(--ink); font-weight: 600 }
+.otabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 12px } .otabs button { font: 13px var(--f-data); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 9px; cursor: pointer; display: flex; flex-direction: column; align-items: center; line-height: 1.2 } .otabs button small { font-size: 11px; color: var(--mute) } .otabs button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 600 }
+.fgrid { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 20px; align-items: start } @media (max-width: 900px) { .fgrid { grid-template-columns: minmax(0, 1fr) } }
+.tri { width: 100%; max-width: 250px; touch-action: none; cursor: crosshair; display: block } .tt { fill: var(--panel); stroke: var(--border); stroke-width: 1.2 } .tg { stroke: var(--soft); stroke-width: 1 } .tl { font: 600 12px var(--f-body) } .tp { fill: var(--ink); stroke: var(--panel); stroke-width: 2 }
+.to { width: 100%; display: block } .axl { font: 11px var(--f-body); fill: var(--mute) } .anch { stroke: var(--mute); stroke-dasharray: 4 3; stroke-width: 1 }
+.pt { cursor: pointer; fill-opacity: .4; stroke: none } .pt.fr { fill-opacity: 1; stroke: var(--panel); stroke-width: 1 } .pt.gone { fill-opacity: .12 } .pt:hover { stroke: var(--ink); stroke-width: 1.5 }
+.cin { fill: var(--accent); background: var(--accent) } .cmid { fill: var(--sun); background: var(--sun) } .cout { fill: var(--warm); background: var(--warm) }
+.k.dotk { width: 9px; height: 9px; border-radius: 50% } .ring10 { fill: none; stroke: var(--ink); stroke-width: 1.2; pointer-events: none } .lab1 { font: 600 11px var(--f-data); fill: var(--ink) } .selr { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-dasharray: 3 2; pointer-events: none }
+.lead { stroke: var(--mute); stroke-width: .8 } .cl { font: 600 11px var(--f-body); paint-order: stroke; stroke: var(--panel); stroke-width: 3px }
+.recipe th.rc { cursor: pointer; text-align: center; vertical-align: bottom } .recipe th.rc:hover, .recipe th.rc.on { color: var(--ink); background: var(--accent-soft) } .recipe th.ex { border-left: 2px solid var(--line) }
+.tag3 { display: block; margin: 3px auto 0; font: 500 9.5px var(--f-data); color: var(--panel); border-radius: 3px; padding: 1px 3px; text-transform: none; letter-spacing: 0 }
+.recipe td { padding: 4px 6px; font-size: 12.5px; white-space: nowrap } .recipe td.lvc { text-align: center; font-size: 12px } .recipe tr.sr td { font-family: var(--f-data) } .recipe tr.grph td { font: 500 11px var(--f-data); text-transform: uppercase; letter-spacing: .06em; color: var(--mute); padding-top: 12px }
+.reg { min-width: 150px } .rbar { display: inline-block; width: 60px; height: 6px; background: var(--soft); border-radius: 3px; vertical-align: middle; overflow: hidden } .rbar i { display: block; height: 100%; background: var(--warm) }
+.bctl { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-bottom: 10px } .bori { display: flex; flex-wrap: wrap; gap: 4px 12px } .btab tr.bsel { cursor: pointer } .btab tr.bsel:hover { background: var(--accent-soft) }
+.tohead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px } .tohead h3 { margin: 0 } .yseg { width: auto } .yseg button { padding: 3px 10px; font-size: 12.5px }
+.ori { display: grid; grid-template-columns: repeat(4, auto); gap: 2px 10px } .types { display: flex; flex-direction: column; gap: 2px }
+details.reading > summary { cursor: pointer; list-style: none; font-size: 13.5px; line-height: 1.5 } details.reading > summary::-webkit-details-marker { display: none } .readline { color: var(--ink) } details.reading[open] > summary .link { display: none } details.reading[open] > summary { margin-bottom: 8px }
+.ttabs { display: flex; flex-wrap: wrap; gap: 6px } .ttabs button { font: 600 15px var(--f-disp); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 8px 14px; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; text-align: left } .ttabs button small { font: 400 12px var(--f-body); color: var(--mute) } .ttabs button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent) }
+.briefbox { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px } .briefbox .lead { font-size: 15px; margin: 4px 0 12px; max-width: 80ch } .briefbox h3 { margin-top: 14px } ul.rec { margin: 0; padding-left: 18px; max-width: 86ch } ul.rec li { margin: 4px 0; font-size: 14px } .tagE { font: 500 10.5px var(--f-data); color: var(--panel); background: var(--accent); border-radius: 3px; padding: 1px 5px; vertical-align: 1px }
+table.guide td, table.guide th { font-size: 13px; padding: 5px 8px; white-space: nowrap } table.guide th.gc { cursor: pointer; text-align: left } table.guide th.gc:hover { color: var(--ink); background: var(--accent-soft) } table.guide td.gsh { background: var(--accent-soft) } table.guide .alt { color: var(--mute); font-size: 12px } table.guide tr.grph td { font: 500 11px var(--f-data); text-transform: uppercase; letter-spacing: .06em; color: var(--mute); padding-top: 12px } table.guide tr.sr td { font-family: var(--f-data) }
+#pcdet > summary, #more > summary { cursor: pointer; font: 600 15px var(--f-disp); margin: 16px 0 8px } #more { margin-top: 6px }
+.strat > summary { cursor: pointer; list-style: revert } .sg { margin-top: 6px } .sgl { font-size: 12.5px; font-weight: 600 } .sgo { display: flex; flex-wrap: wrap; gap: 0 10px } .sgo .chk { font-size: 12.5px }
+.aibox { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--cool); border-radius: 6px; padding: 16px 18px } .aiconn { margin: 6px 0 10px; display: flex; flex-direction: column; gap: 6px } .aikeyrow { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center } .aikeyrow input[type=password] { font: 13px var(--f-data); padding: 5px 7px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink) }
+.aibtns { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px } .aimark { font-size: 12px; color: var(--mute); border-left: 3px solid var(--cool); padding-left: 8px; margin: 6px 0 10px }
+ol.checks { margin: 0; padding-left: 20px; max-width: 88ch } ol.checks li { margin: 0 0 10px } ol.checks p { margin: 2px 0 } .sev { font: 500 10.5px var(--f-data); color: var(--panel); border-radius: 3px; padding: 1px 5px; text-transform: uppercase; letter-spacing: .04em } .sev-e { background: var(--warm) } .sev-c { background: var(--sun) } .sev-n { background: var(--out) }
+.aisum { max-width: 86ch; font-size: 14px } .aisum h4, .ca h4 { font: 600 14px var(--f-body); margin: 12px 0 4px } .aisum p, .ca p { margin: 4px 0 } .aisum ul, .ca ul { margin: 4px 0; padding-left: 18px }
+.chatlog { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow-y: auto; margin-bottom: 8px } .chatlog:empty { display: none } .cq { align-self: flex-end; background: var(--accent-soft); border-radius: 8px; padding: 6px 10px; max-width: 80%; font-size: 14px } .ca { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; max-width: 92%; font-size: 14px }
+.chatf { display: flex; gap: 8px } .chatf input { flex: 1; font: 14px var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px }
+.lgi { white-space: nowrap } .aitag { font: 500 13px var(--f-data); color: var(--cool); vertical-align: 4px } .unocc { fill: var(--soft); opacity: .7 } .k.unk { background: var(--soft); height: 10px } .runbar { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin: 14px 0 4px } .runbar .seg { width: auto } .runbar .seg button { padding: 4px 10px; font-size: 13px } .runbar .small { flex-basis: 100%; max-width: 80ch } .bsum { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; margin-bottom: 8px } @media (max-width: 700px) { .bsum { grid-template-columns: minmax(0, 1fr) } } .tcell { fill: var(--accent-soft) } .zbg { fill: transparent; cursor: crosshair } .zbox { fill: var(--accent); fill-opacity: .1; stroke: var(--accent); stroke-dasharray: 3 2; pointer-events: none } .toctl { display: flex; gap: 12px; align-items: center } .toctl .link { font-size: 12.5px }
+input.auto { color: var(--mute) } .din.bad { color: var(--warm) }
+@media (prefers-reduced-motion: reduce) { #bar { transition: none } }
+
+/* v4 */
+.askbtn { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font: 600 14px var(--f-body); color: var(--panel); background: var(--ink); border: 0; border-radius: 999px; padding: 10px 16px; min-height: 44px; cursor: pointer }
+.v4s { margin: 18px 0 }
+.v4card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px }
+.v4h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; margin-bottom: 12px } .v4h h2 { margin: 0; font-size: 20px }
+.v4pre { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px }
+.v4pre button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 10px 12px; min-height: 60px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--panel); color: var(--ink); font: 14px var(--f-body); cursor: pointer }
+.v4pre button span { font-size: 12px; color: var(--mute) } .v4pre button[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink) } .v4pre button[aria-pressed="true"] span { color: var(--panel); opacity: .85 }
+.v4chg { margin-top: 10px; display: flex; flex-direction: column; gap: 3px; background: var(--warm-soft); border-radius: 8px; padding: 10px 14px; font-size: 13.5px }
+.v4tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 18px 0 } .v4tile.ok .tk { color: var(--accent) } .fcard .dinl { display: block; margin: -2px 0 4px }
+.v4tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 3px }
+.v4tile .tk { font-weight: 600; font-size: 13px } .v4tile b { font: 700 30px/1.1 var(--f-body) } .v4tile .u { font-size: 12.5px; color: var(--ink) }
+.v4tile.dl .tk, b.dl { color: var(--sun) } .v4tile.oh .tk, b.oh { color: var(--warm) } .v4tile.en .tk, b.en { color: var(--cool) }
+.ring4 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px }
+.strip4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px }
+.fcard { display: flex; flex-direction: column; gap: 6px; text-align: left; background: var(--panel); color: var(--ink); border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; font: 13px var(--f-body); min-width: 0 }
+.fcard.on { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink) inset }
+.fch { display: flex; justify-content: space-between; align-items: baseline } .fch b { font-size: 17px } .fch span { font-size: 12px; color: var(--mute) }
+.c3wrap svg { max-width: 100%; max-height: 190px; height: auto; cursor: pointer; display: block; margin: 0 auto } .c3wrap .r3d .c3, .fp3d .r3d .c3 { fill: var(--sun) }
+.c3wait { display: flex; align-items: center; justify-content: center; height: 150px; font-size: 12px; color: var(--mute); background: var(--bg); border-radius: 6px }
+.chips { display: flex; flex-wrap: wrap; gap: 4px } .chips span { font-size: 11.5px; background: var(--soft); border-radius: 999px; padding: 2px 8px }
+.fm { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; font-size: 11.5px; color: var(--mute) } .fm b { font-size: 14px; display: block }
+.plan4 { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center }
+.plan4 .sq { position: relative; width: 130px; height: 130px; border: 2px solid var(--ink); border-radius: 4px; display: flex; align-items: center; justify-content: center; padding: 8px; box-sizing: border-box; font-size: 12.5px; color: var(--mute); background: var(--bg) }
+.plan4 .pn { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-weight: 700; color: var(--ink) }
+h3.v4k { font: 600 13px var(--f-data); text-transform: uppercase; letter-spacing: .07em; margin: 16px 0 8px }
+.dgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px }
+.dcard { background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px } .dcard p { margin: 0; font-size: 13.5px }
+.dcard.avoid { border-color: var(--warm) }
+.dch { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start } .dch > div { display: flex; flex-direction: column; gap: 1px } .dch b { font-size: 16px }
+.tagb { font-size: 11px; border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; white-space: nowrap; color: var(--mute) }
+.imp { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--mute) } .ibar { height: 6px; background: var(--soft); border-radius: 3px; overflow: hidden } .ibar i { display: block; height: 6px; background: var(--ink) }
+.dcf { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap } .rob { font-size: 12px; font-weight: 600 }
+.ghost.why { width: auto; padding: 6px 12px; min-height: 36px; cursor: pointer }
+.whyb { border-top: 1px solid var(--soft); padding-top: 8px; display: flex; flex-direction: column; gap: 4px } .wt { font-size: 12.5px; font-weight: 600; margin-top: 4px }
+.wb { display: grid; grid-template-columns: 82px minmax(0, 1fr) 150px; gap: 8px; align-items: center; font-size: 12px } .wb .bar { height: 8px; background: var(--soft); border-radius: 3px; overflow: hidden } .wb .bar i { display: block; height: 8px }
+.grps { display: flex; flex-wrap: wrap; gap: 6px } .grps span { background: var(--soft); border-radius: 6px; padding: 5px 9px; font-size: 13px }
+.ychips { display: flex; flex-wrap: wrap; gap: 6px } .ychips span { background: var(--soft); border-radius: 8px; padding: 6px 10px; font-size: 13px } .ychips small { color: var(--mute) }
+ul.gain { margin: 0; padding-left: 18px; font-size: 13.5px } ul.gain li { margin: 3px 0 }
+.fpg { display: flex; flex-wrap: wrap; gap: 20px } .sw { flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column } .fpr { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 6px }
+.swr { padding: 7px 0; border-bottom: 1px solid var(--soft); display: flex; flex-direction: column; gap: 5px } .swh { display: flex; justify-content: space-between; gap: 8px; font-size: 13px }
+.swo { display: flex; flex-wrap: wrap; gap: 6px } .swo button { font: 600 12.5px var(--f-body); padding: 6px 10px; min-height: 36px; border-radius: 6px; border: 1.5px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer }
+.swo button.on { background: var(--ink); color: var(--panel); border-color: var(--ink) } .swo button.wi { background: var(--cool); color: var(--panel); border-color: var(--cool) }
+.fp3d svg { width: 100%; max-width: 460px } .fr { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 2px 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--soft) } .fr b { font-size: 17px } .fr b small { font-size: 12px; font-weight: 400; color: var(--mute) } .fr span:last-child:not(:nth-child(2)) { grid-column: 2; font-size: 12.5px; font-weight: 600 }
+.oth { background: var(--bg); border-radius: 8px; padding: 10px 12px; font-size: 13px } .oth ul { margin: 6px 0 0; padding-left: 18px }
+#wireset { width: auto; align-self: flex-start; padding: 8px 14px; cursor: pointer }
+table.cmp { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 560px } table.cmp th, table.cmp td { text-align: left; padding: 7px 6px; border-top: 1px solid var(--soft) } table.cmp thead th { font-size: 12px; color: var(--mute); font-weight: 600 } table.cmp tr.rr { background: var(--bg) }
+.evh { font-size: 20px; margin: 28px 0 8px } details.ev { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 0 14px } details.ev > summary { cursor: pointer; padding: 12px 0; font-weight: 600 } details.ev > summary .small { font-weight: 400; margin-left: 8px }
+.to .recr { fill: none; stroke: #1a7f37; stroke-width: 3 } .to .recl { font: 600 11px var(--f-body); fill: #1a7f37 }
+@media (max-width: 760px) { .ring4 { grid-template-columns: minmax(0, 1fr) } .ring4 > * { grid-column: auto !important; grid-row: auto !important } .plan4 { display: none } .v4pre { grid-template-columns: repeat(2, minmax(0, 1fr)) } .v4tiles { grid-template-columns: minmax(0, 1fr) } }
+
+/* v5 */
+.fine { margin: -8px 0 12px } .fine > summary { cursor: pointer; font-size: 13px; color: var(--mute) } .fgrid1 { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 16px; padding: 8px 0 }
+details.adv { margin-top: 10px; border-top: 1px solid var(--soft); padding-top: 8px } details.adv > summary { cursor: pointer; font-size: 13px; color: var(--mute) }
+.xbtn { display: inline-flex; gap: 4px } .ghost.xb { width: auto; padding: 4px 9px; font-size: 12px; cursor: pointer; min-height: 30px }
+details.ev.in { margin-top: 14px }
+.modband { margin: 0 0 12px; padding: 7px 10px; border-left: 3px solid var(--warm); background: var(--warm-soft); font-size: 13px } .modnote span { display: block; margin-top: 3px } .warmtxt { color: var(--warm) }
+.regt { font-size: 12.5px; min-width: 640px } .regt th, .regt td { text-align: left; vertical-align: top; padding: 5px 6px; border-top: 1px solid var(--soft) } .regt td.st { white-space: nowrap; font: 500 11px var(--f-data); text-transform: uppercase; letter-spacing: .05em } .regt td.st.secondary, .regt td.st.assumption { color: var(--warm) }
+.coolt { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 620px } .coolt th, .coolt td { text-align: left; padding: 7px 6px; border-top: 1px solid var(--soft) } .coolt thead th { font-size: 12px; color: var(--mute); font-weight: 600 } .coolt tr.on { background: var(--bg) }
+
+#detail h3 { font-size: 15px; margin: 18px 0 6px } .dstack { display: flex; flex-direction: column; gap: 10px } .dstack .two { margin-top: 8px } #detail .dfull { margin-top: 6px } #detail .week { width: 100%; height: auto } #detail .week .ax { font-size: 13px }
+#detail .mini { font-size: 13.5px } #detail .legend { font-size: 13px }
+.cvlist { margin: 4px 0 12px; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.5 } .cvlist li { display: flex; gap: 10px; align-items: baseline }
+.cvlist li b.fl { min-width: 54px } details.figs > summary { cursor: pointer; font-size: 13px; color: var(--mute); margin: 6px 0 } .swo button .flip { display: block; font-size: 10.5px; font-weight: 600; color: var(--warm) } .swo button .flip.gd { color: var(--cool) }
+.fr .cvd { font-size: 12.5px }
+.spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.9s linear infinite; vertical-align: -2px } @keyframes spin { to { transform: rotate(360deg) } }
+.coold > summary { cursor: pointer; list-style: none } .coold > summary::-webkit-details-marker { display: none }
+.cdh { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px } .h2l { font: 600 20px var(--f-disp); color: var(--ink) } .h2l::before { content: "▸ "; color: var(--mute); font-size: 15px } .coold[open] .h2l::before { content: "▾ " }
+.coolsum { display: flex; flex-wrap: wrap; gap: 6px } .coold[open] > summary { margin-bottom: 10px }
+.cvd { display: inline-block; font: 600 12px var(--f-body); padding: 2px 8px; border-radius: 10px; white-space: nowrap }
+.cvd.none { background: var(--accent-soft); color: var(--accent) } .cvd.ceil { background: rgba(63,111,154,.15); color: var(--cool) } .cvd.sys { background: var(--warm-soft); color: var(--warm) } .cvd.dry { background: rgba(168,118,19,.15); color: var(--sun) } .cvd.wait { background: var(--soft); color: var(--mute) }
+.fcard .cvd { align-self: flex-start; margin: 2px 0 4px }
+.ctests { margin: 6px 0 12px; padding-left: 20px; font-size: 13.5px; line-height: 1.55 } .ctests input, .coolt th input { width: 64px; font-size: 13px; padding: 2px 4px }
+.coolv { font-size: 15px; margin: 4px 0 12px } .capin { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px } .capin input { width: 80px }
+.cchart svg { width: 100%; max-width: 760px; display: block }
+.pcbox { overflow-x: auto }
+@media (max-width: 760px) { .fgrid1 { grid-template-columns: minmax(0, 1fr) } }
+.cool .ctt { font: 600 13px var(--f-body); fill: var(--ink) } .cool .cax { font: 11px var(--f-data); fill: var(--mute) } .cool .cg { stroke: var(--soft); stroke-width: 1 }
+.cool .cbi { fill: var(--cool); fill-opacity: .75 } .cool .cbo { fill: var(--warm); fill-opacity: .8 } .cool .ccap { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 5 3 } .cool .ccapt { font: 600 11px var(--f-body); fill: var(--ink) }
+/* v16 phase 3.4: progress panel */
+.runp .pb { display: inline-block; height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; vertical-align: middle; width: 160px; flex: 0 0 160px } .runp .pb i { display: block; height: 100%; background: var(--accent, var(--ink)); transition: width .4s } .runp .pb.big { display: block; width: 100%; height: 12px; margin: 6px 0 10px } .runp .pst { border-top: 1px solid var(--soft); padding: 8px 0 } .runp h3 { font-size: 13px; margin: 0 0 6px } .runp .prow { display: flex; align-items: center; gap: 10px; margin: 4px 0; font-size: 13px } .runp .prow > span:first-child { flex: 0 0 64px; font-weight: 600 } .runp .pfac { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0 6px 74px } .runp .pf { display: flex; align-items: center; gap: 6px; font-size: 12px } .runp .pf .pb { width: 70px; flex: 0 0 70px; height: 6px } .runp .pf.dn .pb i { background: var(--ok) }
+/* v16 phase 3.3: design buttons above the switches */
+.dsel { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px } .dsel button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; font: 600 12.5px var(--f-body); padding: 6px 10px; min-height: 40px; border-radius: 6px; border: 1.5px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; text-align: left } .dsel button small { font-weight: 400; font-size: 11px; color: var(--mute) } .dsel button.on { background: var(--ink); color: var(--panel); border-color: var(--ink) } .dsel button.on small { color: var(--panel) } .dsel button.wi { background: var(--cool); border-color: var(--cool) } .dsel button.miss { border-style: dashed }
+/* v16 phase 3: verdict */
+#v5verd p.lead { font-size: 15px; margin: 6px 0 } #v5verd p.lead.ok { color: var(--ok) } #v5verd p.lead.bad { color: var(--warm) } #v5verd ul.miss { margin: 4px 0 8px 18px; padding: 0 } b.bad { color: var(--warm) } .mute { color: var(--mute) } .vtab td, .vtab th { vertical-align: top }
+</style>
+<div class="wrap">
+  <header class="top"><h1>Room Clima <span class="aitag">v16 · phase 2</span></h1><span class="tag">What to build, facade by facade, for daylight, comfort and energy in this climate</span><span class="draft">Draft, not validated</span><button type="button" id="askbtn" class="askbtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg>Ask Claude</button></header>
+  <div class="grid">
+    <aside>
+      <h2 class="colh">Inputs</h2>
+      <div class="grp"><span class="lab">Weather</span>
+        <select id="wx" aria-label="Weather file"></select>
+        <div class="drop" id="drop">Drop an EPW file here or <label for="file">choose one</label><input id="file" type="file" accept=".epw,.zip" hidden></div>
+        <span class="small" id="wxinfo"></span><span class="err" id="fileerr"></span></div>
+      <div class="grp"><span class="lab">DIN 4108-2 summer region <span class="small">(Sommerklimaregion)</span></span>
+        <select id="region" aria-label="Summer climate region"><option value="A">A, summer-cool (25 °C)</option><option value="B">B, moderate (26 °C)</option><option value="C">C, summer-hot (27 °C)</option></select>
+        <span class="err" id="regionask" hidden>Choose the region of the site.</span>
+        <span class="small" id="reginfo"></span></div>
+      <div class="grp"><span class="lab">Future climate</span>
+        <div class="seg" id="futSeg" role="group" aria-label="Future climate"><button type="button" data-v="0" aria-pressed="true">Present</button><button type="button" data-v="1.5" aria-pressed="false" title="around 2030">+1.5 °C</button><button type="button" data-v="2" aria-pressed="false" title="around 2050">+2 °C</button><button type="button" data-v="3" aria-pressed="false" title="around 2080 to 2100">+3 °C</button></div>
+        <span class="small">Global warming since 1850-1900. Approximate years: +1.5 °C around 2030, +2 °C around 2050, +3 °C around 2080 to 2100 (earlier on high emissions).</span>
+        <span class="small modnote" id="futnote"></span></div>
+      <div class="grp"><span class="lab">Urban context</span>
+        <div class="seg" id="uhiSeg" role="group" aria-label="Urban context"><button type="button" data-v="off" aria-pressed="true">As recorded</button><button type="button" data-v="suburban" aria-pressed="false">Suburban</button><button type="button" data-v="urban" aria-pressed="false">Urban</button><button type="button" data-v="dense" aria-pressed="false">Dense</button></div>
+        <div id="uhibox" hidden>
+          <label class="inl">Sky view factor, area average <input id="svf" type="range" min="0.2" max="1" step="0.05" style="width:100px"> <output id="svfo"></output></label>
+          <label class="inl">Vegetation fraction <input id="fveg" type="range" min="0" max="0.8" step="0.05" style="width:100px"> <output id="fvego"></output></label>
+        </div>
+        <span class="small modnote" id="uhinote"></span>
+        <span class="small">Weather files usually come from airports outside the city. An urban context raises the air temperature by an estimated heat island (Theeuwes et al. 2017). Same model, presets and code as Macro Clima and Micro Clima; the preset values are placeholders.</span></div>
+      <div class="grp"><span class="lab">Use</span>
+        <div class="seg" id="useSeg"><button type="button" data-v="dwelling">Dwelling</button><button type="button" data-v="office">Office</button><button type="button" data-v="school">School</button></div>
+        <span class="small">DIN 4108-2 boundary conditions for gains, schedules, base air change and heating setpoint.</span>
+        <label class="inl">Blinds operated <select id="blindctl" aria-label="How blinds are operated" style="width:auto"><option value="auto">automatically</option><option value="hand">by hand</option></select></label>
+        <span class="small" id="blindthr"></span>
+        <details class="small"><summary>Blind properties</summary>
+          <label class="inl">Exterior blind F<sub>C</sub> <input id="fcext" type="number" step="0.05" min="0" max="1" placeholder="DIN" style="width:64px"> light <input id="tauext" type="number" step="0.05" min="0" max="1" style="width:64px"></label>
+          <label class="inl">Interior blind F<sub>C</sub> <input id="fcint" type="number" step="0.05" min="0" max="1" placeholder="DIN" style="width:64px"> light <input id="tauint" type="number" step="0.05" min="0" max="1" style="width:64px"></label>
+          <span class="small">F<sub>C</sub>: share of solar heat let through when down; empty = DIN 4108-2 Table 7 by glazing (exterior 0.25, 0.30 with solar control glass; interior 0.70 double, 0.65 triple). Light: share of daylight let through when down (assumptions 0.10 and 0.25).</span>
+        </details>
+        <label class="inl">Ceiling fan power <input id="fanw" type="number" step="0.5" min="0" max="10" style="width:70px"> W/m² floor, while on</label>
+        <span class="small" id="gainnote"></span></div>
+      <div class="grp"><span class="lab">Room</span>
+        <div class="room3"><label>Width<input id="rw" type="number" step="0.05" min="2" max="12"></label><label>Depth<input id="rd" type="number" step="0.05" min="2" max="12"></label><label>Height<input id="rh" type="number" step="0.05" min="2.4" max="5"></label></div>
+        <label class="inl">Wall depth <select id="wall" aria-label="Wall depth"><option value="0.3">30 cm</option><option value="0.35">35 cm</option><option value="0.4">40 cm</option></select></label>
+        <span class="small">Width is facade A. Glass 10 cm behind the inner face of the wall. <button id="roomreset" type="button" class="link">Preset size</button></span><span class="err" id="roomerr"></span></div>
+      <div class="grp"><span class="lab">Building</span>
+        <span class="small">Facades the building has, by the direction they face:</span>
+        <div class="ori" id="ori"></div>
+        <span class="small">Room types:</span>
+        <div id="types" class="types"></div>
+        <span class="small" id="orinote"></span></div>
+      <details class="grp strat"><summary><span class="lab">Strategies to test</span> <span class="small" id="stratsum"></span></summary>
+        <span class="small">Untick what is not feasible on this site: it is neither simulated nor recommended.</span>
+        <div id="strat"></div><span class="err" id="straterr"></span></details>
+      <div class="grp"><label class="chk"><input type="checkbox" id="refwin"> Refine the window size in 5% steps</label>
+        <span class="small">Optional. After the search, sizes within 10 points of the best ones are added in 5% steps, and window size, fixed shading and blinds are searched again around them. Adds about half to two thirds to the run time. Ticking it after a run refines that run.</span></div>
+      <div class="grp"><span class="lab">Comfort standard</span><select id="model" aria-label="Comfort standard"></select>
+        <div id="catrow"><select id="cat" aria-label="Category"></select></div>
+        <label class="chk" id="fanrow"><input type="checkbox" id="nafan"> Credit ceiling fans with the EN 16798-1 air speed allowance (+1.8 K at 0.9 m/s, in the hours the fans run). Not part of the German annex.</label>
+        <span class="small" id="modelloc"></span>
+        <span class="small">When cooling is used, the room is held at the standard's upper limit in occupied hours: with the German annex the upper edge of its band; with EN 16798-1 and ASHRAE 55 their fixed limits for cooled rooms; with DIN 4108-2 the reference temperature of the region.</span></div>
+      <div class="grp"><button id="run" type="button" class="primary">Run</button><div class="progress"><div id="bar"></div></div><span id="status">Set the inputs, then run.</span></div>
+    </aside>
+    <main>
+      <details class="reading" id="settings"><summary><span class="colh">Reading</span> <span id="readline" class="readline">Choose the inputs and press Run.</span> <span class="link">Change</span></summary><p class="sub">These choices score the same calculation. A change of the daylight measure, minimum or comfort model completes the trade-off front in the background; only the missing designs are simulated.</p>
+        <div class="rgrid">
+          <div class="grp"><span class="lab">Daylight</span>
+            <div class="seg" id="dlSeg" role="group" aria-label="Daylight measure"><button type="button" data-v="UDI">Useful daylight (UDI), %</button><button type="button" data-v="S">Daylight score S, %</button><button type="button" data-v="EN">EN 17037 rating</button></div>
+            <span class="small" id="dlnote"></span>
+            <label class="inl">Daylight target <input id="dlt" type="number" step="5" min="0" max="100" style="width:70px"> % useful daylight</label>
+            <label class="chk"><input type="checkbox" id="floorOn"> Require the EN 17037 minimum</label>
+            <span class="small">Designs that miss it drop out of the ranking, however good their comfort and energy.</span></div>
+          <div class="grp"><span class="lab">Comfort</span>
+            <span class="small" id="modelnote"></span>
+            <label class="inl">Overheating limit <input id="limit" type="number" step="50" min="1" style="width:90px"> <span id="limu">K·h/a</span></label>
+            <span class="small">Judged without cooling. Score 0.5 at the limit; a design above it does not meet the comfort target.</span></div>
+          <div class="grp"><span class="lab">Energy, delivered</span>
+            <label class="inl">Target <input id="tgt" type="number" step="0.5" min="0" style="width:80px"> kWh/m²a</label>
+            <label class="inl">Limit <input id="upp" type="number" step="0.5" min="0" style="width:80px"> kWh/m²a</label>
+            <label class="inl">Carbon of electricity <input id="grid" type="number" step="0.01" min="0" style="width:80px"> kg CO₂e/kWh, mean over 50 years</label>
+            <label class="inl">COP heating <input id="coph" type="number" step="0.1" min="0.5" style="width:70px"> cooling <input id="copc" type="number" step="0.1" min="0.5" style="width:70px"></label>
+            <span class="small" id="enote"></span></div>
+        </div>
+        <details class="adv"><summary>Advanced: other daylight measures</summary>
+        <div class="rgrid">
+          <div class="grp"><span class="lab">Daylight measure</span>
+            <select id="dlm" aria-label="Daylight measure"><option value="UDI">Useful daylight (UDI) with blinds, % of floor and hours</option><option value="S">Daylight score S, % of floor and working hours</option><option value="UDA">Useful daylight area, % of floor</option><option value="LEED">LEED sDA, % of floor, reduced when ASE is above 10%</option><option value="EN">EN 17037 rating</option></select>
+            <label class="inl">Required minimum <select id="floor" aria-label="Required daylight minimum"><option value="en">EN 17037 minimum</option><option value="enx">EN 17037 minimum, excess area at most 10%</option><option value="none">None</option></select></label></div>
+        </div></details></details>
+      <p id="empty">No results yet. Choose the weather, use and room on the left, then press Run.</p>
+      <div id="results" hidden>
+      <div class="modband" id="modband" hidden></div>
+      <div class="ttabs" id="ttabs" role="group" aria-label="Room type"></div>
+      <div id="notes"></div>
+      <section class="aibox" id="aibox" hidden><h2>Critical review by Claude</h2>
+        <p class="sub">Claude reads the full results of this run, looks for likely errors and weak points, and writes a critical summary. Then you can ask it questions; it can look up the options already evaluated and simulate a specific design. It uses only the numbers computed here, and its text is marked.</p>
+        <div class="aiconn"><span class="small" id="aiconnnote"></span>
+          <div id="aikeyrow" class="aikeyrow" hidden><label class="inl">API key <input id="aikey" type="password" autocomplete="off" placeholder="sk-ant-…" style="width:260px"></label> <label class="chk"><input type="checkbox" id="aikeep"> remember in this browser</label>
+            <label class="inl">Model <select id="aimodel" style="width:auto"><option value="claude-sonnet-5-5">Claude Sonnet 5.5 (faster)</option><option value="claude-opus-5-5">Claude Opus 5.5 (most careful)</option></select></label></div></div>
+        <div class="aibtns"><button id="aigo" type="button" class="primary" style="width:auto;padding:8px 16px">Check the results</button> <select id="aiscope" style="width:auto"><option value="shown">The room type shown</option><option value="all">All room types</option></select> <button id="aistop" type="button" class="link" hidden>Stop</button> <span class="small" id="aistate"></span></div>
+        <div id="aiout"></div>
+        <h3 style="margin-top:16px">Ask about the results</h3>
+        <div id="chatlog" class="chatlog"></div>
+        <form id="chatf" class="chatf"><input id="chatq" type="text" placeholder="For example: what changes on the south and west facades without exterior blinds?" aria-label="Question about the results"><button id="chatgo" type="submit" class="primary" style="width:auto;padding:8px 14px">Ask</button></form></section>
+      <section class="v4s" id="v4prio"></section>
+      <details class="fine" id="finedet"><summary>Fine-tune the priorities</summary><div class="fgrid1"><div id="tri"></div><div><p class="small" id="wtxt"></p><button id="weq" type="button" class="link">Equal weights</button>
+        <p class="small">Click a small triangle: the closer to a corner, the more that result counts. The same triangle always gives the same weights.</p></div></div></details>
+      <section class="v4card runp" id="runp" hidden aria-live="polite"></section>
+      <section class="v4s v4card" id="v5verd"></section>
+      <section class="v4tiles" id="v4tiles"></section>
+      <section class="v4s" id="v4dec"></section>
+      <section class="v4s v4card" id="v4glance"></section>
+      <details class="v4s v4card coold" id="cooldet"><summary><span class="cdh"><span class="h2l">Do these rooms need cooling?</span><span class="coolsum" id="coolsum"></span></span></summary><div id="v5cool"></div></details>
+      <section class="v4s v4card" id="facbox">
+        <div id="v4fac"></div>
+        <details class="ev in" id="evdet"><summary>How the room behaves through the year <span class="small">comfort diagram, hottest week, every hour, comfort under every standard, daylight readings</span></summary>
+        <section id="detail"></section></details>
+      </section>
+      <h2 class="evh">Evidence and method</h2>
+      <details class="ev" id="evpc"><summary>All options at this facade <span class="small">trade-off chart and parallel coordinates, filter by measure and result</span></summary>
+        <div class="tohead"><h3 class="v4k" id="toh">Trade-off at this facade</h3><div class="toctl"><span class="xbtn"><button type="button" class="ghost xb" data-x="tradeoff|svg">SVG</button><button type="button" class="ghost xb" data-x="tradeoff|png">PNG</button></span><button id="tofront" type="button" class="link">Focus on the front</button><button id="toreset" type="button" class="link" hidden>Reset view</button><div class="seg yseg" id="yaxSeg" role="group" aria-label="Vertical axis"><button type="button" data-v="E">Energy</button><button type="button" data-v="C">Overheating</button></div></div></div>
+        <div id="tradeoff"></div><p class="legend" id="tolegend"></p><p class="small">Drag a box on the chart to zoom; double-click to go back. Click a dot to see that design through the year.</p>
+        <div id="pcdet"><div class="tohead"><span id="pctitle" class="small">All options at this facade</span><span class="xbtn"><button type="button" class="ghost xb" data-x="pc|png">PNG</button><button type="button" class="ghost xb" data-x="csv|csv">Table (CSV)</button></span></div>
+          <p class="sub">Every option simulated at this facade, one line each. Drag along a result axis to set the range you accept; click a choice on an axis to set it aside; click a line to see it through the year.</p>
+          <div class="pcbox"><canvas id="pc" aria-label="Parallel coordinates of the options at this facade"></canvas><div id="pctip" class="tip" hidden></div></div>
+          <p class="small">Bold: the ten best. ↓ lower is better, ↑ higher is better. Overheating, DIN degree-hours and humid hours on a square-root scale. Hover to preview, click to open.</p>
+          <p class="pcfoot"><span id="pccount"></span> <button id="pcreset" type="button" class="link" hidden>Clear ranges</button></p></div></details>
+      <details class="ev"><summary>Method and limits <span class="small">engines, standards, controls, scoring, search, parameter register, version notes</span></summary>
+      <section class="method"><h2>Method and limits</h2>
+      <p>Thermal engine: EN ISO 52016-1 hourly model with wind-driven exterior convection and angle-dependent glazing, validated against ASHRAE Standard 140 and EnergyPlus in 14 climates. Checked against EnergyPlus for the three room types (432 rooms, 3 climates, v15 controls): options ranked alike (rank correlation 0.98), hourly error 0.7 K, rooms about 0.45 K cooler on average and DIN degree-hours about 5% low. The comparison is to be repeated with the v16 controls. Windows sit 10 cm behind the inner face of the wall; the reveal, overhangs and fins shade the glass hour by hour from the same geometry as the daylight model.</p>
+      <p>Internal gains and schedules (interne Wärmeeinträge, Nutzungszeiten): every run uses those of DIN 4108-2, 8.4.2 b and e: dwellings 100 Wh/m² a day over all hours; offices and schools 144 Wh/m² a day over 7 to 18 h, Monday to Friday, no public holidays or school breaks. The year starts on a Monday. Energy figures use the same until the profiles of DIN V 18599-10 are added.</p>
+      <p>Summer protection check (sommerlicher Wärmeschutz, DIN 4108-2): each design shown is rerun with the conditions of 8.4.2 only: the standard's gains, all convective; base air change 0.5 1/h for dwellings and 4 A_G/V in use hours, 0.24 1/h outside, for other uses; heating to 20 or 21 °C; day ventilation up to 3 1/h when the room air is above 23 °C and above the outdoor air; night ventilation at the design's level, 2 1/h where windows can be opened at night or 5 1/h with air across storeys or a fan system, when the room air is above the heating setpoint and above the outdoor air, and only with sun protection reaching g_tot of 0.4 or less; blinds by irradiance on the window alone, and not at weekends when operated by hand in non-residential use; no fans, no cooling. Degree-hours above 25, 26 or 27 °C by summer region (Übertemperaturgradstunden), limit 1,200 K·h/a for dwellings and 500 K·h/a otherwise (Table 9). The region is chosen from figure 1 of the standard. The proof uses the 2011 test reference year of the region (Testreferenzjahr, 8.4.2 c); on any other weather file, the bundled ones included, the result is an indication. Elsewhere in the page the DIN figure of the design run is an estimate: same gains, the app's own controls.</p>
+      <p>Design runs (comfort and energy): windows open by day when the room air is above 23 °C, the outdoor air is at least 1 K cooler and at least 12 °C; at night after a warm day (operative temperature above 24 °C in the last presence period) when the room air is above the heating setpoint and at least 2 K warmer than outside. In both cases the air flow is reduced in the hour so that the operative temperature stays at least 2 K above the heating setpoint: windows never open while heating runs. Tested on 864 cases in three climates: no hour with open windows and heating; window ventilation adds at most 0.3 kWh/m²a of heating in medium and heavy rooms and up to 0.8 kWh/m²a in light rooms, where the cooled structure draws heat the next morning. Day ventilation: none or 3 1/h. Night ventilation: none, 2 1/h, or 5 1/h, the last only when ticked, since it needs air across storeys or a fan system. Blinds come down by the DIN 4108-2 irradiance thresholds when the room air is above 23 °C, so winter sun is kept; set "by hand" in the inputs, they stay up at weekends in non-residential use. The free opening area that ventilation needs is estimated for single-sided openings without wind (CIBSE AM10: Q = 0.6 A / 3 √(g h ΔT / T), ΔT 2 K by day and 3 K at night).</p>
+      <p>Comfort models: German annex (DIN EN 16798-1/NA): comfort temperature 22 °C up to 16 °C hourly mean outdoor temperature, then 18 + 0.25 θe, 26 °C from 32 °C; band ±1, ±2, ±3 K by category. Until v15 the band followed the running mean, which roughly doubled the degree-hours above it. The basis on the hourly temperature is in the standard (caption of figure NA.2); the formula and tolerances are from secondary sources until checked against the text of NA.4.1. EN 16798-1 and ASHRAE 55 adaptive models as before; their bands are held at the top value above the range of the model. Ceiling fans raise the upper limit by 1.8 K in the hours in which they run (until v15: in every hour at 25 °C or more).</p>
+      <p>Operation for energy: heating, and ideal cooling in occupied hours to the upper limit of the comfort standard (German annex: the upper edge of its band; EN 16798-1 and ASHRAE 55: fixed limits for cooled rooms, 26 °C by default; DIN 4108-2: the region's reference temperature). Delivered energy = heating need ÷ COP + cooling need ÷ COP + fan electricity, cooling including moisture removal above 12 g/kg. The cooled run is a mixed-mode building: windows stay shut while cooling runs, open by day only when the outdoor air is at least 2 K below the cooling limit and at most 12 g/kg, at night only when it is at most 12 g/kg. Overheating is always judged from the run without cooling.</p>
+      <p>Cooling need: in Germany (or with the DIN 4108-2 model) the summer protection check decides; elsewhere the chosen comfort standard: at most 5% of occupied hours above its band by default. Where cooling is needed, the loads are sized on the 99th percentile of the occupied cooling hours (the load exceeded in 1% of them), so a Monday morning after a hot weekend does not set the size. A chilled ceiling without air conditioning is enough when, with dew-point control, its rated capacity (at 10 K between room and mean water, less when the water must run warmer than 16 °C or than the room's dew point + 1 K) covers that load with the room at most at 12 g/kg (up to 75 W/m² floor), and the humid hours in which it falls short and the hours with room air above 12 g/kg each stay within 5% of occupied hours. Otherwise air conditioning is needed. Ideal loads are a first estimate, not a sizing; they include the fresh air at outdoor temperature.</p>
+      <p>Daylight: climate-based, in the page, validated against Radiance (sDA within about 1 point, ASE identical). Scored by one of four measures: useful daylight score S (default), useful daylight area, LEED sDA reduced when ASE is above 10%, or the EN 17037 rating as steps, with a minimum below which the score is 0 (EN 17037 minimum by default). Movable blinds do not yet enter the daylight results (planned for the next phase). Light transmittance by glazing: double 0.80 / 0.70 / 0.55 and triple 0.74 / 0.66 / 0.50 for g 0.60 / 0.45 / 0.30 (typical product values, an assumption).</p>
+      <p>Constructions: the room is cut at the mid-plane of the slabs and internal walls, which are adiabatic. Thermal mass levels, heat capacity seen from the room per m² floor (EN ISO 13786, cellular room): light (timber floor on dry screed, gypsum linings, stud partitions) about 100 kJ/m²K; medium (concrete slab with screed and suspended ceiling, sand-lime inner leaf, stud partitions) about 230; heavy (as medium with the slab soffit exposed over 70% of the ceiling) about 390, close to DIN V 18599 "schwer"; very heavy (heavy with 17.5 cm sand-lime partitions) about 700, not tested unless ticked. Shading factors F_C from DIN 4108-2 Table 7. Mass works mainly together with night ventilation.</p>
+      <p>Building-wide measures (glass, wall insulation, mass) are chosen once for all room types tested: the set with the highest mean score over every facade of every room type. Each room type keeps its own window, shading and ventilation choices. Every option includes the wall reveal of the chosen wall depth.</p>
+      <p>Scoring (v16 phase 3): fixed scales, never taken from the run. Daylight: the useful daylight share; target 40% (sufficient), words at 40, 60 and 80%. Comfort: 1 with no overheating, 0.5 at the limit, 1/3 at twice the limit. Energy: 1 at or below the target, 0.5 at the limit. The overall score is the weighted geometric mean, with the weights set in the priority triangle. Recommended design at each facade: among the designs that meet every target (daylight minimum, daylight target, comfort limit, energy limit and, in Germany, DIN 4108-2 as estimated in the design run), the one with the highest score; when none meets them all, the closest design: the smallest largest shortfall, each shortfall as a share of its target and weighted by the priorities, with the daylight minimum and DIN 4108-2 never traded. Other packages: every design that also meets every target and differs in two or more measures, best score first, with the score gap shown (up to five, near twins thinned). Overheating without cooling is free-running performance (thermal autonomy) over a typical year; it is not a passive survivability check (no power outage, no extreme week). Scenarios: the recommended design and the packages rerun at +2 °C (+3 °C when the run is at +2 °C) and with poor operation (blinds down on every other day only, no night ventilation). Carbon: embodied carbon of the elements the options change, with replacements over 50 years, plus delivered energy times the grid factor over 50 years; generic factors listed in the register, shown but not scored. Search (v16 phase 3.2): the front is not extended from designs whose largest shortfall exceeds 100%; afterwards a local search around the lowest-carbon design that meets every target; see search.prune in the register. Ties within 0.01 in score go to less whole-life carbon. Corner picks: the option with the smallest largest weighted shortfall, weight 0.6 on one metric and 0.2 on the others.</p>
+      <p>Recommendations: the building's facades are combined by taking, for each set of shared measures, each facade's best option with that set, and keeping the set with the highest mean score (checked against brute force). Each statement gives the modelled difference against the same option with only that measure changed. "Little difference": every alternative tested changes the result by less than 3 daylight points, 100 K·h/a and 1 kWh/m²a. "Avoid": a large difference (five times that) at every facade. Only the strategies ticked in the inputs are simulated and recommended.</p>
+      <p>Search: for each facade of the building, 60 designs at random, window ratio, outdoor shading and glazing drawn from those meeting the daylight minimum there, then four rounds of 30 variations of options on the Pareto front, then every single change of every design on the front, repeated until the front stops changing (at most 5,000 designs per facade). Checked against brute force at 7 facades in 3 climates (v3).</p>
+      <p>Weather files: gaps in air temperature, dew point and radiation are filled by linear interpolation in time and listed under the weather input; a file with more than 2% of hours missing in any of them is refused. Missing long-wave sky radiation is computed from dew point and sky cover (Clark and Allen). The bundled German file is a test reference year whose edition is not recorded; it stands for region C.</p>
+      <p>Weather modifiers, shared with Macro Clima and Micro Clima (same code, copied from Macro Clima and checked against it to 2·10⁻⁶ K): future climate shifts the file to a global warming level of +1.5, +2 or +3 °C by the monthly change of its IPCC AR6 region, measured from the middle of the file's years (2010 when the file does not state them); relative humidity is held, so the dew point rises, and long-wave sky radiation follows the temperature. The urban context adds an estimated heat island (Theeuwes et al. 2017) to the air temperature, full at night and 15 % of it at the sun's daily peak, with the vapour pressure held. Future change first, heat island on top. Sun, daylight and wind are unchanged. With a modifier on, every result uses the modified weather, the DIN 4108-2 check included, which is then a look ahead, not a proof.</p>
+      <p>Not included yet: humidity in the comfort metric (reported separately), construction cost and carbon, obstruction by neighbouring buildings. Supply air is outdoor air.</p>
+      <h3>Parameter register</h3>
+      <p class="small">Every value the engine and this page use, with its source. Standard: from the text of the standard named. Secondary: from a secondary source, to be checked against the standard. Decision: a modelling choice of this app, dated. Assumption: a typical value without a binding source.</p>
+      <div class="tw"><table class="regt" id="regtable"></table></div>
+      <h3>Version notes</h3>
+      <div class="tw"><table class="regt" id="changelog"></table></div>
+    </section>
+      </details>
+      </div>
+    </main>
+  </div>
+</div>

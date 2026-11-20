@@ -211,5 +211,5 @@ footer {{ padding: 22px 0 48px; font-size: 13px; color: var(--mute) }}
 </body>
 </html>
 '''
-(ROOT / 'index.html').write_text(page)
+(ROOT / 'index.html').write_text(page.replace('<body>', '<body>' + A.bar('home'), 1))
 print('index.html written;', nmap, 'station dots in the map preview')

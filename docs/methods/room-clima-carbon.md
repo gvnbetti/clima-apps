@@ -28,7 +28,7 @@ installed during the study period: ⌈50 / L⌉.
 the 50-year study period.
 
 The factor represents an assumed average over the study period, not today's grid intensity. Germany's electricity mix
-was approximately 0.38 kg CO₂e/kWh in 2024 (Icha & Lauf, 2025). The lower factor reflects the expected decarbonisation of electricity
+was approximately 0.41 kg CO₂e/kWh in 2024, including upstream emissions (Icha & Lauf, 2026). The lower factor reflects the expected decarbonisation of electricity
 generation. It can be changed in the app.
 
 ## Embodied carbon of design options
@@ -88,7 +88,7 @@ The recommendation therefore prioritises meeting the comfort, energy and dayligh
 carbon to identify the better-performing option among eligible designs.
 
 ## References
-<!-- refs: oekobaudat bnb dgnb icha2025 -->
+<!-- refs: oekobaudat bnb dgnb icha2026 -->
 
 Bundesministerium für Wohnen, Stadtentwicklung und Bauwesen. (n.d.-a). *Bewertungssystem Nachhaltiges Bauen (BNB)*. https://www.bnb-nachhaltigesbauen.de
 
@@ -96,4 +96,4 @@ Bundesministerium für Wohnen, Stadtentwicklung und Bauwesen. (n.d.-b). *ÖKOBAU
 
 Deutsche Gesellschaft für Nachhaltiges Bauen. (n.d.). *DGNB System*. https://www.dgnb-system.de
 
-Icha, P., & Lauf, T. (2025). *Entwicklung der spezifischen Treibhausgas-Emissionen des deutschen Strommix in den Jahren 1990–2024* (Climate Change 13/2025). Umweltbundesamt.
+Icha, P., & Lauf, T. (2026). *Entwicklung der spezifischen Treibhausgas-Emissionen des deutschen Strommix in den Jahren 1990–2025* (Climate Change 16/2026). Umweltbundesamt.

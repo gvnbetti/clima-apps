@@ -11,7 +11,7 @@ stand is changing.
 In practice, climate-adaptive and bioclimatic design are still often treated as specialist tasks, requiring
 specialised software and knowledge.
 
-CBE Clima (Betti et al., 2023) was born from the idea that climate data should be easy to access and easy to understand, without
+CBE Clima (Betti et al., 2024) was born from the idea that climate data should be easy to access and easy to understand, without
 specialised tools or expertise. The aim was to lower the barrier to entry. Clima Toolbox follows the same ethos,
 builds on that experience, and takes it a step further.
 
@@ -74,7 +74,7 @@ The apps build on published scientific models and methods, including EN ISO 5201
 Theeuwes (Theeuwes et al., 2017), the IPCC AR6 Atlas (Gutiérrez et al., 2021) and Radiance's sky model (Perez et al.,
 1993; Ward, 1994). Their results are checked against established simulation tools used in the field,
 including EnergyPlus (Crawley et al., 2001), Radiance (Ward, 1994), pvlib (Holmgren et al., 2018),
-pythermalcomfort (Tartarini & Schiavon, 2020) and Ladybug (Roudsari & Pak, 2013). These comparisons are model-to-model validations,
+pythermalcomfort (Tartarini & Schiavon, 2020) and Ladybug (Sadeghipour Roudsari & Pak, 2013). These comparisons are model-to-model validations,
 rather than comparisons with measured building performance. See [Validation](../../validation/) for details.
 
 ### Everything runs in the browser
@@ -98,7 +98,7 @@ Each page has the same parts: what the app is for, how it works, assumptions, li
 ## References
 <!-- refs: betti2023 iso52016 perez1990 brode2012 theeuwes2017 gutierrez2021 perez1993 ward1994 crawley2001 holmgren2018 tartarini2020 roudsari2013 -->
 
-Betti, G., Tartarini, F., Nguyen, C., & Schiavon, S. (2023). CBE Clima Tool: A free and open-source web application for climate analysis tailored to sustainable building design. *Building Simulation*. https://doi.org/10.1007/s12273-023-1090-5
+Betti, G., Tartarini, F., Nguyen, C., & Schiavon, S. (2024). CBE Clima Tool: A free and open-source web application for climate analysis tailored to sustainable building design. *Building Simulation, 17*(3), 493–508. https://doi.org/10.1007/s12273-023-1090-5
 
 Bröde, P., Fiala, D., Błażejczyk, K., Holmér, I., Jendritzky, G., Kampmann, B., Tinz, B., & Havenith, G. (2012). Deriving the operational procedure for the Universal Thermal Climate Index (UTCI). *International Journal of Biometeorology, 56*(3), 481–494. https://doi.org/10.1007/s00484-011-0454-1
 
@@ -114,7 +114,7 @@ Perez, R., Ineichen, P., Seals, R., Michalsky, J., & Stewart, R. (1990). Modelin
 
 Perez, R., Seals, R., & Michalsky, J. (1993). All-weather model for sky luminance distribution: Preliminary configuration and validation. *Solar Energy, 50*(3), 235–245. https://doi.org/10.1016/0038-092X(93)90017-I
 
-Roudsari, M. S., & Pak, M. (2013). Ladybug: A parametric environmental plugin for Grasshopper to help designers create an environmentally-conscious design. In *Proceedings of BS2013: 13th Conference of the International Building Performance Simulation Association* (pp. 3128–3135). IBPSA.
+Sadeghipour Roudsari, M., & Pak, M. (2013). Ladybug: A parametric environmental plugin for Grasshopper to help designers create an environmentally-conscious design. In *Proceedings of BS2013: 13th Conference of the International Building Performance Simulation Association*, Chambéry, France. IBPSA.
 
 Tartarini, F., & Schiavon, S. (2020). pythermalcomfort: A Python package for thermal comfort research. *SoftwareX, 12*, 100578. https://doi.org/10.1016/j.softx.2020.100578
 

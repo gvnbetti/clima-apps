@@ -60,7 +60,7 @@ UTCI matches pythermalcomfort (Tartarini & Schiavon, 2020). SolarCal (Arens et a
 coefficient, 6.012 W/m²K as in ASHRAE 55 (ASHRAE, 2020b) and Ladybug, which pythermalcomfort rounds to 6. Solar position agrees with
 pvlib (Holmgren et al., 2018) within 0.02°. Ground and wall heat balances have been checked against exact solutions (Carslaw & Jaeger, 1959).
 
-The overall performance ranking of 70 design configurations has also been compared with Ladybug Tools (Roudsari & Pak, 2013), achieving a
+The overall performance ranking of 70 design configurations has also been compared with Ladybug Tools (Sadeghipour Roudsari & Pak, 2013), achieving a
 rank correlation of 0.97.
 
 These checks assess the consistency of the calculations and the relative ranking of design alternatives. They do not
@@ -86,7 +86,7 @@ Leuning, R. (1995). A critical appraisal of a combined stomatal-photosynthesis m
 
 Oke, T. R. (1987). *Boundary layer climates* (2nd ed.). Methuen.
 
-Roudsari, M. S., & Pak, M. (2013). Ladybug: A parametric environmental plugin for Grasshopper to help designers create an environmentally-conscious design. In *Proceedings of BS2013: 13th Conference of the International Building Performance Simulation Association* (pp. 3128–3135). IBPSA.
+Sadeghipour Roudsari, M., & Pak, M. (2013). Ladybug: A parametric environmental plugin for Grasshopper to help designers create an environmentally-conscious design. In *Proceedings of BS2013: 13th Conference of the International Building Performance Simulation Association*, Chambéry, France. IBPSA.
 
 Tartarini, F., & Schiavon, S. (2020). pythermalcomfort: A Python package for thermal comfort research. *SoftwareX, 12*, 100578. https://doi.org/10.1016/j.softx.2020.100578
 

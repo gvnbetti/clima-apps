@@ -64,7 +64,7 @@ solar calculator) instead of its replica of gendaymtx's; Radiance keeps its own.
 | S50-overhang | south | 0.50 | overhang 1.0 m |
 | E50-frame | east | 0.50 | frame 0.5 m (overhang and fins) |
 
-**Reference.** Radiance 6.0a (the binaries shipped with pyradiance 1.3.1; Wang, n.d.) on the app's own geometry: every rectangle of the
+**Reference.** Radiance 6.0a (the binaries shipped with pyradiance 1.3.1; Lawrence Berkeley National Laboratory, n.d.) on the app's own geometry: every rectangle of the
 room, reveals, facade and shading, with the same reflectances and sensors.
 - **Daylight coefficients:** two-phase, from rfluxmtx with a Reinhart sky MF:4 and the ground, 6 ambient bounces and
   8,192 ambient divisions.
@@ -114,6 +114,8 @@ DIN. (2013). *DIN 4108-2:2013-02 Wärmeschutz und Energie-Einsparung in Gebäude
 
 Larson, G. W., & Shakespeare, R. (1998). *Rendering with Radiance: The art and science of lighting visualization*. Morgan Kaufmann.
 
+Lawrence Berkeley National Laboratory. (n.d.). *pyradiance: Python interface for Radiance* (Version 1.3.1) [Computer software]. https://github.com/LBNL-ETA/pyradiance
+
 Nabil, A., & Mardaljevic, J. (2005). Useful daylight illuminance: A new paradigm for assessing daylight in buildings. *Lighting Research & Technology, 37*(1), 41–57. https://doi.org/10.1191/1365782805li128oa
 
 Perez, R., Ineichen, P., Seals, R., Michalsky, J., & Stewart, R. (1990). Modeling daylight availability and irradiance components from direct and global irradiance. *Solar Energy, 44*(5), 271–289. https://doi.org/10.1016/0038-092X(90)90055-H
@@ -121,7 +123,5 @@ Perez, R., Ineichen, P., Seals, R., Michalsky, J., & Stewart, R. (1990). Modelin
 Perez, R., Seals, R., & Michalsky, J. (1993). All-weather model for sky luminance distribution: Preliminary configuration and validation. *Solar Energy, 50*(3), 235–245. https://doi.org/10.1016/0038-092X(93)90017-I
 
 Tregenza, P. R. (1987). Subdivision of the sky hemisphere for luminance measurements. *Lighting Research & Technology, 19*(1), 13–14. https://doi.org/10.1177/096032718701900103
-
-Wang, T. (n.d.). *pyradiance* (Version 1.3.1) [Computer software]. Lawrence Berkeley National Laboratory. https://github.com/LBNL-ETA/pyradiance
 
 Ward, G. J. (1994). The RADIANCE lighting simulation and rendering system. In *Proceedings of the 21st Annual Conference on Computer Graphics and Interactive Techniques (SIGGRAPH '94)* (pp. 459–472). ACM. https://doi.org/10.1145/192161.192286

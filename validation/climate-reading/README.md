@@ -41,12 +41,12 @@ cd climate-reading && node dump.js && python3 verify.py      # pip install pvlib
 ## Earlier record
 `history/report_7nov2026.md` records the first verification of 7 November 2026. It covered more parts (PMV, MRT with
 sky exchange, degree days, comfort bands, extremes, sky classes, driving rain, wind roses, the EPW reader, the
-interface) and a comparison of methods with CBE Clima (Betti et al., 2023). Its scripts are not in this repository.
+interface) and a comparison of methods with CBE Clima (Betti et al., 2024). Its scripts are not in this repository.
 
 ## References
 <!-- refs: cen16798_1 reda2004 holmgren2018 perez1990 meyer2019 tartarini2020 betti2023 -->
 
-Betti, G., Tartarini, F., Nguyen, C., & Schiavon, S. (2023). CBE Clima Tool: A free and open-source web application for climate analysis tailored to sustainable building design. *Building Simulation*. https://doi.org/10.1007/s12273-023-1090-5
+Betti, G., Tartarini, F., Nguyen, C., & Schiavon, S. (2024). CBE Clima Tool: A free and open-source web application for climate analysis tailored to sustainable building design. *Building Simulation, 17*(3), 493–508. https://doi.org/10.1007/s12273-023-1090-5
 
 CEN. (2019). *EN 16798-1:2019 Energy performance of buildings: Ventilation for buildings: Part 1: Indoor environmental input parameters for design and assessment of energy performance of buildings addressing indoor air quality, thermal environment, lighting and acoustics (Module M1-6)*. European Committee for Standardization.
 

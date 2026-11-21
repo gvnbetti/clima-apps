@@ -50,7 +50,7 @@ for each). It is written out in the engine and not compared separately.
   - two enclosures: open field, courtyard H/W 1;
   - exposed to wind; standing person.
 
-**Reference.** Ladybug Tools (ladybug-comfort; Roudsari & Pak, 2013) with its own SolarCal (`body_solar_flux_from_parts`), longwave exchange
+**Reference.** Ladybug Tools (ladybug-comfort; Sadeghipour Roudsari & Pak, 2013) with its own SolarCal (`body_solar_flux_from_parts`), longwave exchange
 with the sky (`longwave_mrt_delta_from_horiz_ir`) and UTCI. The inputs are Micro Clima's for sky view, sunlit share and
 wind. Two variants:
 - **V1:** the surroundings at air temperature, Ladybug's default outdoor assumption;
@@ -101,7 +101,7 @@ Bruse, M., & Fleer, H. (1998). Simulating surface–plant–air interactions ins
 
 Carslaw, H. S., & Jaeger, J. C. (1959). *Conduction of heat in solids* (2nd ed.). Clarendon Press.
 
-Clark, G., & Allen, C. P. (1978). The estimation of atmospheric radiation for clear and cloudy skies. In *Proceedings of the 2nd National Passive Solar Conference* (pp. 675–678). American Section of the International Solar Energy Society.
+Clark, G., & Allen, C. P. (1978). The estimation of atmospheric radiation for clear and cloudy skies. In *Proceedings of the 2nd National Passive Solar Conference* (pp. 675–678). AS/ISES.
 
 Holmgren, W. F., Hansen, C. W., & Mikofski, M. A. (2018). pvlib python: A python package for modeling solar energy systems. *Journal of Open Source Software, 3*(29), 884. https://doi.org/10.21105/joss.00884
 
@@ -111,6 +111,6 @@ Perez, R., Ineichen, P., Seals, R., Michalsky, J., & Stewart, R. (1990). Modelin
 
 Reda, I., & Andreas, A. (2004). Solar position algorithm for solar radiation applications. *Solar Energy, 76*(5), 577–589. https://doi.org/10.1016/j.solener.2003.12.003
 
-Roudsari, M. S., & Pak, M. (2013). Ladybug: A parametric environmental plugin for Grasshopper to help designers create an environmentally-conscious design. In *Proceedings of BS2013: 13th Conference of the International Building Performance Simulation Association* (pp. 3128–3135). IBPSA.
+Sadeghipour Roudsari, M., & Pak, M. (2013). Ladybug: A parametric environmental plugin for Grasshopper to help designers create an environmentally-conscious design. In *Proceedings of BS2013: 13th Conference of the International Building Performance Simulation Association*, Chambéry, France. IBPSA.
 
 Tartarini, F., & Schiavon, S. (2020). pythermalcomfort: A Python package for thermal comfort research. *SoftwareX, 12*, 100578. https://doi.org/10.1016/j.softx.2020.100578

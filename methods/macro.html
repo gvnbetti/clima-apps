@@ -54,11 +54,15 @@ thead th { font: 600 11px var(--f-data); text-transform: uppercase; letter-spaci
 <div class="wrap"><nav class="toc" aria-label="Method pages"><b>Methods</b><a href="../methods.html">Overview</a><a href="../methods/map.html">Clima Map</a><a href="../methods/macro.html" aria-current=page>Macro Clima</a><a href="../methods/climate.html">Future and urban climate</a><a href="../methods/micro.html">Micro Clima</a><a href="../methods/room.html">Room Clima</a><a href="../methods/room-carbon.html">Room Clima: carbon</a></nav>
 <article><h1>Macro Clima: method</h1>
 <h2>What it is for</h2>
-<p>Reading a climate for design. Macro Clima takes one weather file (EPW) and shows what the climate asks of a building
-and its outdoor spaces: when it is too hot or too cold, where the sun and wind come from, how much daylight and rain
-there is, and which passive strategies suit it. It can show the same file under future warming and in a city.</p>
+<p>Understanding a climate and what it means for design.</p>
+<p>Macro Clima takes a single weather file (EPW) and turns it into a reading of the climate: when conditions are too hot
+or too cold, where the sun and wind come from, how much daylight and rain there is, and which passive design
+strategies are likely to work.</p>
+<p>It looks at the climate from several perspectives, bringing together thermal comfort, solar radiation, wind, sky
+conditions, precipitation and energy potential. The same climate can also be explored under future warming scenarios
+and with adjustments for the urban environment.</p>
 <h2>How it works</h2>
-<p>All calculations are in <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/macro/core.js"><code>macro/core.js</code></a>, hour by hour over the typical year.</p>
+<p>All calculations are performed in <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/macro/core.js"><code>macro/core.js</code></a>, hour by hour across the typical meteorological year.</p>
 <div class="tw"><table>
 <thead>
 <tr>
@@ -70,91 +74,95 @@ there is, and which passive strategies suit it. It can show the same file under 
 <tbody>
 <tr>
 <td>Time</td>
-<td>values at the middle of each hour (the EPW convention for radiation)</td>
+<td>Weather values are evaluated at the middle of each hour, following the EPW convention for solar radiation.</td>
 <td>EPW definition</td>
 </tr>
 <tr>
 <td>Sun position</td>
-<td>NOAA solar calculator (Meeus), from the Julian day, with refraction, at mid-hour</td>
+<td>NOAA solar calculator, based on Meeus, using the Julian day and accounting for atmospheric refraction. Calculated at mid-hour.</td>
 <td>NOAA</td>
 </tr>
 <tr>
-<td>Sun on surfaces</td>
-<td>Perez 1990 transposition, ground reflectance from the file or 0.2</td>
+<td>Solar radiation on surfaces</td>
+<td>Perez 1990 transposition model, with ground reflectance taken from the weather file or set to 0.2 where unavailable.</td>
 <td>Perez et al. 1990</td>
 </tr>
 <tr>
 <td>Psychrometrics</td>
-<td>saturation pressure, humidity ratio, wet bulb, enthalpy, dew point</td>
-<td>ASHRAE Handbook Fundamentals</td>
+<td>Calculation of saturation pressure, humidity ratio, wet-bulb temperature, enthalpy and dew point.</td>
+<td>ASHRAE Handbook of Fundamentals</td>
 </tr>
 <tr>
 <td>Outdoor comfort</td>
-<td>UTCI (operational polynomial); mean radiant temperature with SolarCal, measured diffuse and reflected light and longwave exchange with the sky</td>
+<td>UTCI using the operational polynomial. Mean radiant temperature is calculated with SolarCal, accounting for direct, diffuse and reflected solar radiation and longwave exchange with the sky.</td>
 <td>Bröde et al. 2012; Arens et al. 2015</td>
 </tr>
 <tr>
 <td>Indoor comfort</td>
-<td>adaptive EN 16798-1 (exponential running mean, alpha 0.8) and ASHRAE 55; PMV where shown</td>
-<td>EN 16798-1, ASHRAE 55, ISO 7730</td>
+<td>Adaptive comfort following EN 16798-1, using an exponential running mean (alpha 0.8), and ASHRAE 55. PMV is also calculated where shown.</td>
+<td>EN 16798-1; ASHRAE 55; ISO 7730</td>
 </tr>
 <tr>
 <td>Degree days</td>
-<td>from daily mean temperatures, heating base 15 °C (G 20/15 for German stations)</td>
-<td>VDI 4710, EN ISO 15927-6</td>
+<td>Calculated from daily mean temperatures, with a heating base of 15 °C (G 20/15 for German stations).</td>
+<td>VDI 4710; EN ISO 15927-6</td>
 </tr>
 <tr>
-<td>Extremes</td>
-<td>summer, hot, tropical, frost and ice days; heat and cold spells; hottest and coldest week</td>
+<td>Climate extremes</td>
+<td>Summer, hot, tropical, frost and ice days, together with heat and cold spells and the hottest and coldest weeks.</td>
 <td>DWD definitions</td>
 </tr>
 <tr>
 <td>Sky and daylight</td>
-<td>Perez sky classes; hours above 10, 20 and 50 klx</td>
+<td>Perez sky classifications and the number of hours above 10, 20 and 50 klx.</td>
 <td>Perez et al. 1990</td>
 </tr>
 <tr>
 <td>Rain and wind</td>
-<td>driving rain index by orientation; wind roses in 16 sectors</td>
+<td>Driving rain index by orientation and wind roses divided into 16 directional sectors.</td>
 <td>ISO 15927-3</td>
 </tr>
 <tr>
-<td>Strategy zones</td>
-<td>Givoni-Milne zones on the psychrometric chart</td>
+<td>Passive strategies</td>
+<td>Givoni-Milne climate strategy zones, plotted on the psychrometric chart.</td>
 <td>Givoni; Milne; Climate Consultant</td>
 </tr>
 <tr>
 <td>PV potential</td>
-<td>PVWatts v5 chain, fixed assumptions</td>
+<td>PVWatts v5 calculation chain, using fixed assumptions.</td>
 <td>NREL PVWatts</td>
 </tr>
 <tr>
 <td>Future and urban climate</td>
-<td>see <a href="../methods/climate.html">Future and urban climate</a></td>
-<td></td>
+<td>Adjustments for global warming scenarios and urban conditions. See <a href="../methods/climate.html">Future and urban climate</a>.</td>
+<td>See dedicated method</td>
 </tr>
 </tbody>
 </table></div>
-<p>Seasons are December to February, March to May and so on, swapped south of the equator.</p>
+<p>Seasons are grouped into December–February, March–May and so on, with the seasons reversed for locations in the
+southern hemisphere.</p>
 <h2>Assumptions</h2>
-<ul>
-<li>Outdoor comfort treats the ground and surroundings as being at air temperature, and uses the station's wind at
-  10 m above open ground. Micro Clima models the ground, walls and shelter of a real outdoor space.</li>
-<li>Typical-year files often carry incomplete rain and snow records. The readings flag implausible totals.</li>
-<li>The "at a glance" comparison uses nine reference climates; none is subarctic or equatorial.</li>
-</ul>
+<p><strong>Outdoor comfort.</strong> The ground and surrounding surfaces are assumed to be at air temperature. Wind conditions are
+taken from the weather station, typically measured at 10 m above open ground. This represents the general outdoor
+climate rather than the microclimate of a particular space. Micro Clima takes the analysis further by explicitly
+modelling the ground, walls, shading and wind shelter of an outdoor environment.</p>
+<p><strong>Rain and snow.</strong> Typical-year weather files often contain incomplete or unreliable precipitation records. The app
+flags implausible totals so that these readings can be interpreted with care.</p>
+<p><strong>Climate comparisons.</strong> The "At a glance" comparison uses nine reference climates. These illustrate a range of
+climatic conditions but do not cover every climate type, notably subarctic and equatorial climates.</p>
 <h2>Limits</h2>
-<ul>
-<li>The Givoni-Milne strategy zones are a reconstruction of published criteria and have not yet been checked against
-  Climate Consultant.</li>
-<li>The German national annex comfort band (DIN EN 16798-1/NA) follows the formula of Room Clima; no open reference
-  implementation exists to check it against.</li>
-</ul>
+<p><strong>Passive strategy zones.</strong> The Givoni-Milne zones are a reconstruction of published criteria. Their results have not
+yet been checked against Climate Consultant, which is one of the established tools using this approach.</p>
+<p><strong>German adaptive comfort.</strong> The national annex comfort band (DIN EN 16798-1/NA) follows the formula implemented in
+Room Clima. There is currently no open reference implementation available for direct comparison.</p>
 <h2>Validation</h2>
-<p><a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/climate-reading">Climate reading</a>: sun within 0.02° of pvlib's NREL SPA, sun on walls and roofs
-within 0.2 % of pvlib's Perez model, psychrometrics, UTCI and the adaptive band identical to psychrolib and
-pythermalcomfort. The first verification of 7 November 2026, which also covered PMV, MRT, degree days, extremes, sky
-classes, rain, wind and the file reader, is recorded there.</p>
+<p>The climate calculations have been checked against established reference implementations.</p>
+<p>Solar position agrees with pvlib's NREL SPA calculation within 0.02°. Solar radiation on walls and roofs agrees with
+pvlib's Perez model within 0.2%. Psychrometric calculations, UTCI and the adaptive comfort band match the
+corresponding implementations in psychrolib and pythermalcomfort.</p>
+<p>The first verification, carried out on 7 November 2026, also covered PMV, mean radiant temperature, degree days,
+climate extremes, sky classifications, rain, wind and the EPW file reader. The verification results are documented in
+the <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/climate-reading">validation records</a>.</p>
 <p class="src">Source: <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/docs/methods/macro-clima.md">docs/methods/macro-clima.md</a></p>
 <div class="next"><a href="../methods/map.html">← Clima Map</a><a href="../methods/climate.html">Future and urban climate →</a></div></article></div>
 </body>

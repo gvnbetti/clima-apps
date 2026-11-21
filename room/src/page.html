@@ -918,7 +918,7 @@ self.onmessage=(e)=>{const m=e.data;
     $("tradeoff").innerHTML = tradeoffSvg(fa);
     $("toh").textContent = `Trade-off at ${orientLabel(sc, a)}: daylight against ${st.yAx === "C" ? "overheating, coloured by energy" : "energy, coloured by overheating"}`;
     const lg = (c, t) => `<span class="lgi"><span class="k dotk ${c}"></span>${t}</span>`;
-    $("tolegend").innerHTML = (st.yAx === "C" ? lg("cin", "Energy at or below the target") + lg("cmid", "Between target and limit") + lg("cout", "Above the limit") : lg("cin", "Comfort within the limit") + lg("cmid", "Above the limit") + lg("cout", "Twice the limit or more")) + `<span>Larger dots: the Pareto front (no other design better on all three). Green ring: recommended. Labels: the designs that come out on top with each priority button.</span>`;
+    $("tolegend").innerHTML = (st.yAx === "C" ? lg("cin", "Energy at or below the target") + lg("cmid", "Between target and limit") + lg("cout", "Above the limit") : lg("cin", "Comfort within the limit") + lg("cmid", "Above the limit") + lg("cout", "Twice the limit or more")) + `<span>Larger dots: the Pareto front (no other design better on all three). Green ring: recommended. Labels: the alternatives offered above the switches.</span>`;
     bindZoom(fa);
     document.querySelectorAll("#yaxSeg button").forEach((b) => { b.setAttribute("aria-pressed", b.dataset.v === st.yAx); b.onclick = () => { st.yAx = b.dataset.v; renderFacade(); }; });
     document.querySelectorAll("#tradeoff .pt").forEach((p) => p.onclick = () => { const r = fa.rows[+p.dataset.i]; select(r, "Option at this facade"); });
@@ -991,8 +991,10 @@ self.onmessage=(e)=>{const m=e.data;
       s += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${f ? 4.6 : 3}" class="pt ${cls(r)}${f ? " fr" : ""}${ok ? "" : " gone"}" data-i="${i}"><title>${tip}</title></circle>`;
     });
     fa.an.top.forEach((r, k) => { if (!inV(r)) return; s += `<circle cx="${X(r.m.S * 100).toFixed(1)}" cy="${Y(yv(r)).toFixed(1)}" r="8" class="ring10"/>`; if (k === 0) s += `<text x="${(X(r.m.S * 100) + 10).toFixed(1)}" y="${(Y(yv(r)) + 4).toFixed(1)}" class="lab1">1</text>`; });
-    const CN = ["daylight first", "comfort first", "energy first"], labs = [], PD = presetDesigns(st.scen);
-    ["daylight", "comfort", "energy"].forEach((pk, k) => { const Bp = PD[pk], d = Bp && Bp.best.per[st.fa], r = d && fa.rows.find((x) => FS.keyOf(x.dz) === FS.keyOf(d.dz)); if (r && r.m.A1 && inV(r)) labs.push({ k, x: X(r.m.S * 100), y: Y(yv(r)) }); });
+    // v17: the same alternatives as the buttons above the switches
+    const CN = ["most daylight", "least overheating", "lowest energy"], labs = [], Bb = buildResult(st.scen), rec0 = Bb && Bb.best.per[st.fa];
+    const DSx = rec0 ? designSet(st.scen, st.fa, rec0) : [];
+    ["md", "lo", "le"].forEach((id, k) => { const d = DSx.find((x) => x[0] === id), r = d && fa.rows.find((x) => FS.keyOf(x.dz) === FS.keyOf(d[2].dz)); if (r && r.m.A1 && inV(r)) labs.push({ k, x: X(r.m.S * 100), y: Y(yv(r)) }); });
     labs.sort((p, q) => p.y - q.y); let lastY = -1e9;
     labs.forEach((l) => { l.ly = Math.max(l.y - 26, lastY + 14); lastY = l.ly; });
     labs.forEach((l) => { const lx = l.x - 26;
@@ -1091,7 +1093,7 @@ self.onmessage=(e)=>{const m=e.data;
   function axes() {
     const cat = MEASURES(st.scen);
     // a measure with a single level (not tested in this run) gets no axis
-    return cat.filter((k) => LVa(k).length > 1).map((k) => ({ k, cat: true, levels: LVa(k) })).concat(["D", "S", "C", "E", "din", "hum"].map((k) => ({ k, cat: false })));
+    return cat.filter((k) => LVa(k).length > 1).map((k) => ({ k, cat: true, levels: LVa(k) })).concat(["S", "C", "E", "din", "hum"].map((k) => ({ k, cat: false }))); // v17: no score axis
   }
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   let PX = null;
@@ -1890,7 +1892,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     shading: (v) => ["None", "Interior", "Exterior"][v], dayAch: (v) => ({ 0: "Closed", 1: "Tilt", 2: "Open" })[v], nightAch: (v) => ({ 0: "None", 1: "Tilt", 5: "Across storeys" })[v], fans: (v) => v ? "Fans" : "None", roof: (v) => v === "cool" ? "Cool" : "Standard" };
   // ---- confidence: how many of the 7 priority settings keep a choice best at every facade
   const GREEN = (k) => k >= 7 ? "#1a7f37" : k >= 6 ? "#2f8f4a" : k >= 5 ? "#4f9f63" : k >= 4 ? "#79b689" : k >= 3 ? "#a3ccad" : "#c9dfcf";
-  const robTxt = (k) => k >= 7 ? "Holds whatever the priorities" : k >= 5 ? "Holds for most priorities" : "Depends on the priorities";
+  const robTxt = (k) => k >= 5 ? "Clear choice" : "Close call: other choices do about as well";
   // ---- building option under balanced priorities, for "what changed"
   function balancedOf(sc) {
     if (sameW(st.w, EQW)) return buildResult(sc);
@@ -2015,7 +2017,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   // ---- render
   function renderV4() {
     const sc = st.scen, B = buildResult(sc), A = facList(sc);
-    $("v4prio").innerHTML = prioHtml(sc, B); bindV4Prio();
+    $("v4prio").innerHTML = ""; // v17: no priority buttons; Recommended is the balanced design
     if (!B) { $("v4tiles").innerHTML = ""; $("v4glance").innerHTML = `<p class="wait">${st.running || st.topping ? "The design appears when the facades of this room type have been searched." : "No combination of the facades scores above 0. Check the required daylight minimum and the comfort limit under Reading."}</p>`; $("v4dec").innerHTML = ""; $("v4fac").innerHTML = ""; $("v5verd").innerHTML = ""; $("v5cool").innerHTML = ""; $("coolsum").innerHTML = ""; return; }
     if (!A.includes(st.fa)) st.fa = A[0];
     $("v4tiles").innerHTML = tilesHtml(sc, B); $("v5verd").innerHTML = verdictHtml(sc, B);
@@ -2124,7 +2126,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const keep = items.filter((it) => it.same && !it.small && !core.covered.has(it.p)).sort((x, y) => y.maxSev - x.maxSev);
     const adapt = items.filter((it) => !it.same && !it.small && !core.covered.has(it.p));
     const yours = items.filter((it) => it.small && !core.covered.has(it.p));
-    let h = `<div class="v4h"><h2>Recommendations</h2><span class="small">For the whole building, at every facade of this room type. Green: the choice holds whatever the priorities.</span></div>`;
+    let h = `<div class="v4h"><h2>Recommendations</h2><span class="small">For the whole building, at every facade of this room type. Clear choice: it stays best however daylight, comfort and energy are weighed. Close call: the alternatives come close.</span></div>`;
     if (B.global) { const d = SH4.filter((q) => B.own && B.own.shared[q] !== B.best.shared[q]);
       h += `<p class="small">Glass, insulation and mass are chosen once for the whole building, over every room type tested.${d.length ? ` On its own the ${SCLAB[sc].toLowerCase()} would take ${listJoin(d.map((q) => lvWord(q, B.own.shared[q])))} (mean score ${pts(B.own.mean)} against ${pts(B.best.mean)}).` : ""}</p>`; }
     h += `<h3 class="v4k">Keep at every facade</h3><div class="dgrid">${keep.map((it) => card(it, (it.p === "wwr" ? winRangeTxt(sc, B) : it.p === "mass" ? massDep(sc, B) : ventTxt(it, B.best.per[B.A[0]].dz)) + edgeTxt(it.p, it.chosen))).join("")}${core.pairs.map((pr) => `<article class="dcard" style="border-color:${GREEN(7)};border-width:3px"><div class="dch"><div><span class="small">${cap(pr.x.label)}</span><b>At least one of the two</b></div></div><p>Without either: ${deltaTxt(pr.worst)}${at(pr.worst)}. The two stand in for each other here, so the choice between them is free.</p></article>`).join("")}</div>`;
@@ -2168,10 +2170,13 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   function designSet(sc, a, rec) {
     const out = [["rec", "Recommended", rec, "the recommended design", 0]], seen = new Set([FS.keyOf(rec.dz)]);
     const add = (id, lab, r, note, row) => { if (!r) return; const k = FS.keyOf(r.dz); if (seen.has(k)) return; seen.add(k); out.push([id, lab, r, note, row]); };
-    const lc = lowCarbonOf(sc, a); if (lc) add("lc", "Lowest carbon", lc, "the least whole-life carbon among the designs that meet every target", 0);
+    // the best design on one measure among those that meet every target (ties: the better balanced one)
     const f = facade(sc, a), ok = (f ? f.ok : []).filter((r) => r.t && r.t.all);
-    const md = ok.length ? ok.reduce((b, r) => (pts(r.m.S) > pts(b.m.S) || (pts(r.m.S) === pts(b.m.S) && r.q > b.q) ? r : b), ok[0]) : null;
-    if (md && pts(md.m.S) - pts(rec.m.S) > TH.S) add("md", "Most daylight", md, "the most daylight among the designs that meet every target", 0);
+    const bestOn = (val) => ok.length ? ok.reduce((b, r) => (val(r) < val(b) - 1e-9 || (Math.abs(val(r) - val(b)) <= 1e-9 && r.q > b.q) ? r : b), ok[0]) : null;
+    add("md", "Most daylight", bestOn((r) => -pts(r.m.S)), "the most daylight among the designs that meet every target", 0);
+    add("lo", "Least overheating", bestOn((r) => Math.round(r.m.C)), "the least overheating among the designs that meet every target", 0);
+    add("le", "Lowest energy", bestOn((r) => Math.round(r.m.E * 10)), "the lowest delivered energy among the designs that meet every target", 0);
+    const lc = lowCarbonOf(sc, a); if (lc) add("lc", "Lowest carbon", lc, "the least whole-life carbon among the designs that meet every target", 0);
     packagesOf(sc, a, rec).forEach((r, i) => add("p" + i, pkgLabel(sc, rec, r), r, rec.t.all ? "also meets every target" : "about as close to the targets", 1));
     return out;
   }
@@ -2196,12 +2201,13 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     return ch.slice(0, 2).map((p, i) => { const w = measWord(p, r.dz[p], rec.dz[p]); return i ? w.charAt(0).toLowerCase() + w.slice(1) : w; }).join(" + ") + (ch.length > 2 ? ` +${ch.length - 2} more` : "");
   }
   function pkgEffect(rec, r) { // plain words; thresholds as everywhere: 3 daylight points, 100 K·h/a, 1 kWh/m²a
-    if (r === rec) return "best for your priorities";
+    if (r === rec) return "best balance of daylight, comfort and energy";
     const c = delta(rec, r), w = [];
-    if (c.dS > TH.S) w.push("more daylight"); else if (c.dS < -TH.S) w.push("less daylight");
-    if (c.dC >= BIG * TH.C) w.push("much warmer"); else if (c.dC >= TH.C) w.push("warmer"); else if (c.dC >= TH.C / 2) w.push("a little warmer");
-    else if (c.dC <= -TH.C) w.push("cooler");
-    if (c.dE >= TH.E) w.push("more energy"); else if (c.dE <= -TH.E) w.push("less energy");
+    // large differences in plain words; smaller ones as "a little", so each alternative names what it is best at
+    if (c.dS > TH.S) w.push("more daylight"); else if (c.dS >= 1) w.push("a little more daylight"); else if (c.dS < -TH.S) w.push("less daylight"); else if (c.dS <= -1) w.push("a little less daylight");
+    if (c.dC >= BIG * TH.C) w.push("much more overheating"); else if (c.dC >= TH.C) w.push("more overheating"); else if (c.dC >= TH.C / 4) w.push("a little more overheating");
+    else if (c.dC <= -TH.C) w.push("less overheating"); else if (c.dC <= -TH.C / 4) w.push("a little less overheating");
+    if (c.dE >= TH.E) w.push("more energy"); else if (c.dE >= TH.E / 3) w.push("a little more energy"); else if (c.dE <= -TH.E) w.push("less energy"); else if (c.dE <= -TH.E / 3) w.push("a little less energy");
     if (c.dK <= -20) w.push("less carbon"); else if (c.dK >= 20) w.push("more carbon");
     return w.length ? listJoin(w) : "practically the same results";
   }
@@ -2218,7 +2224,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const F = st.fac[sc][a], vNow = cur ? coolVerdict(cur, sc, a).v : null;
     const flipTag = (p, v) => { if (!vNow || vNow === "wait" || v === dz[p] || !F) return ""; const x = F.byKey.get(FS.keyOf(Object.assign({}, dz, { [p]: v }))); if (!x) return "";
       const v2 = coolVerdict({ dz: x.dz, r: x.r }, sc, a).v; if (v2 === "wait" || v2 === vNow) return ""; return `<span class="flip${RANKV[v2] < RANKV[vNow] ? " gd" : ""}">${{ none: "no cooling needed", ceil: "needs a chilled ceiling", sys: "needs air conditioning" }[v2] || VSHORT[v2]}</span>`; };
-    let h = `<div class="v4h"><h2>${orientFull(sc, a)} ${sc === "cellular" ? "facade" : "facades"}, ${SCLAB[sc].toLowerCase()}</h2><span class="small">${wi ? "What if: your changes are in blue." : "The recommended design. Pick other choices to see their effect."} A label under a choice shows where it changes the cooling result.</span></div>${cur && cur.t && !cur.t.all ? `<p class="missnote"><b>No design found meets every target here.</b> Shown: the one that comes closest. ${cap(missTxt(cur))}. Change the targets under Reading, or allow more strategies in the inputs.</p>` : ""}${B.mixed ? `<p class="missnote">No single choice of glass, insulation and mass was found that suits every facade of this room type; each facade shows its own best design.</p>` : ""}<div class="fpg">`;
+    let h = `<div class="v4h"><h2>${orientFull(sc, a)} ${sc === "cellular" ? "facade" : "facades"}, ${SCLAB[sc].toLowerCase()}</h2><span class="small">${wi ? "What if: your changes are in blue." : "The recommended design: daylight, comfort and energy weighed equally. Pick other choices to see their effect."} A label under a choice shows where it changes the cooling result.</span></div>${cur && cur.t && !cur.t.all ? `<p class="missnote"><b>No design found meets every target here.</b> Shown: the one that comes closest. ${cap(missTxt(cur))}. Change the targets under Reading, or allow more strategies in the inputs.</p>` : ""}${B.mixed ? `<p class="missnote">No single choice of glass, insulation and mass was found that suits every facade of this room type; each facade shows its own best design.</p>` : ""}<div class="fpg">`;
     const DS4 = designSet(sc, a, rec), kNow = FS.keyOf(dz);
     const btn = ([id, lab, r, note]) => { const on = FS.keyOf(r.dz) === kNow;
       return `<button type="button" data-ds="${id}" aria-pressed="${on}" class="${on ? "on" : ""}${r.t && r.t.all ? "" : " miss"}" title="${escA(cap(note) + ". " + pkgNumbers(rec, r) + (r.t && r.t.all ? "." : ". Misses: " + missTxt(r) + "."))}"><b>${lab}</b><small>${pkgEffect(rec, r)}</small></button>`; };

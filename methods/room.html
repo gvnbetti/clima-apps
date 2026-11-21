@@ -163,17 +163,19 @@ standard's own conditions (schedules, gains, air change, blinds, reference tempe
 limits of 1,200 or 500 K·h/a). On any weather file other than the test reference year of the region, the result is
 an estimate, and the app says so. The text of DIN 4108-2 is not part of this repository.</p>
 <h2>Daylight</h2>
-<p>Climate-based daylight for the box room, in the browser (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/room/src/core.js"><code>room/src/core.js</code></a>, first part):
-- Daylight coefficients from a radiosity solution of the six room surfaces. Sky and ground in Reinhart patches (MF:2),
-  as Radiance.
-- Sky each hour by the Perez all-weather model with Perez 1990 luminous efficacy, replicated from Radiance gendaymtx.
-- Direct sun by an exact ray test from each sensor through the glazing. Glazing by the Radiance glass model.
-- Blinds as a two-part layer (decision of 20 November 2026): a small share of the light passes straight through,
+<p>Climate-based daylight for the box room, in the browser (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/room/src/core.js"><code>room/src/core.js</code></a>, first part):</p>
+<ul>
+<li>Daylight coefficients from a radiosity solution of the six room surfaces. Sky and ground in Reinhart patches (MF:2),
+  as Radiance.</li>
+<li>Sky each hour by the Perez all-weather model with Perez 1990 luminous efficacy, replicated from Radiance gendaymtx.</li>
+<li>Direct sun by an exact ray test from each sensor through the glazing. Glazing by the Radiance glass model.</li>
+<li>Blinds as a two-part layer (decision of 20 November 2026): a small share of the light passes straight through,
   the rest is scattered evenly. Exterior blind 0.10 in all, 0.01 of it straight; interior blind 0.25, 0.03 straight,
-  reflectance 0.6. The angle dependence of slats is not modelled.
-- Useful daylight: share of floor and hours between 300 and 3,000 lx (non-residential) or 100 and 2,000 lx
-  (residential). EN 17037 levels are also reported.
-- Electric lighting: 6 W/m² LED to reach 500 lx (office) or 300 lx (classroom) where daylight falls short.</p>
+  reflectance 0.6. The angle dependence of slats is not modelled.</li>
+<li>Useful daylight: share of floor and hours between 300 and 3,000 lx (non-residential) or 100 and 2,000 lx
+  (residential). EN 17037 levels are also reported.</li>
+<li>Electric lighting: 6 W/m² LED to reach 500 lx (office) or 300 lx (classroom) where daylight falls short.</li>
+</ul>
 <p>Checked against Radiance on 6 rooms × 6 climates × 3 blind states in <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/daylight"><code>validation/daylight/</code></a>.</p>
 <h2>Scores, recommendation and search</h2>
 <ul>
@@ -188,9 +190,11 @@ an estimate, and the app says so. The text of DIN 4108-2 is not part of this rep
   development; that benchmark is not yet part of this repository.</li>
 </ul>
 <h2>Scenarios</h2>
-<p>The recommended design and the packages are rerun:
-- <strong>Climate:</strong> +2 °C global warming (+3 °C when the run already uses +2 °C). Morphing as in <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/future-climate"><code>validation/future-climate/</code></a>.
-- <strong>Poor operation:</strong> blinds down on only every other day, windows shut at night.</p>
+<p>The recommended design and the packages are rerun:</p>
+<ul>
+<li><strong>Climate:</strong> +2 °C global warming (+3 °C when the run already uses +2 °C). Morphing as in <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/future-climate"><code>validation/future-climate/</code></a>.</li>
+<li><strong>Poor operation:</strong> blinds down on only every other day, windows shut at night.</li>
+</ul>
 <p>A design is robust when it still meets the comfort limit, or stays the best of the shortlist.</p>
 <h2>Carbon</h2>
 <p>See <code>room-clima-carbon.md</code>.</p>

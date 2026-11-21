@@ -65,6 +65,8 @@ def links(h, out):
 for i, (md, out, label) in enumerate(PAGES):
     text = (SRC / md).read_text()
     text = re.sub(r'^> Draft for .*\n\n?', '', text, flags=re.M)  # editorial notes stay in the repository
+    # Python-Markdown needs a blank line before a list (GitHub does not): add it where a list follows a paragraph
+    text = re.sub(r'(?m)^((?![-*] |\d+\. |\s|\|).+)\n(?=(?:[-*] |\d+\. ))', r'\1\n\n', text)
     title = re.match(r'# (.+)', text).group(1)
     body = markdown.markdown(text, extensions=['tables', 'sane_lists'])
     body = links(body, out).replace('<table>', '<div class="tw"><table>').replace('</table>', '</table></div>')

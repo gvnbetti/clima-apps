@@ -1,64 +1,116 @@
 # Future and urban climate: method
 
-Macro, Micro and Room Clima can shift a weather file to a level of global warming, and add the heat island of a
-neighbourhood. Both modifiers are computed once, in Macro Clima's code (`macro/core.js`), and shared with the other
-two apps (`room/src/climamods.js` is generated from it by `shared/mkmods.py`; Micro Clima carries a copy).
+## A shared module
+Future and Urban Climate is a shared module used by Macro Clima, Micro Clima and Room Clima. It applies the same
+climate adjustments consistently across all three apps. Clima Map is the exception: it helps select and download the
+original weather file but does not modify it.
+
+The module provides two ways to adjust a weather file: to account for future global warming and to represent the
+additional heat associated with the urban environment.
+
+Both modifiers are calculated centrally in Macro Clima (`macro/core.js`) and shared with the other apps. Room Clima
+uses a generated version (`room/src/climamods.js`), produced by `shared/mkmods.py`, while Micro Clima carries its own
+copy.
 
 ## What it is for
-A typical-year file describes the recent past at an open site, usually an airport. A building designed now will
-stand in a warmer climate, and most buildings stand in a city. The two modifiers let a design be tested in those
-conditions, at concept stage and without a separate climate study.
+A typical-year weather file describes recent climatic conditions at a particular location, usually an open site such
+as an airport. But a building designed today will operate in a warmer climate, and most buildings stand within
+cities, where the surrounding urban fabric adds further heat.
+
+These two modifiers make it possible to explore both effects directly in the design process, without requiring a
+separate climate study.
 
 ## Future climate
 
-**Levels, not years.** The file is shifted to +1.5, +2 or +3 °C of global warming above 1850-1900, not to a year
-under a scenario. The timing of each level depends on emissions; the regional climate at a given level depends much
-less on the route taken to it. This follows the IPCC AR6 Atlas.
+**Warming levels, not future years.** The weather file is adjusted to represent +1.5, +2 or +3 °C of global warming
+above the pre-industrial period (1850–1900). These are warming levels, not projections for specific calendar years.
 
-**How it works**
-1. **Region.** The weather file's latitude and longitude select an IPCC AR6 reference region (land regions first).
-2. **Years of the file.** The middle of the period the typical year was built from: read from "Period of Record" in
-   the file's comments, or from "TMYx.YYYY-YYYY" in its name; 2010 if neither is there.
-3. **Change at the level.** For each month: the median over 35 CMIP6 models of the regional change from 1995-2014 to
-   the 20 years around the year each model crosses the level (all four SSP scenarios). The 10th and 90th percentiles
-   are shown as the spread.
-4. **Warming already in the file** is subtracted: the models' change from 1995-2014 to the file's middle year. An
-   older file is therefore shifted more.
-5. **Morphing** (Belcher et al. 2005): temperature shifted by the monthly change, spread day by day between mid-month
-   values; relative humidity held, so dew point and absolute humidity rise; sky infrared scaled with (T'/T)⁴;
-   precipitation scaled by the monthly percentage change.
+The timing of each warming level depends on future emissions, while regional climate changes at a given level depend
+much less on the pathway taken to reach it. This approach follows the IPCC Sixth Assessment Report (AR6) Atlas.
 
-**Assumptions**
-- One shift for the whole file: the typical months stand for the whole period they were drawn from.
-- Shift only, no stretch: the Atlas gives the change of the mean, not of the daily maximum and minimum, so the
-  day-night swing and the spread of hot and cold spells stay as recorded.
+### How it works
+The calculation follows five steps:
 
-**Limits**
-- Morphing keeps the file's weather sequence, so future heat waves are underestimated.
-- The change is a regional land mean. Coastal and mountain sites may warm differently.
+1. **Identify the region.** The latitude and longitude of the weather file are used to identify the corresponding
+   IPCC AR6 reference region, prioritising land regions.
+2. **Establish the file's reference period.** The middle year of the period represented by the typical weather file
+   is identified from its comments (Period of Record) or filename (TMYx.YYYY-YYYY). If neither is available, 2010 is
+   assumed.
+3. **Calculate the climate change.** For each month, the calculation uses the median change across 35 CMIP6 climate
+   models, comparing the 1995–2014 baseline with the 20-year period around the year each model reaches the selected
+   warming level. All four SSP scenarios are included. The 10th and 90th percentiles show the range of model results.
+4. **Account for warming already present.** The warming that has already occurred between the 1995–2014 baseline and
+   the middle year of the weather file is subtracted. Older weather files therefore receive a larger adjustment than
+   more recent ones.
+5. **Adjust the weather file.** Using the morphing method of Belcher et al. (2005), monthly temperature changes are
+   interpolated between mid-month values and applied day by day. Relative humidity is held constant, allowing dew
+   point and absolute humidity to increase with temperature. Sky infrared radiation is scaled by the fourth power of
+   the absolute temperature ratio (T'/T)⁴, while precipitation is adjusted according to the monthly percentage change.
+
+### Assumptions
+- **One adjustment for the whole file.** The typical months are assumed to represent the full period from which the
+  weather file was constructed.
+- **Changes in the mean, not in variability.** The adjustment shifts temperatures but does not stretch or compress
+  their daily range. The day-night temperature swing and the variability of hot and cold spells remain as recorded in
+  the original file. The IPCC Atlas provides changes in mean climate conditions, not equivalent changes in daily
+  extremes.
+
+### Limits
+The morphing method preserves the original sequence of weather conditions. It therefore cannot reproduce the timing,
+duration or intensity of future heat waves, and may underestimate future extreme heat.
+
+The climate changes are based on regional land averages. Coastal and mountain locations may experience different
+changes from the regional mean.
 
 ## Urban heat island
 
-**How it works.** The daily maximum heat island is computed with the diagnostic equation of Theeuwes et al. (2017):
+### How it works
+The urban heat island modifier estimates the additional warming associated with the built environment. It uses the
+diagnostic equation proposed by Theeuwes et al. (2017):
 
-UHI_max = (2 − SVF − F_veg) × (S × DTR³ / U)^¼
+<p align="center">UHI<sub>max</sub> = (2 − SVF − F<sub>veg</sub>) × (S × DTR³ / U)<sup>1/4</sup></p>
 
-from the neighbourhood's sky view factor (SVF) and vegetation fraction (F_veg), and the day's solar radiation (S),
-temperature range (DTR) and wind speed (U) in the weather file. The heat island is added to the air temperature at
-every hour, with vapour pressure held.
+The calculation combines two characteristics of the neighbourhood, the sky view factor (SVF) and vegetation fraction
+(F<sub>veg</sub>), with three daily weather conditions from the weather file: solar radiation (S), diurnal temperature
+range (DTR) and wind speed (U).
 
-**Assumptions**
-- Daily profile: the full maximum with the sun down; with the sun up it is reduced by
-  0.85 × √(sin(altitude) / sin(highest altitude of the day)), so 15 % remains at the daily sun peak. This profile is
-  the apps' own, not from the paper.
-- Neighbourhood presets (SVF, F_veg): suburban 0.8 and 0.35; urban 0.6 and 0.2; dense 0.4 and 0.1.
+The resulting maximum daily heat island is distributed across the hours of the day and added to the original air
+temperature. Vapour pressure is held constant.
 
-**Limits**
-- The equation was fitted to 14 cities in north-western Europe, for SVF 0.2 to 0.9 and F_veg up to 0.4. Elsewhere it is
-  an extrapolation, and the apps say so.
-- The heat island is a neighbourhood mean. Conditions in a given street or courtyard are the subject of Micro Clima.
+### Assumptions
+**Daily temperature profile.** The full maximum heat island is applied at night. During daylight hours, it decreases
+according to the sun's altitude, following the apps' own profile:
+
+<p align="center">UHI(h) = UHI<sub>max</sub> × (1 − 0.85 × √(sin α<sub>h</sub> / sin α<sub>max</sub>))</p>
+
+where α<sub>h</sub> is the sun's altitude at a given hour and α<sub>max</sub> is its highest altitude that day. This
+leaves 15% of the maximum heat island at solar noon. This hourly profile is an implementation choice developed for the
+apps, rather than a profile proposed in the original paper.
+
+**Neighbourhood presets.** Three representative urban conditions are available, defined by their sky view factor and
+vegetation fraction:
+
+| Setting | SVF | Vegetation |
+|---|--:|--:|
+| Suburban | 0.8 | 0.35 |
+| Urban | 0.6 | 0.2 |
+| Dense urban | 0.4 | 0.1 |
+
+### Limits
+The original equation was developed using data from 14 cities in north-western Europe. Its calibration covers sky
+view factors from 0.2 to 0.9 and vegetation fractions up to 0.4. Applying it outside these geographical and parameter
+ranges is an extrapolation, which the apps explicitly flag.
+
+The result represents an average neighbourhood heat island, not the conditions of an individual street, courtyard or
+outdoor space. These more local effects, including shading, ground materials and wind shelter, are explored in Micro
+Clima.
 
 ## Validation
-Both modifiers are checked against the open data and models they cite, not against observations:
-[future climate](../../validation/future-climate/) (IPCC Atlas data, official regions, pyepwmorph) and
-[urban heat island](../../validation/urban-heat-island/) (independent implementation of the equation).
+Both modifiers are checked against their cited reference data and models, rather than against direct measurements of
+future or urban conditions.
+
+Future climate adjustments are checked against IPCC Atlas data, official reference regions and the pyepwmorph
+implementation of weather-file morphing: see [future climate](../../validation/future-climate/).
+
+The urban heat island calculation is checked against an independent implementation of the diagnostic equation
+published by Theeuwes et al. (2017): see [urban heat island](../../validation/urban-heat-island/).

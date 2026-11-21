@@ -53,55 +53,120 @@ thead th { font: 600 11px var(--f-data); text-transform: uppercase; letter-spaci
 </style><nav class="csb" aria-label="Clima Toolbox apps"><a class="csb-home" href="https://gvnbetti.github.io/clima-toolbox/"><svg width="24" height="24" viewBox="0 0 64 64" aria-hidden="true"><path d="M4 44H60M8 44A24 24 0 0 1 56 44M15 44A17 17 0 0 1 49 44M22 44A10 10 0 0 1 42 44" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="44" cy="23.22" r="5" fill="#d9762b"/></svg><b>Clima</b><span>Toolbox</span></a><span class="csb-apps"><a href="https://gvnbetti.github.io/clima-toolbox/map/index.html" title="Clima Map: Find a weather file"><svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="#d9762b"/><path d="M32 58C29 53 24 48 24 43A8 8 0 0 1 40 43C40 48 35 53 32 58Z" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Clima Map</span></a><a href="https://gvnbetti.github.io/clima-toolbox/macro/index.html" title="Macro Clima: Read the climate"><svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="#d9762b"/><path d="M4 34H60M14 43H50M24 52H40" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Macro Clima</span></a><a href="https://gvnbetti.github.io/clima-toolbox/micro/index.html" title="Micro Clima: Outdoor comfort"><svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="#d9762b"/><path d="M6 56H58M24 48V56M42 49V56" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="41" r="7" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="42" cy="45" r="3" fill="currentColor"/></svg><span>Micro Clima</span></a><a href="https://gvnbetti.github.io/clima-toolbox/room/build/index.html" title="Room Clima: Room and facade"><svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="#d9762b"/><path d="M50 43V38H14V56H50V51" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Room Clima</span></a></span><span class="csb-right"><a href="https://gvnbetti.github.io/clima-toolbox/methods.html" aria-current=page>Methods</a><a href="https://gvnbetti.github.io/clima-toolbox/validation.html">Validation</a><a class="csb-src" href="https://github.com/gvnbetti/clima-toolbox">Source</a><a href="https://gvnbetti.github.io/clima-toolbox/about.html">About</a><a href="https://gvnbetti.github.io/clima-toolbox/impressum.html">Impressum</a></span></nav><script>(function(){if(!/(^|\.)github\.io$/.test(location.hostname))return;var s=document.createElement("script");s.async=true;s.setAttribute("data-goatcounter","https://climatoolbox.goatcounter.com/count");s.src="https://gvnbetti.github.io/clima-toolbox/shared/goatcounter-count.js";document.head.appendChild(s)})();</script><!-- /clima-studio-bar -->
 <div class="wrap"><nav class="toc" aria-label="Method pages"><b>Methods</b><a href="../methods.html">Overview</a><a href="../methods/map.html">Clima Map</a><a href="../methods/macro.html">Macro Clima</a><a href="../methods/climate.html" aria-current=page>Future and urban climate</a><a href="../methods/micro.html">Micro Clima</a><a href="../methods/room.html">Room Clima</a><a href="../methods/room-carbon.html">Room Clima: carbon</a></nav>
 <article><h1>Future and urban climate: method</h1>
-<p>Macro, Micro and Room Clima can shift a weather file to a level of global warming, and add the heat island of a
-neighbourhood. Both modifiers are computed once, in Macro Clima's code (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/macro/core.js"><code>macro/core.js</code></a>), and shared with the other
-two apps (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/room/src/climamods.js"><code>room/src/climamods.js</code></a> is generated from it by <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/shared/mkmods.py"><code>shared/mkmods.py</code></a>; Micro Clima carries a copy).</p>
+<h2>A shared module</h2>
+<p>Future and Urban Climate is a shared module used by Macro Clima, Micro Clima and Room Clima. It applies the same
+climate adjustments consistently across all three apps. Clima Map is the exception: it helps select and download the
+original weather file but does not modify it.</p>
+<p>The module provides two ways to adjust a weather file: to account for future global warming and to represent the
+additional heat associated with the urban environment.</p>
+<p>Both modifiers are calculated centrally in Macro Clima (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/macro/core.js"><code>macro/core.js</code></a>) and shared with the other apps. Room Clima
+uses a generated version (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/room/src/climamods.js"><code>room/src/climamods.js</code></a>), produced by <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/shared/mkmods.py"><code>shared/mkmods.py</code></a>, while Micro Clima carries its own
+copy.</p>
 <h2>What it is for</h2>
-<p>A typical-year file describes the recent past at an open site, usually an airport. A building designed now will
-stand in a warmer climate, and most buildings stand in a city. The two modifiers let a design be tested in those
-conditions, at concept stage and without a separate climate study.</p>
+<p>A typical-year weather file describes recent climatic conditions at a particular location, usually an open site such
+as an airport. But a building designed today will operate in a warmer climate, and most buildings stand within
+cities, where the surrounding urban fabric adds further heat.</p>
+<p>These two modifiers make it possible to explore both effects directly in the design process, without requiring a
+separate climate study.</p>
 <h2>Future climate</h2>
-<p><strong>Levels, not years.</strong> The file is shifted to +1.5, +2 or +3 °C of global warming above 1850-1900, not to a year
-under a scenario. The timing of each level depends on emissions; the regional climate at a given level depends much
-less on the route taken to it. This follows the IPCC AR6 Atlas.</p>
-<p><strong>How it works</strong>
-1. <strong>Region.</strong> The weather file's latitude and longitude select an IPCC AR6 reference region (land regions first).
-2. <strong>Years of the file.</strong> The middle of the period the typical year was built from: read from "Period of Record" in
-   the file's comments, or from "TMYx.YYYY-YYYY" in its name; 2010 if neither is there.
-3. <strong>Change at the level.</strong> For each month: the median over 35 CMIP6 models of the regional change from 1995-2014 to
-   the 20 years around the year each model crosses the level (all four SSP scenarios). The 10th and 90th percentiles
-   are shown as the spread.
-4. <strong>Warming already in the file</strong> is subtracted: the models' change from 1995-2014 to the file's middle year. An
-   older file is therefore shifted more.
-5. <strong>Morphing</strong> (Belcher et al. 2005): temperature shifted by the monthly change, spread day by day between mid-month
-   values; relative humidity held, so dew point and absolute humidity rise; sky infrared scaled with (T'/T)⁴;
-   precipitation scaled by the monthly percentage change.</p>
-<p><strong>Assumptions</strong>
-- One shift for the whole file: the typical months stand for the whole period they were drawn from.
-- Shift only, no stretch: the Atlas gives the change of the mean, not of the daily maximum and minimum, so the
-  day-night swing and the spread of hot and cold spells stay as recorded.</p>
-<p><strong>Limits</strong>
-- Morphing keeps the file's weather sequence, so future heat waves are underestimated.
-- The change is a regional land mean. Coastal and mountain sites may warm differently.</p>
+<p><strong>Warming levels, not future years.</strong> The weather file is adjusted to represent +1.5, +2 or +3 °C of global warming
+above the pre-industrial period (1850–1900). These are warming levels, not projections for specific calendar years.</p>
+<p>The timing of each warming level depends on future emissions, while regional climate changes at a given level depend
+much less on the pathway taken to reach it. This approach follows the IPCC Sixth Assessment Report (AR6) Atlas.</p>
+<h3>How it works</h3>
+<p>The calculation follows five steps:</p>
+<ol>
+<li><strong>Identify the region.</strong> The latitude and longitude of the weather file are used to identify the corresponding
+   IPCC AR6 reference region, prioritising land regions.</li>
+<li><strong>Establish the file's reference period.</strong> The middle year of the period represented by the typical weather file
+   is identified from its comments (Period of Record) or filename (TMYx.YYYY-YYYY). If neither is available, 2010 is
+   assumed.</li>
+<li><strong>Calculate the climate change.</strong> For each month, the calculation uses the median change across 35 CMIP6 climate
+   models, comparing the 1995–2014 baseline with the 20-year period around the year each model reaches the selected
+   warming level. All four SSP scenarios are included. The 10th and 90th percentiles show the range of model results.</li>
+<li><strong>Account for warming already present.</strong> The warming that has already occurred between the 1995–2014 baseline and
+   the middle year of the weather file is subtracted. Older weather files therefore receive a larger adjustment than
+   more recent ones.</li>
+<li><strong>Adjust the weather file.</strong> Using the morphing method of Belcher et al. (2005), monthly temperature changes are
+   interpolated between mid-month values and applied day by day. Relative humidity is held constant, allowing dew
+   point and absolute humidity to increase with temperature. Sky infrared radiation is scaled by the fourth power of
+   the absolute temperature ratio (T'/T)⁴, while precipitation is adjusted according to the monthly percentage change.</li>
+</ol>
+<h3>Assumptions</h3>
+<ul>
+<li><strong>One adjustment for the whole file.</strong> The typical months are assumed to represent the full period from which the
+  weather file was constructed.</li>
+<li><strong>Changes in the mean, not in variability.</strong> The adjustment shifts temperatures but does not stretch or compress
+  their daily range. The day-night temperature swing and the variability of hot and cold spells remain as recorded in
+  the original file. The IPCC Atlas provides changes in mean climate conditions, not equivalent changes in daily
+  extremes.</li>
+</ul>
+<h3>Limits</h3>
+<p>The morphing method preserves the original sequence of weather conditions. It therefore cannot reproduce the timing,
+duration or intensity of future heat waves, and may underestimate future extreme heat.</p>
+<p>The climate changes are based on regional land averages. Coastal and mountain locations may experience different
+changes from the regional mean.</p>
 <h2>Urban heat island</h2>
-<p><strong>How it works.</strong> The daily maximum heat island is computed with the diagnostic equation of Theeuwes et al. (2017):</p>
-<p>UHI_max = (2 − SVF − F_veg) × (S × DTR³ / U)^¼</p>
-<p>from the neighbourhood's sky view factor (SVF) and vegetation fraction (F_veg), and the day's solar radiation (S),
-temperature range (DTR) and wind speed (U) in the weather file. The heat island is added to the air temperature at
-every hour, with vapour pressure held.</p>
-<p><strong>Assumptions</strong>
-- Daily profile: the full maximum with the sun down; with the sun up it is reduced by
-  0.85 × √(sin(altitude) / sin(highest altitude of the day)), so 15 % remains at the daily sun peak. This profile is
-  the apps' own, not from the paper.
-- Neighbourhood presets (SVF, F_veg): suburban 0.8 and 0.35; urban 0.6 and 0.2; dense 0.4 and 0.1.</p>
-<p><strong>Limits</strong>
-- The equation was fitted to 14 cities in north-western Europe, for SVF 0.2 to 0.9 and F_veg up to 0.4. Elsewhere it is
-  an extrapolation, and the apps say so.
-- The heat island is a neighbourhood mean. Conditions in a given street or courtyard are the subject of Micro Clima.</p>
+<h3>How it works</h3>
+<p>The urban heat island modifier estimates the additional warming associated with the built environment. It uses the
+diagnostic equation proposed by Theeuwes et al. (2017):</p>
+<p align="center">UHI<sub>max</sub> = (2 − SVF − F<sub>veg</sub>) × (S × DTR³ / U)<sup>1/4</sup></p>
+
+<p>The calculation combines two characteristics of the neighbourhood, the sky view factor (SVF) and vegetation fraction
+(F<sub>veg</sub>), with three daily weather conditions from the weather file: solar radiation (S), diurnal temperature
+range (DTR) and wind speed (U).</p>
+<p>The resulting maximum daily heat island is distributed across the hours of the day and added to the original air
+temperature. Vapour pressure is held constant.</p>
+<h3>Assumptions</h3>
+<p><strong>Daily temperature profile.</strong> The full maximum heat island is applied at night. During daylight hours, it decreases
+according to the sun's altitude, following the apps' own profile:</p>
+<p align="center">UHI(h) = UHI<sub>max</sub> × (1 − 0.85 × √(sin α<sub>h</sub> / sin α<sub>max</sub>))</p>
+
+<p>where α<sub>h</sub> is the sun's altitude at a given hour and α<sub>max</sub> is its highest altitude that day. This
+leaves 15% of the maximum heat island at solar noon. This hourly profile is an implementation choice developed for the
+apps, rather than a profile proposed in the original paper.</p>
+<p><strong>Neighbourhood presets.</strong> Three representative urban conditions are available, defined by their sky view factor and
+vegetation fraction:</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Setting</th>
+<th style="text-align: right;">SVF</th>
+<th style="text-align: right;">Vegetation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Suburban</td>
+<td style="text-align: right;">0.8</td>
+<td style="text-align: right;">0.35</td>
+</tr>
+<tr>
+<td>Urban</td>
+<td style="text-align: right;">0.6</td>
+<td style="text-align: right;">0.2</td>
+</tr>
+<tr>
+<td>Dense urban</td>
+<td style="text-align: right;">0.4</td>
+<td style="text-align: right;">0.1</td>
+</tr>
+</tbody>
+</table></div>
+<h3>Limits</h3>
+<p>The original equation was developed using data from 14 cities in north-western Europe. Its calibration covers sky
+view factors from 0.2 to 0.9 and vegetation fractions up to 0.4. Applying it outside these geographical and parameter
+ranges is an extrapolation, which the apps explicitly flag.</p>
+<p>The result represents an average neighbourhood heat island, not the conditions of an individual street, courtyard or
+outdoor space. These more local effects, including shading, ground materials and wind shelter, are explored in Micro
+Clima.</p>
 <h2>Validation</h2>
-<p>Both modifiers are checked against the open data and models they cite, not against observations:
-<a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/future-climate">future climate</a> (IPCC Atlas data, official regions, pyepwmorph) and
-<a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/urban-heat-island">urban heat island</a> (independent implementation of the equation).</p>
+<p>Both modifiers are checked against their cited reference data and models, rather than against direct measurements of
+future or urban conditions.</p>
+<p>Future climate adjustments are checked against IPCC Atlas data, official reference regions and the pyepwmorph
+implementation of weather-file morphing: see <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/future-climate">future climate</a>.</p>
+<p>The urban heat island calculation is checked against an independent implementation of the diagnostic equation
+published by Theeuwes et al. (2017): see <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/urban-heat-island">urban heat island</a>.</p>
 <p class="src">Source: <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/docs/methods/climate-scenarios.md">docs/methods/climate-scenarios.md</a></p>
 <div class="next"><a href="../methods/macro.html">← Macro Clima</a><a href="../methods/micro.html">Micro Clima →</a></div></article></div>
 </body>

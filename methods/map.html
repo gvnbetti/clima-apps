@@ -12,6 +12,7 @@
   --f-body: "IBM Plex Sans", system-ui, sans-serif; --f-data: "IBM Plex Mono", ui-monospace, monospace }
 
 * { box-sizing: border-box }
+.ref { padding-left: 2em; text-indent: -2em; font-size: 14px }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 var(--f-body) }
 .wrap { max-width: 1080px; margin: 0 auto; padding: 48px max(20px, env(safe-area-inset-left, 0px)) 64px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 48px }
 nav.toc { font-size: 14px; position: sticky; top: 16px; align-self: start }
@@ -61,15 +62,15 @@ thead th { font: 600 11px var(--f-data); text-transform: uppercase; letter-spaci
 <p>Clima Map does not calculate or simulate climate conditions. Its purpose is to help identify the weather station whose
 climate is most relevant to the site, and to select and download a suitable weather file for use in the other apps.</p>
 <h2>How it works</h2>
-<p><strong>Weather stations.</strong> The station catalogue combines data from Climate.OneBuilding.org and the EnergyPlus weather
-collection, as used in Macro Clima (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/macro/data/stations.js"><code>macro/data/stations.js</code></a>). It currently contains 29,787 stations and 67,686
+<p><strong>Weather stations.</strong> The station catalogue combines data from Climate.OneBuilding.org (Lawrie &amp; Crawley, 2022) and the
+EnergyPlus weather collection (U.S. Department of Energy, n.d.), as used in Macro Clima (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/macro/data/stations.js"><code>macro/data/stations.js</code></a>). It currently contains 29,787 stations and 67,686
 weather files. Entries referring to the same station across different source folders are merged when their names
 match and their locations are within approximately 2 km.</p>
 <p><strong>Climate classification.</strong> Each station is associated with a Köppen-Geiger climate classification, as provided in the
 source catalogue.</p>
 <p><strong>Distance and elevation.</strong> Clima Map calculates the great-circle distance between the selected location and each
 station. Station elevation is also displayed, helping identify stations with similar geographical conditions.</p>
-<p><strong>Place search.</strong> Location searches use OpenStreetMap's Nominatim service. Requests are only sent when the user
+<p><strong>Place search.</strong> Location searches use OpenStreetMap's Nominatim service (OpenStreetMap contributors, n.d.). Requests are only sent when the user
 explicitly submits a search, in accordance with its usage policy.</p>
 <p><strong>Weather files.</strong> Files are downloaded directly from their original source as ZIP archives. The other apps can read
 these archives directly, without requiring the user to unpack them.</p>
@@ -78,7 +79,7 @@ these archives directly, without requiring the user to unpack them.</p>
 <p>The closest station is not necessarily the most representative one. Elevation, distance from the coast and local
 surroundings, such as an airport, an urban area or a valley, can all influence the relevance of a weather file. Clima
 Map makes these factors visible, but leaves the final choice to the user.</p>
-<p>Where several files are available for the same station, such as different TMYx periods, TMY3, IWEC or national
+<p>Where several files are available for the same station, such as different TMYx periods (Lawrie &amp; Crawley, 2022), TMY3 (Wilcox &amp; Marion, 2008), IWEC or national
 weather datasets, the most recent TMYx period is generally a good starting point, as it draws on the most recent
 available years.</p>
 <h2>Limits</h2>
@@ -92,6 +93,13 @@ on the published station catalogue and the original weather files, with station 
 above.</p>
 <p>The reliability of the selection therefore depends on the accuracy and completeness of the source data, as well as
 the user's assessment of how representative a station is for the site.</p>
+<h2>References</h2>
+<!-- refs: lawrie2022 usdoe_weather osm wilcox2008 -->
+
+<p class="ref">Lawrie, L. K., &amp; Crawley, D. B. (2022). <em>Development of global typical meteorological years (TMYx)</em>. Climate.OneBuilding.Org. <a href="https://climate.onebuilding.org">https://climate.onebuilding.org</a></p>
+<p class="ref">OpenStreetMap contributors. (n.d.). <em>OpenStreetMap</em> and <em>Nominatim</em>. OpenStreetMap Foundation. <a href="https://www.openstreetmap.org">https://www.openstreetmap.org</a>, <a href="https://nominatim.org">https://nominatim.org</a></p>
+<p class="ref">U.S. Department of Energy. (n.d.). <em>EnergyPlus weather data</em> [Data set]. <a href="https://energyplus.net/weather">https://energyplus.net/weather</a></p>
+<p class="ref">Wilcox, S., &amp; Marion, W. (2008). <em>Users manual for TMY3 data sets</em> (NREL/TP-581-43156). National Renewable Energy Laboratory.</p>
 <p class="src">Source: <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/docs/methods/clima-map.md">docs/methods/clima-map.md</a></p>
 <div class="next"><a href="../methods.html">← Overview</a><a href="../methods/macro.html">Macro Clima →</a></div></article></div>
 </body>

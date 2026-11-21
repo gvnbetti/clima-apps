@@ -18,6 +18,7 @@ CSS = '''<style>
   --f-body: "IBM Plex Sans", system-ui, sans-serif; --f-data: "IBM Plex Mono", ui-monospace, monospace }
 
 * { box-sizing: border-box }
+.ref { padding-left: 2em; text-indent: -2em; font-size: 14px }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 var(--f-body) }
 .wrap { max-width: 1080px; margin: 0 auto; padding: 48px max(20px, env(safe-area-inset-left, 0px)) 64px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 48px }
 nav.toc { font-size: 14px; position: sticky; top: 16px; align-self: start }
@@ -69,6 +70,10 @@ for i, (md, out, label) in enumerate(PAGES):
     text = re.sub(r'(?m)^((?![-*] |\d+\. |\s|\|).+)\n(?=(?:[-*] |\d+\. ))', r'\1\n\n', text)
     title = re.match(r'# (.+)', text).group(1)
     body = markdown.markdown(text, extensions=['tables', 'sane_lists'])
+    if '<h2>References</h2>' in body:  # APA list: hanging indent, live links
+        a, b = body.split('<h2>References</h2>', 1)
+        b = re.sub(r'(?<![">])(https?://[^\s<]+[^\s<.,])', r'<a href="\1">\1</a>', b).replace('<p>', '<p class="ref">')
+        body = a + '<h2>References</h2>' + b
     body = links(body, out).replace('<table>', '<div class="tw"><table>').replace('</table>', '</table></div>')
     up = '../' * out.count('/')
     toc = ''.join(f'<a href="{up}{o}"{" aria-current=page" if o == out else ""}>{l}</a>' for _, o, l in PAGES)

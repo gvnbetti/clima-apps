@@ -13,12 +13,13 @@ comparative assessment of alternative designs for the same room, not a whole-bui
 Code: `carbonOf` in `room/src/core.js`. Data: the `carbon.*` entries in `room/src/register.js`.
 
 All embodied-carbon values are generic assumptions. They should be replaced with project-specific data or, where
-available, product and assembly data from the Build-up LCA datasets, including ÖKOBAUDAT.
+available, product and assembly data from the Build-up LCA datasets, including ÖKOBAUDAT (Bundesministerium für Wohnen, Stadtentwicklung und Bauwesen, n.d.-b).
 
 ## Calculation
 <p align="center">Whole-life carbon = embodied carbon of the design options + operational carbon over 50 years</p>
 
-The study period is 50 years, following the reference study period used by BNB and DGNB.
+The study period is 50 years, following the reference study period used by BNB (Bundesministerium für Wohnen, Stadtentwicklung und
+Bauwesen, n.d.-a) and DGNB (Deutsche Gesellschaft für Nachhaltiges Bauen, n.d.).
 
 **Replacement cycles.** An element with a service life of L years is counted according to the number of times it is
 installed during the study period: ⌈50 / L⌉.
@@ -27,7 +28,7 @@ installed during the study period: ⌈50 / L⌉.
 the 50-year study period.
 
 The factor represents an assumed average over the study period, not today's grid intensity. Germany's electricity mix
-was approximately 0.38 kg CO₂e/kWh in 2024 (UBA). The lower factor reflects the expected decarbonisation of electricity
+was approximately 0.38 kg CO₂e/kWh in 2024 (Icha & Lauf, 2025). The lower factor reflects the expected decarbonisation of electricity
 generation. It can be changed in the app.
 
 ## Embodied carbon of design options
@@ -85,3 +86,14 @@ carbon is not one of the main search criteria, and the initial search could othe
 
 The recommendation therefore prioritises meeting the comfort, energy and daylight requirements, then uses whole-life
 carbon to identify the better-performing option among eligible designs.
+
+## References
+<!-- refs: oekobaudat bnb dgnb icha2025 -->
+
+Bundesministerium für Wohnen, Stadtentwicklung und Bauwesen. (n.d.-a). *Bewertungssystem Nachhaltiges Bauen (BNB)*. https://www.bnb-nachhaltigesbauen.de
+
+Bundesministerium für Wohnen, Stadtentwicklung und Bauwesen. (n.d.-b). *ÖKOBAUDAT*. https://www.oekobaudat.de
+
+Deutsche Gesellschaft für Nachhaltiges Bauen. (n.d.). *DGNB System*. https://www.dgnb-system.de
+
+Icha, P., & Lauf, T. (2025). *Entwicklung der spezifischen Treibhausgas-Emissionen des deutschen Strommix in den Jahren 1990–2024* (Climate Change 13/2025). Umweltbundesamt.

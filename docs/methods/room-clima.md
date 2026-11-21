@@ -33,18 +33,18 @@ transfer through the building elements, ventilation and heating or cooling syste
 
 | Part | Method | Source / validation |
 |---|---|---|
-| Room heat balance | Hourly EN ISO 52016-1 method, with a single thermal zone and calculation nodes for each building element. | EN ISO 52016-1:2017; validation against ASHRAE Standard 140 and EnergyPlus |
-| Sun position | NOAA solar calculator at the middle of each hour, from the calculation core shared with Macro and Micro Clima. Used by the thermal and the daylight model alike. | Shared core; validation/climate-reading/ |
-| Solar radiation on the facade | Perez 1990 transposition model, with ground albedo of 0.2. | Shared core with Macro Clima; validation/climate-reading/ |
+| Room heat balance | Hourly EN ISO 52016-1 method, with a single thermal zone and calculation nodes for each building element. | EN ISO 52016-1 (ISO, 2017); validation against ASHRAE Standard 140 (ASHRAE, 2020a) and EnergyPlus (Crawley et al., 2001) |
+| Sun position | NOAA solar calculator at the middle of each hour, from the calculation core shared with Macro and Micro Clima. Used by the thermal and the daylight model alike. | NOAA Global Monitoring Laboratory (n.d.); Meeus (1998); shared core; validation/climate-reading/ |
+| Solar radiation on the facade | Perez 1990 transposition model, with ground albedo of 0.2. | Perez et al. (1990); shared core with Macro Clima; validation/climate-reading/ |
 | Shading | Hourly calculation of the sunlit fraction of the glazing, accounting for overhangs, fins, frames and window reveals. Uses the same geometry as the daylight model. | Geometric calculation; validation/thermal/room-types/ |
-| Room settings | Exterior convective heat transfer based on station wind using the DOE-2 correlation; glazing transmission adjusted for angle of incidence; transmitted solar radiation distributed over opaque internal surfaces only. | Modelling decisions; validation/thermal/README.md |
-| Internal gains and schedules | DIN 4108-2, clause 8.4.2: 100 Wh/m² per day for residential spaces and 144 Wh/m² per day for non-residential spaces. | DIN 4108-2:2013-02 |
+| Room settings | Exterior convective heat transfer based on station wind using the DOE-2 correlation; glazing transmission adjusted for angle of incidence; transmitted solar radiation distributed over opaque internal surfaces only. | U.S. Department of Energy (2024); modelling decisions; validation/thermal/README.md |
+| Internal gains and schedules | DIN 4108-2, clause 8.4.2: 100 Wh/m² per day for residential spaces and 144 Wh/m² per day for non-residential spaces. | DIN 4108-2 (DIN, 2013) |
 | Heating and cooling | Ideal heating and cooling, with heat pump efficiencies used to calculate delivered energy. | Register: score.energy |
-| Ventilation through windows | Hourly airflow calculated using the EN 16798-7 single-sided ventilation method, based on effective opening area, sash height and indoor-outdoor temperature difference. Wind is not credited because site-specific wind conditions are unknown at concept stage. The method is therefore deliberately conservative. The openable sash is assumed to be half the window area. | EN 16798-7 |
+| Ventilation through windows | Hourly airflow calculated using the EN 16798-7 single-sided ventilation method, based on effective opening area, sash height and indoor-outdoor temperature difference. Wind is not credited because site-specific wind conditions are unknown at concept stage. The method is therefore deliberately conservative. The openable sash is assumed to be half the window area. | EN 16798-7 (CEN, 2017) |
 | Window ventilation control | Day ventilation opens when room air temperature exceeds 23 °C, outdoor temperature is at least 1 K lower and at least 12 °C. Night ventilation operates after a warm day, when operative temperature exceeded 24 °C during the last occupied period and the room is at least 2 K warmer than outside. Airflow is reduced to prevent the room from falling below the heating setpoint plus 2 K. | App control rules |
-| Workplace ventilation checks | Office configurations are additionally checked against ASR A3.6, including single-sided room depth, opening area per person and purge ventilation openings. | ASR A3.6 |
-| Blinds | Exterior and interior blinds are lowered whenever solar radiation on the window exceeds the threshold in DIN 4108-2, clause 8.4.2 j. Solar reduction factors (F_C) follow Table 7. The same operating hours are used in the daylight calculation. | DIN 4108-2, Table 7 |
-| Ceiling fans and chilled ceilings | Fans operate during occupied hours above 25 °C operative temperature, increasing the upper comfort limit by 1.8 K, based on the EN 16798-1 air-speed allowance at 0.9 m/s. Chilled ceilings are sized using product performance data (EN 14240 rating), up to 75 W/m² of floor area at a 10 K temperature difference, with 16 °C water and a 1 K dew-point margin. | EN 16798-1; EN 14240; product data |
+| Workplace ventilation checks | Office configurations are additionally checked against ASR A3.6, including single-sided room depth, opening area per person and purge ventilation openings. | ASR A3.6 (Ausschuss für Arbeitsstätten, 2012) |
+| Blinds | Exterior and interior blinds are lowered whenever solar radiation on the window exceeds the threshold in DIN 4108-2, clause 8.4.2 j. Solar reduction factors (F_C) follow Table 7. The same operating hours are used in the daylight calculation. | DIN 4108-2, Table 7 (DIN, 2013) |
+| Ceiling fans and chilled ceilings | Fans operate during occupied hours above 25 °C operative temperature, increasing the upper comfort limit by 1.8 K, based on the EN 16798-1 air-speed allowance at 0.9 m/s. Chilled ceilings are sized using product performance data (EN 14240 rating), up to 75 W/m² of floor area at a 10 K temperature difference, with 16 °C water and a 1 K dew-point margin. | EN 16798-1 (CEN, 2019); EN 14240 (CEN, 2004); product data |
 
 ## Comfort and the German summer check
 Room Clima evaluates thermal comfort using several approaches. This allows the results to be interpreted against
@@ -52,19 +52,20 @@ international comfort standards as well as the specific requirements of German b
 
 | Model | Comfort band | Status |
 |---|---|---|
-| EN 16798-1 adaptive | t = 0.33 t<sub>rm</sub> + 18.8, categories I to III, using an exponential running mean with alpha 0.8. | Secondary |
-| ASHRAE 55 adaptive | t = 0.31 t<sub>pma</sub> + 17.8, with 80% and 90% acceptability, using a seven-day prevailing mean. | Secondary |
-| DIN EN 16798-1/NA (Germany) | 22 to 26 °C, with a slope of 0.25 between outdoor temperatures of 16 and 32 °C and category-dependent tolerance. | Secondary |
+| EN 16798-1 adaptive (CEN, 2019) | t = 0.33 t<sub>rm</sub> + 18.8, categories I to III, using an exponential running mean with alpha 0.8. | Secondary |
+| ASHRAE 55 adaptive (ASHRAE, 2020b; de Dear & Brager, 1998) | t = 0.31 t<sub>pma</sub> + 17.8, with 80% and 90% acceptability, using a seven-day prevailing mean. | Secondary |
+| DIN EN 16798-1/NA, Germany (DIN, 2021) | 22 to 26 °C, with a slope of 0.25 between outdoor temperatures of 16 and 32 °C and category-dependent tolerance. | Secondary |
 | Cooled rooms | Fixed upper comfort limits based on EN 16798-1 design values, with ASHRAE 55 limits following an app-specific modelling decision. | Secondary and assumption |
 
 Overheating is measured as degree-hours above the applicable comfort band during occupied hours. Up to 5% of occupied
-hours above the band is accepted without cooling, following the informative guidance in EN 15251.
+hours above the band is accepted without cooling, following the informative guidance in EN 15251 (CEN, 2007).
 
-For Germany, Room Clima also performs the summer overheating assessment according to DIN 4108-2. This calculation uses
+For Germany, Room Clima also performs the summer overheating assessment according to DIN 4108-2 (DIN, 2013). This calculation uses
 the standard's prescribed conditions, including schedules, internal gains, air change rates, blind operation,
 reference temperatures for summer climate regions A, B and C, and the applicable limits of 1,200 or 500 K·h/a.
 
-When the assessment uses a weather file other than the official test reference year for the relevant region, the
+When the assessment uses a weather file other than the official test reference year for the relevant region (Bundesinstitut für Bau-, Stadt- und
+Raumforschung, 2017), the
 result is an estimate rather than a formal compliance assessment. The app identifies this distinction explicitly.
 
 The text of DIN 4108-2 is not included in this repository.
@@ -77,14 +78,15 @@ The method combines a radiosity solution for the six room surfaces with hourly s
 and glazing properties.
 
 **Sky and daylight coefficients.** Daylight coefficients are calculated using a radiosity solution of the six room
-surfaces. The sky and ground are represented by Reinhart sky patches (MF:2), following the approach used by Radiance.
+surfaces. The sky and ground are represented by Reinhart sky patches (MF:2), following the approach used by Radiance (Bourgeois et al.,
+2008; Tregenza, 1987).
 
-**Sky conditions.** The sky is recalculated for each hour using the Perez all-weather sky model and Perez 1990 luminous
-efficacy. The implementation reproduces the approach of Radiance's gendaymtx; the sun position comes from the shared
+**Sky conditions.** The sky is recalculated for each hour using the Perez all-weather sky model (Perez et al., 1993) and the luminous
+efficacy model of Perez et al. (1990). The implementation reproduces the approach of Radiance's gendaymtx (Ward, 1994); the sun position comes from the shared
 calculation core, as in the thermal model.
 
 **Direct sunlight.** Direct solar radiation is calculated using an exact ray test from each sensor point through the
-glazing. Glazing transmission follows the Radiance glass model.
+glazing. Glazing transmission follows the Radiance glass model (Larson & Shakespeare, 1998).
 
 **Blinds.** Venetian blinds are represented as a two-part optical layer, following a modelling decision dated
 20 November 2026. A small proportion of light passes directly through, while the remainder is scattered evenly.
@@ -94,13 +96,13 @@ glazing. Glazing transmission follows the Radiance glass model.
 
 The angular behaviour of individual slats is not modelled.
 
-**Useful daylight.** Useful daylight is expressed as the share of floor area and occupied hours within the following
+**Useful daylight.** Useful daylight (Nabil & Mardaljevic, 2005) is expressed as the share of floor area and occupied hours within the following
 illuminance ranges:
 
 - Non-residential: 300 to 3,000 lx.
 - Residential: 100 to 2,000 lx.
 
-The corresponding EN 17037 daylight levels are also reported.
+The corresponding EN 17037 daylight levels (CEN, 2018) are also reported.
 
 **Electric lighting.** Where daylight falls below the target illuminance, supplementary LED lighting is estimated at
 6 W/m², providing 500 lx in offices and 300 lx in classrooms.
@@ -199,3 +201,54 @@ The calculation modules have been checked against established simulation tools, 
 
 These comparisons assess the implementation of the models and their agreement with established reference tools. They
 do not replace validation against measured performance in occupied buildings.
+
+## References
+<!-- refs: iso52016 ashrae140 crawley2001 noaa meeus1998 perez1990 usdoe2024 din4108 cen16798_7 asr36 cen16798_1 cen14240 ashrae55 dedear1998 dinNA cen15251 bbsr2017 bourgeois2008 tregenza1987 perez1993 ward1994 larson1998 nabil2005 cen17037 -->
+
+ASHRAE. (2020a). *ANSI/ASHRAE Standard 140-2020: Method of test for evaluating building performance simulation software*. American Society of Heating, Refrigerating and Air-Conditioning Engineers.
+
+ASHRAE. (2020b). *ANSI/ASHRAE Standard 55-2020: Thermal environmental conditions for human occupancy*. American Society of Heating, Refrigerating and Air-Conditioning Engineers.
+
+Ausschuss für Arbeitsstätten. (2012). *Technische Regeln für Arbeitsstätten: Lüftung (ASR A3.6)* (GMBl 2012, S. 92; zuletzt geändert GMBl 2018, S. 474). Bundesanstalt für Arbeitsschutz und Arbeitsmedizin.
+
+Bourgeois, D., Reinhart, C. F., & Ward, G. (2008). Standard daylight coefficient model for dynamic daylighting simulations. *Building Research & Information, 36*(1), 68–82. https://doi.org/10.1080/09613210701446325
+
+Bundesinstitut für Bau-, Stadt- und Raumforschung. (2017). *Ortsgenaue Testreferenzjahre von Deutschland für mittlere, extreme und zukünftige Witterungsverhältnisse*. BBSR; Deutscher Wetterdienst.
+
+CEN. (2004). *EN 14240:2004 Ventilation for buildings: Chilled ceilings: Testing and rating*. European Committee for Standardization.
+
+CEN. (2007). *EN 15251:2007 Indoor environmental input parameters for design and assessment of energy performance of buildings addressing indoor air quality, thermal environment, lighting and acoustics*. European Committee for Standardization.
+
+CEN. (2017). *EN 16798-7:2017 Energy performance of buildings: Ventilation for buildings: Part 7: Calculation methods for the determination of air flow rates in buildings including infiltration (Module M5-5)*. European Committee for Standardization.
+
+CEN. (2018). *EN 17037:2018 Daylight in buildings*. European Committee for Standardization.
+
+CEN. (2019). *EN 16798-1:2019 Energy performance of buildings: Ventilation for buildings: Part 1: Indoor environmental input parameters for design and assessment of energy performance of buildings addressing indoor air quality, thermal environment, lighting and acoustics (Module M1-6)*. European Committee for Standardization.
+
+Crawley, D. B., Lawrie, L. K., Winkelmann, F. C., Buhl, W. F., Huang, Y. J., Pedersen, C. O., Strand, R. K., Liesen, R. J., Fisher, D. E., Witte, M. J., & Glazer, J. (2001). EnergyPlus: Creating a new-generation building energy simulation program. *Energy and Buildings, 33*(4), 319–331. https://doi.org/10.1016/S0378-7788(00)00114-6
+
+de Dear, R. J., & Brager, G. S. (1998). Developing an adaptive model of thermal comfort and preference. *ASHRAE Transactions, 104*(1), 145–167.
+
+DIN. (2013). *DIN 4108-2:2013-02 Wärmeschutz und Energie-Einsparung in Gebäuden: Teil 2: Mindestanforderungen an den Wärmeschutz*. Beuth.
+
+DIN. (2021). *E DIN EN 16798-1/NA:2021-06 Nationaler Anhang: Nationale Ergänzungen und Hinweise zur Anwendung: Energetische Bewertung von Gebäuden: Lüftung von Gebäuden: Teil 1* [Draft standard, withdrawn]. Beuth.
+
+ISO. (2017). *ISO 52016-1:2017 Energy performance of buildings: Energy needs for heating and cooling, internal temperatures and sensible and latent heat loads: Part 1: Calculation procedures*. International Organization for Standardization.
+
+Larson, G. W., & Shakespeare, R. (1998). *Rendering with Radiance: The art and science of lighting visualization*. Morgan Kaufmann.
+
+Meeus, J. (1998). *Astronomical algorithms* (2nd ed.). Willmann-Bell.
+
+Nabil, A., & Mardaljevic, J. (2005). Useful daylight illuminance: A new paradigm for assessing daylight in buildings. *Lighting Research & Technology, 37*(1), 41–57. https://doi.org/10.1191/1365782805li128oa
+
+NOAA Global Monitoring Laboratory. (n.d.). *NOAA solar calculator*. https://gml.noaa.gov/grad/solcalc/
+
+Perez, R., Ineichen, P., Seals, R., Michalsky, J., & Stewart, R. (1990). Modeling daylight availability and irradiance components from direct and global irradiance. *Solar Energy, 44*(5), 271–289. https://doi.org/10.1016/0038-092X(90)90055-H
+
+Perez, R., Seals, R., & Michalsky, J. (1993). All-weather model for sky luminance distribution: Preliminary configuration and validation. *Solar Energy, 50*(3), 235–245. https://doi.org/10.1016/0038-092X(93)90017-I
+
+Tregenza, P. R. (1987). Subdivision of the sky hemisphere for luminance measurements. *Lighting Research & Technology, 19*(1), 13–14. https://doi.org/10.1177/096032718701900103
+
+U.S. Department of Energy. (2024). *EnergyPlus version 24.2 documentation: Engineering reference; Auxiliary programs*. https://energyplus.net/documentation
+
+Ward, G. J. (1994). The RADIANCE lighting simulation and rendering system. In *Proceedings of the 21st Annual Conference on Computer Graphics and Interactive Techniques (SIGGRAPH '94)* (pp. 459–472). ACM. https://doi.org/10.1145/192161.192286

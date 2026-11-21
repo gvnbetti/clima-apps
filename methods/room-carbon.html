@@ -12,6 +12,7 @@
   --f-body: "IBM Plex Sans", system-ui, sans-serif; --f-data: "IBM Plex Mono", ui-monospace, monospace }
 
 * { box-sizing: border-box }
+.ref { padding-left: 2em; text-indent: -2em; font-size: 14px }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 var(--f-body) }
 .wrap { max-width: 1080px; margin: 0 auto; padding: 48px max(20px, env(safe-area-inset-left, 0px)) 64px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 48px }
 nav.toc { font-size: 14px; position: sticky; top: 16px; align-self: start }
@@ -65,17 +66,18 @@ including their replacements, and the operational carbon associated with the ene
 comparative assessment of alternative designs for the same room, not a whole-building LCA.</p>
 <p>Code: <code>carbonOf</code> in <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/room/src/core.js"><code>room/src/core.js</code></a>. Data: the <code>carbon.*</code> entries in <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/room/src/register.js"><code>room/src/register.js</code></a>.</p>
 <p>All embodied-carbon values are generic assumptions. They should be replaced with project-specific data or, where
-available, product and assembly data from the Build-up LCA datasets, including ÖKOBAUDAT.</p>
+available, product and assembly data from the Build-up LCA datasets, including ÖKOBAUDAT (Bundesministerium für Wohnen, Stadtentwicklung und Bauwesen, n.d.-b).</p>
 <h2>Calculation</h2>
 <p align="center">Whole-life carbon = embodied carbon of the design options + operational carbon over 50 years</p>
 
-<p>The study period is 50 years, following the reference study period used by BNB and DGNB.</p>
+<p>The study period is 50 years, following the reference study period used by BNB (Bundesministerium für Wohnen, Stadtentwicklung und
+Bauwesen, n.d.-a) and DGNB (Deutsche Gesellschaft für Nachhaltiges Bauen, n.d.).</p>
 <p><strong>Replacement cycles.</strong> An element with a service life of L years is counted according to the number of times it is
 installed during the study period: ⌈50 / L⌉.</p>
 <p><strong>Operational carbon.</strong> Delivered energy is multiplied by an assumed electricity-grid factor of 0.25 kg CO₂e/kWh and by
 the 50-year study period.</p>
 <p>The factor represents an assumed average over the study period, not today's grid intensity. Germany's electricity mix
-was approximately 0.38 kg CO₂e/kWh in 2024 (UBA). The lower factor reflects the expected decarbonisation of electricity
+was approximately 0.38 kg CO₂e/kWh in 2024 (Icha &amp; Lauf, 2025). The lower factor reflects the expected decarbonisation of electricity
 generation. It can be changed in the app.</p>
 <h2>Embodied carbon of design options</h2>
 <div class="tw"><table>
@@ -226,6 +228,13 @@ designs with otherwise equivalent performance.</p>
 carbon is not one of the main search criteria, and the initial search could otherwise miss a lower-carbon option.</p>
 <p>The recommendation therefore prioritises meeting the comfort, energy and daylight requirements, then uses whole-life
 carbon to identify the better-performing option among eligible designs.</p>
+<h2>References</h2>
+<!-- refs: oekobaudat bnb dgnb icha2025 -->
+
+<p class="ref">Bundesministerium für Wohnen, Stadtentwicklung und Bauwesen. (n.d.-a). <em>Bewertungssystem Nachhaltiges Bauen (BNB)</em>. <a href="https://www.bnb-nachhaltigesbauen.de">https://www.bnb-nachhaltigesbauen.de</a></p>
+<p class="ref">Bundesministerium für Wohnen, Stadtentwicklung und Bauwesen. (n.d.-b). <em>ÖKOBAUDAT</em>. <a href="https://www.oekobaudat.de">https://www.oekobaudat.de</a></p>
+<p class="ref">Deutsche Gesellschaft für Nachhaltiges Bauen. (n.d.). <em>DGNB System</em>. <a href="https://www.dgnb-system.de">https://www.dgnb-system.de</a></p>
+<p class="ref">Icha, P., &amp; Lauf, T. (2025). <em>Entwicklung der spezifischen Treibhausgas-Emissionen des deutschen Strommix in den Jahren 1990–2024</em> (Climate Change 13/2025). Umweltbundesamt.</p>
 <p class="src">Source: <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/docs/methods/room-clima-carbon.md">docs/methods/room-clima-carbon.md</a></p>
 <div class="next"><a href="../methods/room.html">← Room Clima</a><a href="../validation.html">Validation →</a></div></article></div>
 </body>

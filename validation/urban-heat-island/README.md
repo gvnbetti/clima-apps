@@ -14,7 +14,7 @@ Clima's engine embed. The check confirms that each app, as built, gives the same
 - The equation gives 2.521 K for the worked example both by hand and in the apps.
 
 ## The model
-**Daily maximum** (Theeuwes et al. 2017, equation 13):
+**Daily maximum** (Theeuwes et al., 2017, Equation 13):
 
 UHI_max = (2 − SVF − F_veg) × (S × DTR³ / U)^¼
 
@@ -57,3 +57,8 @@ between implementations.
 python3 weather/fetch.py
 cd urban-heat-island && node uhi_dump.js && python3 uhi_check.py
 ```
+
+## References
+<!-- refs: theeuwes2017 -->
+
+Theeuwes, N. E., Steeneveld, G. J., Ronda, R. J., & Holtslag, A. A. M. (2017). A diagnostic equation for the daily maximum urban heat island effect for cities in northwestern Europe. *International Journal of Climatology, 37*(1), 443–454. https://doi.org/10.1002/joc.4717

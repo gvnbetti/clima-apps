@@ -20,15 +20,15 @@ UTCI, future climate and the urban heat island come from the calculation core sh
 
 | Part | Method | Source |
 |---|---|---|
-| Neighbourhood air temperature | Weather-file temperature adjusted for the urban heat island. Additional daytime cooling from tree canopy is applied only above 40% canopy cover; its strength is currently a placeholder. | Theeuwes et al. 2017; Ziter et al. 2019 |
-| Ground surface | One-dimensional implicit heat balance extending to 4 m depth, accounting for solar radiation, longwave exchange, convection and evaporation according to surface moisture availability. | Oke 1987; material properties documented in the guide, "Where the values come from" |
+| Neighbourhood air temperature | Weather-file temperature adjusted for the urban heat island. Additional daytime cooling from tree canopy is applied only above 40% canopy cover; its strength is currently a placeholder. | Theeuwes et al. (2017); Ziter et al. (2019) |
+| Ground surface | One-dimensional implicit heat balance extending to 4 m depth, accounting for solar radiation, longwave exchange, convection and evaporation according to surface moisture availability. | Oke (1987); material properties documented in the guide, "Where the values come from" |
 | Walls | Separate surface heat balances for each orientation, using a fixed indoor temperature. | Surface heat balance model |
-| Mean radiant temperature | Longwave radiation exchange calculated using view factors for the sky, ground, canopy and walls, combined with SolarCal for direct and diffuse solar exposure of the body, in standing or seated positions. | Arens et al. 2015 |
-| Trees | Big-leaf energy balance model of the tree canopy, including solar transmission for leaf-on and leaf-off conditions. | Sources documented in the guide |
+| Mean radiant temperature | Longwave radiation exchange calculated using view factors for the sky, ground, canopy and walls, combined with SolarCal for direct and diffuse solar exposure of the body, in standing or seated positions. | Arens et al. (2015) |
+| Trees | Big-leaf energy balance model of the tree canopy, including solar transmission for leaf-on and leaf-off conditions. | Campbell & Norman (1998); Leuning (1995); further sources in the guide |
 | Built canopy | Thin-sheet heat balance, using a white membrane with 10% solar transmission and 15% absorption. | Material assumptions documented in the guide |
 | Enclosures | Four spatial configurations: open field, single wall, courtyard and street canyon, with height-to-width ratios (H/W) of 0.5, 1 and 2. Sky view factors and solar access are calculated geometrically at the centre point. | Geometric calculations |
 | Wind | Weather-station wind speed at 10 m, adjusted using wind shelter and enclosure factors. These factors are currently placeholders. | Assumptions documented in the guide |
-| Outdoor comfort | UTCI calculated using the operational polynomial and its associated thermal stress categories. | Bröde et al. 2012 |
+| Outdoor comfort | UTCI calculated using the operational polynomial and its associated thermal stress categories. | Bröde et al. (2012) |
 | Future and urban climate | Adjustments for global warming scenarios and urban heat island effects. See [Future and urban climate](climate-scenarios.md). | See dedicated method |
 
 ## Assumptions
@@ -56,13 +56,40 @@ closest available geometry, rather than modelled in all its architectural detail
 The main calculation components have been checked against established reference implementations and analytical
 solutions.
 
-UTCI matches pythermalcomfort. SolarCal matches it within 0.06 K; the difference comes from the radiation heat transfer
-coefficient, 6.012 W/m²K as in ASHRAE 55 and Ladybug, which pythermalcomfort rounds to 6. Solar position agrees with
-pvlib within 0.02°. Ground and wall heat balances have been checked against exact solutions.
+UTCI matches pythermalcomfort (Tartarini & Schiavon, 2020). SolarCal (Arens et al., 2015) matches it within 0.06 K; the difference comes from the radiation heat transfer
+coefficient, 6.012 W/m²K as in ASHRAE 55 (ASHRAE, 2020b) and Ladybug, which pythermalcomfort rounds to 6. Solar position agrees with
+pvlib (Holmgren et al., 2018) within 0.02°. Ground and wall heat balances have been checked against exact solutions (Carslaw & Jaeger, 1959).
 
-The overall performance ranking of 70 design configurations has also been compared with Ladybug Tools, achieving a
+The overall performance ranking of 70 design configurations has also been compared with Ladybug Tools (Roudsari & Pak, 2013), achieving a
 rank correlation of 0.97.
 
 These checks assess the consistency of the calculations and the relative ranking of design alternatives. They do not
 constitute validation against measured conditions in real outdoor spaces. See
 [outdoor comfort](../../validation/outdoor-comfort/).
+
+## References
+<!-- refs: theeuwes2017 ziter2019 oke1987 arens2015 campbell1998 leuning1995 brode2012 tartarini2020 ashrae55 holmgren2018 carslaw1959 roudsari2013 -->
+
+Arens, E., Hoyt, T., Zhou, X., Huang, L., Zhang, H., & Schiavon, S. (2015). Modeling the comfort effects of short-wave solar radiation indoors. *Building and Environment, 88*, 3–9. https://doi.org/10.1016/j.buildenv.2014.09.004
+
+ASHRAE. (2020b). *ANSI/ASHRAE Standard 55-2020: Thermal environmental conditions for human occupancy*. American Society of Heating, Refrigerating and Air-Conditioning Engineers.
+
+Bröde, P., Fiala, D., Błażejczyk, K., Holmér, I., Jendritzky, G., Kampmann, B., Tinz, B., & Havenith, G. (2012). Deriving the operational procedure for the Universal Thermal Climate Index (UTCI). *International Journal of Biometeorology, 56*(3), 481–494. https://doi.org/10.1007/s00484-011-0454-1
+
+Campbell, G. S., & Norman, J. M. (1998). *An introduction to environmental biophysics* (2nd ed.). Springer.
+
+Carslaw, H. S., & Jaeger, J. C. (1959). *Conduction of heat in solids* (2nd ed.). Clarendon Press.
+
+Holmgren, W. F., Hansen, C. W., & Mikofski, M. A. (2018). pvlib python: A python package for modeling solar energy systems. *Journal of Open Source Software, 3*(29), 884. https://doi.org/10.21105/joss.00884
+
+Leuning, R. (1995). A critical appraisal of a combined stomatal-photosynthesis model for C3 plants. *Plant, Cell & Environment, 18*(4), 339–355. https://doi.org/10.1111/j.1365-3040.1995.tb00370.x
+
+Oke, T. R. (1987). *Boundary layer climates* (2nd ed.). Methuen.
+
+Roudsari, M. S., & Pak, M. (2013). Ladybug: A parametric environmental plugin for Grasshopper to help designers create an environmentally-conscious design. In *Proceedings of BS2013: 13th Conference of the International Building Performance Simulation Association* (pp. 3128–3135). IBPSA.
+
+Tartarini, F., & Schiavon, S. (2020). pythermalcomfort: A Python package for thermal comfort research. *SoftwareX, 12*, 100578. https://doi.org/10.1016/j.softx.2020.100578
+
+Theeuwes, N. E., Steeneveld, G. J., Ronda, R. J., & Holtslag, A. A. M. (2017). A diagnostic equation for the daily maximum urban heat island effect for cities in northwestern Europe. *International Journal of Climatology, 37*(1), 443–454. https://doi.org/10.1002/joc.4717
+
+Ziter, C. D., Pedersen, E. J., Kucharik, C. J., & Turner, M. G. (2019). Scale-dependent interactions between tree canopy cover and impervious surfaces reduce daytime urban heat during summer. *Proceedings of the National Academy of Sciences, 116*(15), 7575–7580. https://doi.org/10.1073/pnas.1817561116

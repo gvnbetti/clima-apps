@@ -1,8 +1,8 @@
 # Daylight
 
 **What is checked.** Room Clima's daylight calculation (`room/src/core.js`, `Daylight` and `DaySweep`): useful daylight
-illuminance (UDI) over the floor and the occupied hours, without blinds and with blinds lowered as the app lowers them.
-The reference is Radiance.
+illuminance (UDI; Nabil & Mardaljevic, 2005) over the floor and the occupied hours, without blinds and with blinds lowered as the app lowers them.
+The reference is Radiance (Ward, 1994).
 
 **Result in short.** Over 6 rooms and 6 climates (108 comparisons), the app's useful daylight is within 2.9 points of
 Radiance in every case:
@@ -19,12 +19,12 @@ solar calculator) instead of its replica of gendaymtx's; Radiance keeps its own.
 ## The model of the app
 - **Daylight coefficients** from a radiosity solution of the room's six surfaces, the wall reveals and the outdoor
   shading:
-  - Reinhart sky patches MF:1 plus the ground, as Radiance;
+  - Reinhart sky patches MF:1 plus the ground, as Radiance (Bourgeois et al., 2008; Tregenza, 1987);
   - first arrival by stratified, cosine-weighted rays;
   - interreflection solved once per room.
-- **Sky per hour:** Perez all-weather model with Perez 1990 luminous efficacy, as Radiance's gendaymtx.
+- **Sky per hour:** Perez all-weather model (Perez et al., 1993) with the luminous efficacy of Perez et al. (1990), as Radiance's gendaymtx.
 - **Direct sun:** an exact ray test from each sensor through the glazing.
-- **Glazing:** the Radiance glass model (n = 1.52).
+- **Glazing:** the Radiance glass model (n = 1.52; Larson & Shakespeare, 1998).
 - **Blinds** (decision of 20 November 2026). A lowered blind is a diffusing layer. It lets a small share of light pass
   straight through, in the sun's direction, and scatters the rest evenly:
 
@@ -40,7 +40,7 @@ solar calculator) instead of its replica of gendaymtx's; Radiance keeps its own.
   interreflections. The angle dependence of real slats is not modelled: a venetian blind that sends light to the
   ceiling is represented by its average.
 - **Hours with blinds down:** from a heated thermal run of a reference room with the same window, orientation and
-  blind type (register `dl.blindRef`). The rule is that of DIN 4108-2: blinds down above 200 W/m² of sun on the
+  blind type (register `dl.blindRef`). The rule is that of DIN 4108-2 (DIN, 2013): blinds down above 200 W/m² of sun on the
   window, 150 W/m² facing north (offices); in design runs they stay up below 23 °C room air.
 
 ## Base cases
@@ -64,7 +64,7 @@ solar calculator) instead of its replica of gendaymtx's; Radiance keeps its own.
 | S50-overhang | south | 0.50 | overhang 1.0 m |
 | E50-frame | east | 0.50 | frame 0.5 m (overhang and fins) |
 
-**Reference.** Radiance 6.0a (the binaries shipped with pyradiance 1.3.1) on the app's own geometry: every rectangle of the
+**Reference.** Radiance 6.0a (the binaries shipped with pyradiance 1.3.1; Wang, n.d.) on the app's own geometry: every rectangle of the
 room, reveals, facade and shading, with the same reflectances and sensors.
 - **Daylight coefficients:** two-phase, from rfluxmtx with a Reinhart sky MF:4 and the ground, 6 ambient bounces and
   8,192 ambient divisions.
@@ -104,3 +104,24 @@ cd daylight && node dump.js && python3 run.py && python3 analyse.py
 ```
 `run.py` needs the Radiance programs, for example from `pip install pyradiance` (rfluxmtx, gendaymtx, dctimestep, rmtxop, epw2wea); `RADIANCE_BIN` points to
 them. About 40 minutes on two cores.
+
+## References
+<!-- refs: nabil2005 ward1994 bourgeois2008 tregenza1987 perez1993 perez1990 larson1998 din4108 pyradiance -->
+
+Bourgeois, D., Reinhart, C. F., & Ward, G. (2008). Standard daylight coefficient model for dynamic daylighting simulations. *Building Research & Information, 36*(1), 68–82. https://doi.org/10.1080/09613210701446325
+
+DIN. (2013). *DIN 4108-2:2013-02 Wärmeschutz und Energie-Einsparung in Gebäuden: Teil 2: Mindestanforderungen an den Wärmeschutz*. Beuth.
+
+Larson, G. W., & Shakespeare, R. (1998). *Rendering with Radiance: The art and science of lighting visualization*. Morgan Kaufmann.
+
+Nabil, A., & Mardaljevic, J. (2005). Useful daylight illuminance: A new paradigm for assessing daylight in buildings. *Lighting Research & Technology, 37*(1), 41–57. https://doi.org/10.1191/1365782805li128oa
+
+Perez, R., Ineichen, P., Seals, R., Michalsky, J., & Stewart, R. (1990). Modeling daylight availability and irradiance components from direct and global irradiance. *Solar Energy, 44*(5), 271–289. https://doi.org/10.1016/0038-092X(90)90055-H
+
+Perez, R., Seals, R., & Michalsky, J. (1993). All-weather model for sky luminance distribution: Preliminary configuration and validation. *Solar Energy, 50*(3), 235–245. https://doi.org/10.1016/0038-092X(93)90017-I
+
+Tregenza, P. R. (1987). Subdivision of the sky hemisphere for luminance measurements. *Lighting Research & Technology, 19*(1), 13–14. https://doi.org/10.1177/096032718701900103
+
+Wang, T. (n.d.). *pyradiance* (Version 1.3.1) [Computer software]. Lawrence Berkeley National Laboratory. https://github.com/LBNL-ETA/pyradiance
+
+Ward, G. J. (1994). The RADIANCE lighting simulation and rendering system. In *Proceedings of the 21st Annual Conference on Computer Graphics and Interactive Techniques (SIGGRAPH '94)* (pp. 459–472). ACM. https://doi.org/10.1145/192161.192286

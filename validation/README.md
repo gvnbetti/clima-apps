@@ -6,17 +6,17 @@ results; the scripts that produce them; and the result files they write. Every s
 
 | Model | Used by | Reference | Result | Folder |
 |---|---|---|---|---|
-| Hourly room model (EN ISO 52016-1 with three changes) | Room Clima | ASHRAE Standard 140-2020; EnergyPlus 24.2 in 14 climates | Standard 140: 32 of 44 within range (EnergyPlus 43); heating 4.8 %, cooling 12.7 % from the reference median | `thermal/` |
+| Hourly room model (EN ISO 52016-1 with three changes) | Room Clima | ASHRAE Standard 140-2020 (ASHRAE, 2020a); EnergyPlus 24.2 (Crawley et al., 2001) in 14 climates | Standard 140: 32 of 44 within range (EnergyPlus 43); heating 4.8 %, cooling 12.7 % from the reference median | `thermal/` |
 | Room Clima's rooms with their operation | Room Clima | EnergyPlus 24.2, 432 rooms in 6 climates | hourly RMSE 0.69 K, bias −0.49 K; overheating −8 %; same ranking (0.98), same best design in 68 of 72 groups | `thermal/` |
-| Daylight with and without blinds | Room Clima | Radiance, 6 rooms × 6 climates | useful daylight within 2.9 points in all 108 cases; mean +1.0 (no blind), +0.3 (interior), −0.9 (exterior) | `daylight/` |
-| Climate reading: sun, surfaces, psychrometrics, UTCI, adaptive comfort | Macro Clima | pvlib, psychrolib, pythermalcomfort | sun within 0.02°; surfaces within 0.2 %; psychrometrics and UTCI identical | `climate-reading/` |
-| Future climate | Macro, Micro, Room Clima | IPCC AR6 Atlas data; official regions; pyepwmorph (Belcher 2005) | table within 0.05 K on average; region 99.99 %; morphing equal on the annual mean, dew point within 0.01 K | `future-climate/` |
-| Urban heat island | Macro, Micro, Room Clima | Theeuwes et al. 2017, independent implementation | identical within 0.0001 K; the three apps share one implementation | `urban-heat-island/` |
-| Outdoor comfort | Micro Clima | pvlib, pythermalcomfort, exact solutions; Ladybug Tools | UTCI identical, SolarCal within 0.06 K; sun within 0.02°; ranking of 70 designs 0.97 against Ladybug | `outdoor-comfort/` |
+| Daylight with and without blinds | Room Clima | Radiance (Ward, 1994), 6 rooms × 6 climates | useful daylight within 2.9 points in all 108 cases; mean +1.0 (no blind), +0.3 (interior), −0.9 (exterior) | `daylight/` |
+| Climate reading: sun, surfaces, psychrometrics, UTCI, adaptive comfort | Macro Clima | pvlib (Holmgren et al., 2018), psychrolib (Meyer & Thevenard, 2019), pythermalcomfort (Tartarini & Schiavon, 2020) | sun within 0.02°; surfaces within 0.2 %; psychrometrics and UTCI identical | `climate-reading/` |
+| Future climate | Macro, Micro, Room Clima | IPCC AR6 Atlas data (Iturbide et al., 2021); official regions (Iturbide et al., 2020); pyepwmorph (McCarty, n.d.) after Belcher et al. (2005) | table within 0.05 K on average; region 99.99 %; morphing equal on the annual mean, dew point within 0.01 K | `future-climate/` |
+| Urban heat island | Macro, Micro, Room Clima | Theeuwes et al. (2017), independent implementation | identical within 0.0001 K; the three apps share one implementation | `urban-heat-island/` |
+| Outdoor comfort | Micro Clima | pvlib, pythermalcomfort, exact solutions; Ladybug Tools (Roudsari & Pak, 2013) | UTCI identical, SolarCal within 0.06 K; sun within 0.02°; ranking of 70 designs 0.97 against Ladybug | `outdoor-comfort/` |
 
 ## Shared calculation core
-Since 21 November 2026 Macro, Micro and Room Clima compute sun position, sun on surfaces (Perez), psychrometrics,
-SolarCal, sky longwave (file data, or Clark and Allen where missing), UTCI (inputs outside the polynomial's range held at
+Since 21 November 2026 Macro, Micro and Room Clima compute sun position, sun on surfaces (Perez et al., 1990), psychrometrics,
+SolarCal, sky longwave (file data, or Clark and Allen (1978) where missing), UTCI (inputs outside the polynomial's range held at
 its edge), future climate and the urban heat island with the same code, `shared/climamods.js`, copied verbatim from
 Macro Clima. The studies it affects (thermal, room types, daylight, climate reading, outdoor comfort, urban heat island)
 were rerun on that code on 21 November 2026; the future-climate code itself did not change.
@@ -36,11 +36,11 @@ established model. Neither compares the tools with measured buildings or outdoor
 these studies.
 
 ## Software
-- EnergyPlus 24.2.0 (build 94a887817b)
-- Radiance 6.0a (as shipped with pyradiance 1.3.1)
+- EnergyPlus 24.2.0 (build 94a887817b) (U.S. Department of Energy, 2024)
+- Radiance 6.0a (as shipped with pyradiance 1.3.1; Wang, n.d.)
 - Node.js 22
 - Python 3.13 with numpy, pandas, scipy, pvlib 0.16.1, pythermalcomfort 4.8.1, ladybug-comfort 0.19.18, pyepwmorph
-  3.6.1, shapely 2.2
+  3.6.1, psychrolib 2.5.0, shapely 2.2
 
 ## Running
 ```
@@ -54,3 +54,38 @@ build Room Clima first (`python3 room/build.py`).
 All results were produced on 20 November 2026 and, for the studies affected by the shared core, again on 21 November
 2026, with the code at the commit that adds them. Earlier runs, on earlier
 versions, are kept in `history/` folders where they were published.
+
+## References
+<!-- refs: ashrae140 crawley2001 ward1994 holmgren2018 meyer2019 tartarini2020 iturbide2021 iturbide2020 mccarty belcher2005 theeuwes2017 roudsari2013 perez1990 clark1978 usdoe2024 pyradiance -->
+
+ASHRAE. (2020a). *ANSI/ASHRAE Standard 140-2020: Method of test for evaluating building performance simulation software*. American Society of Heating, Refrigerating and Air-Conditioning Engineers.
+
+Belcher, S. E., Hacker, J. N., & Powell, D. S. (2005). Constructing design weather data for future climates. *Building Services Engineering Research and Technology, 26*(1), 49–61. https://doi.org/10.1191/0143624405bt112oa
+
+Clark, G., & Allen, C. P. (1978). The estimation of atmospheric radiation for clear and cloudy skies. In *Proceedings of the 2nd National Passive Solar Conference* (pp. 675–678). American Section of the International Solar Energy Society.
+
+Crawley, D. B., Lawrie, L. K., Winkelmann, F. C., Buhl, W. F., Huang, Y. J., Pedersen, C. O., Strand, R. K., Liesen, R. J., Fisher, D. E., Witte, M. J., & Glazer, J. (2001). EnergyPlus: Creating a new-generation building energy simulation program. *Energy and Buildings, 33*(4), 319–331. https://doi.org/10.1016/S0378-7788(00)00114-6
+
+Holmgren, W. F., Hansen, C. W., & Mikofski, M. A. (2018). pvlib python: A python package for modeling solar energy systems. *Journal of Open Source Software, 3*(29), 884. https://doi.org/10.21105/joss.00884
+
+Iturbide, M., Fernández, J., Gutiérrez, J. M., Bedia, J., Cimadevilla, E., Díez-Sierra, J., Manzanas, R., Casanueva, A., Baño-Medina, J., Milovac, J., Herrera, S., Cofiño, A. S., San Martín, D., García-Díez, M., Hauser, M., Huard, D., & Yelekçi, Ö. (2021). *Repository supporting the implementation of FAIR principles in the IPCC-WGI Atlas* (Version v2.0-final) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.5171760
+
+Iturbide, M., Gutiérrez, J. M., Alves, L. M., Bedia, J., Cerezo-Mota, R., Cimadevilla, E., Cofiño, A. S., Di Luca, A., Faria, S. H., Gorodetskaya, I. V., Hauser, M., Herrera, S., Hennessy, K., Hewitt, H. T., Jones, R. G., Krakovska, S., Manzanas, R., Martínez-Castro, D., Narisma, G. T., … Vera, C. S. (2020). An update of IPCC climate reference regions for subcontinental analysis of climate model data: Definition and aggregated datasets. *Earth System Science Data, 12*(4), 2959–2970. https://doi.org/10.5194/essd-12-2959-2020
+
+McCarty, J. (n.d.). *pyepwmorph* (Version 3.6.1) [Computer software]. https://github.com/justinfmccarty/pyepwmorph
+
+Meyer, D., & Thevenard, D. (2019). PsychroLib: A library of psychrometric functions to calculate thermodynamic properties of air. *Journal of Open Source Software, 4*(33), 1137. https://doi.org/10.21105/joss.01137
+
+Perez, R., Ineichen, P., Seals, R., Michalsky, J., & Stewart, R. (1990). Modeling daylight availability and irradiance components from direct and global irradiance. *Solar Energy, 44*(5), 271–289. https://doi.org/10.1016/0038-092X(90)90055-H
+
+Roudsari, M. S., & Pak, M. (2013). Ladybug: A parametric environmental plugin for Grasshopper to help designers create an environmentally-conscious design. In *Proceedings of BS2013: 13th Conference of the International Building Performance Simulation Association* (pp. 3128–3135). IBPSA.
+
+Tartarini, F., & Schiavon, S. (2020). pythermalcomfort: A Python package for thermal comfort research. *SoftwareX, 12*, 100578. https://doi.org/10.1016/j.softx.2020.100578
+
+Theeuwes, N. E., Steeneveld, G. J., Ronda, R. J., & Holtslag, A. A. M. (2017). A diagnostic equation for the daily maximum urban heat island effect for cities in northwestern Europe. *International Journal of Climatology, 37*(1), 443–454. https://doi.org/10.1002/joc.4717
+
+U.S. Department of Energy. (2024). *EnergyPlus version 24.2 documentation: Engineering reference; Auxiliary programs*. https://energyplus.net/documentation
+
+Wang, T. (n.d.). *pyradiance* (Version 1.3.1) [Computer software]. Lawrence Berkeley National Laboratory. https://github.com/LBNL-ETA/pyradiance
+
+Ward, G. J. (1994). The RADIANCE lighting simulation and rendering system. In *Proceedings of the 21st Annual Conference on Computer Graphics and Interactive Techniques (SIGGRAPH '94)* (pp. 459–472). ACM. https://doi.org/10.1145/192161.192286

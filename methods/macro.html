@@ -12,6 +12,7 @@
   --f-body: "IBM Plex Sans", system-ui, sans-serif; --f-data: "IBM Plex Mono", ui-monospace, monospace }
 
 * { box-sizing: border-box }
+.ref { padding-left: 2em; text-indent: -2em; font-size: 14px }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 var(--f-body) }
 .wrap { max-width: 1080px; margin: 0 auto; padding: 48px max(20px, env(safe-area-inset-left, 0px)) 64px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 48px }
 nav.toc { font-size: 14px; position: sticky; top: 16px; align-self: start }
@@ -80,62 +81,62 @@ there into the calculation core shared with Micro and Room Clima (<a href="https
 <tr>
 <td>Time</td>
 <td>Weather values are evaluated at the middle of each hour, following the EPW convention for solar radiation.</td>
-<td>EPW definition</td>
+<td>U.S. Department of Energy (2024)</td>
 </tr>
 <tr>
 <td>Sun position</td>
 <td>NOAA solar calculator, based on Meeus, using the Julian day and accounting for atmospheric refraction. Calculated at mid-hour.</td>
-<td>NOAA</td>
+<td>NOAA Global Monitoring Laboratory (n.d.); Meeus (1998)</td>
 </tr>
 <tr>
 <td>Solar radiation on surfaces</td>
 <td>Perez 1990 transposition model, with ground reflectance taken from the weather file or set to 0.2 where unavailable.</td>
-<td>Perez et al. 1990</td>
+<td>Perez et al. (1990)</td>
 </tr>
 <tr>
 <td>Psychrometrics</td>
 <td>Calculation of saturation pressure, humidity ratio, wet-bulb temperature, enthalpy and dew point.</td>
-<td>ASHRAE Handbook of Fundamentals</td>
+<td>ASHRAE (2021); Hyland &amp; Wexler (1983)</td>
 </tr>
 <tr>
 <td>Outdoor comfort</td>
 <td>UTCI using the operational polynomial. Mean radiant temperature is calculated with SolarCal, accounting for direct, diffuse and reflected solar radiation and longwave exchange with the sky.</td>
-<td>Bröde et al. 2012; Arens et al. 2015</td>
+<td>Bröde et al. (2012); Arens et al. (2015)</td>
 </tr>
 <tr>
 <td>Indoor comfort</td>
 <td>Adaptive comfort following EN 16798-1, using an exponential running mean (alpha 0.8), and ASHRAE 55. PMV is also calculated where shown.</td>
-<td>EN 16798-1; ASHRAE 55; ISO 7730</td>
+<td>EN 16798-1 (CEN, 2019); ASHRAE 55 (ASHRAE, 2020b); ISO 7730 (ISO, 2005)</td>
 </tr>
 <tr>
 <td>Degree days</td>
 <td>Calculated from daily mean temperatures, with a heating base of 15 °C (G 20/15 for German stations).</td>
-<td>VDI 4710; EN ISO 15927-6</td>
+<td>VDI 4710 Blatt 2 (VDI, 2007); EN ISO 15927-6 (ISO, 2007)</td>
 </tr>
 <tr>
 <td>Climate extremes</td>
 <td>Summer, hot, tropical, frost and ice days, together with heat and cold spells and the hottest and coldest weeks.</td>
-<td>DWD definitions</td>
+<td>Deutscher Wetterdienst (n.d.)</td>
 </tr>
 <tr>
 <td>Sky and daylight</td>
 <td>Perez sky classifications and the number of hours above 10, 20 and 50 klx.</td>
-<td>Perez et al. 1990</td>
+<td>Perez et al. (1990)</td>
 </tr>
 <tr>
 <td>Rain and wind</td>
 <td>Driving rain index by orientation and wind roses divided into 16 directional sectors.</td>
-<td>ISO 15927-3</td>
+<td>ISO 15927-3 (ISO, 2009)</td>
 </tr>
 <tr>
 <td>Passive strategies</td>
 <td>Givoni-Milne climate strategy zones, plotted on the psychrometric chart.</td>
-<td>Givoni; Milne; Climate Consultant</td>
+<td>Givoni (1969, 1992); Milne &amp; Givoni (1979); Milne (n.d.)</td>
 </tr>
 <tr>
 <td>PV potential</td>
 <td>PVWatts v5 calculation chain, using fixed assumptions.</td>
-<td>NREL PVWatts</td>
+<td>Dobos (2014)</td>
 </tr>
 <tr>
 <td>Future and urban climate</td>
@@ -157,17 +158,47 @@ flags implausible totals so that these readings can be interpreted with care.</p
 climatic conditions but do not cover every climate type, notably subarctic and equatorial climates.</p>
 <h2>Limits</h2>
 <p><strong>Passive strategy zones.</strong> The Givoni-Milne zones are a reconstruction of published criteria. Their results have not
-yet been checked against Climate Consultant, which is one of the established tools using this approach.</p>
-<p><strong>German adaptive comfort.</strong> The national annex comfort band (DIN EN 16798-1/NA) follows the formula implemented in
+yet been checked against Climate Consultant (Milne, n.d.), which is one of the established tools using this approach.</p>
+<p><strong>German adaptive comfort.</strong> The national annex comfort band (DIN EN 16798-1/NA; DIN, 2021) follows the formula implemented in
 Room Clima. There is currently no open reference implementation available for direct comparison.</p>
 <h2>Validation</h2>
 <p>The climate calculations have been checked against established reference implementations.</p>
-<p>Solar position agrees with pvlib's NREL SPA calculation within 0.02°. Solar radiation on walls and roofs agrees with
+<p>Solar position agrees with pvlib's NREL SPA calculation (Holmgren et al., 2018; Reda &amp; Andreas, 2004) within
+0.02°. Solar radiation on walls and roofs agrees with
 pvlib's Perez model within 0.2%. Psychrometric calculations, UTCI and the adaptive comfort band match the
-corresponding implementations in psychrolib and pythermalcomfort.</p>
+corresponding implementations in psychrolib (Meyer &amp; Thevenard, 2019) and pythermalcomfort (Tartarini &amp;
+Schiavon, 2020).</p>
 <p>The first verification, carried out on 7 November 2026, also covered PMV, mean radiant temperature, degree days,
 climate extremes, sky classifications, rain, wind and the EPW file reader. The verification results are documented in
 the <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/climate-reading">validation records</a>.</p>
+<h2>References</h2>
+<!-- refs: usdoe2024 noaa meeus1998 perez1990 ashraeF hyland1983 brode2012 arens2015 cen16798_1 ashrae55 iso7730 vdi4710 iso15927_6 dwd iso15927_3 givoni1969 givoni1992 milne1979 milneCC dobos2014 dinNA holmgren2018 reda2004 meyer2019 tartarini2020 -->
+
+<p class="ref">Arens, E., Hoyt, T., Zhou, X., Huang, L., Zhang, H., &amp; Schiavon, S. (2015). Modeling the comfort effects of short-wave solar radiation indoors. <em>Building and Environment, 88</em>, 3–9. <a href="https://doi.org/10.1016/j.buildenv.2014.09.004">https://doi.org/10.1016/j.buildenv.2014.09.004</a></p>
+<p class="ref">ASHRAE. (2020b). <em>ANSI/ASHRAE Standard 55-2020: Thermal environmental conditions for human occupancy</em>. American Society of Heating, Refrigerating and Air-Conditioning Engineers.</p>
+<p class="ref">ASHRAE. (2021). <em>ASHRAE handbook: Fundamentals</em>. American Society of Heating, Refrigerating and Air-Conditioning Engineers.</p>
+<p class="ref">Bröde, P., Fiala, D., Błażejczyk, K., Holmér, I., Jendritzky, G., Kampmann, B., Tinz, B., &amp; Havenith, G. (2012). Deriving the operational procedure for the Universal Thermal Climate Index (UTCI). <em>International Journal of Biometeorology, 56</em>(3), 481–494. <a href="https://doi.org/10.1007/s00484-011-0454-1">https://doi.org/10.1007/s00484-011-0454-1</a></p>
+<p class="ref">CEN. (2019). <em>EN 16798-1:2019 Energy performance of buildings: Ventilation for buildings: Part 1: Indoor environmental input parameters for design and assessment of energy performance of buildings addressing indoor air quality, thermal environment, lighting and acoustics (Module M1-6)</em>. European Committee for Standardization.</p>
+<p class="ref">Deutscher Wetterdienst. (n.d.). <em>Wetter- und Klimalexikon</em>. <a href="https://www.dwd.de/lexikon">https://www.dwd.de/lexikon</a></p>
+<p class="ref">DIN. (2021). <em>E DIN EN 16798-1/NA:2021-06 Nationaler Anhang: Nationale Ergänzungen und Hinweise zur Anwendung: Energetische Bewertung von Gebäuden: Lüftung von Gebäuden: Teil 1</em> [Draft standard, withdrawn]. Beuth.</p>
+<p class="ref">Dobos, A. P. (2014). <em>PVWatts version 5 manual</em> (NREL/TP-6A20-62641). National Renewable Energy Laboratory.</p>
+<p class="ref">Givoni, B. (1969). <em>Man, climate and architecture</em>. Elsevier.</p>
+<p class="ref">Givoni, B. (1992). Comfort, climate analysis and building design guidelines. <em>Energy and Buildings, 18</em>(1), 11–23. <a href="https://doi.org/10.1016/0378-7788(92)90047-K">https://doi.org/10.1016/0378-7788(92)90047-K</a></p>
+<p class="ref">Holmgren, W. F., Hansen, C. W., &amp; Mikofski, M. A. (2018). pvlib python: A python package for modeling solar energy systems. <em>Journal of Open Source Software, 3</em>(29), 884. <a href="https://doi.org/10.21105/joss.00884">https://doi.org/10.21105/joss.00884</a></p>
+<p class="ref">Hyland, R. W., &amp; Wexler, A. (1983). Formulations for the thermodynamic properties of the saturated phases of H2O from 173.15 K to 473.15 K. <em>ASHRAE Transactions, 89</em>(2A), 500–519.</p>
+<p class="ref">ISO. (2005). <em>ISO 7730:2005 Ergonomics of the thermal environment: Analytical determination and interpretation of thermal comfort using calculation of the PMV and PPD indices and local thermal comfort criteria</em>. International Organization for Standardization.</p>
+<p class="ref">ISO. (2007). <em>ISO 15927-6:2007 Hygrothermal performance of buildings: Calculation and presentation of climatic data: Part 6: Accumulated temperature differences (degree-days)</em>. International Organization for Standardization.</p>
+<p class="ref">ISO. (2009). <em>ISO 15927-3:2009 Hygrothermal performance of buildings: Calculation and presentation of climatic data: Part 3: Calculation of a driving rain index for vertical surfaces from hourly wind and rain data</em>. International Organization for Standardization.</p>
+<p class="ref">Meeus, J. (1998). <em>Astronomical algorithms</em> (2nd ed.). Willmann-Bell.</p>
+<p class="ref">Meyer, D., &amp; Thevenard, D. (2019). PsychroLib: A library of psychrometric functions to calculate thermodynamic properties of air. <em>Journal of Open Source Software, 4</em>(33), 1137. <a href="https://doi.org/10.21105/joss.01137">https://doi.org/10.21105/joss.01137</a></p>
+<p class="ref">Milne, M. (n.d.). <em>Climate Consultant</em> (Version 6) [Computer software]. UCLA Energy Design Tools Group. <a href="https://www.sbse.org/resources/climate-consultant">https://www.sbse.org/resources/climate-consultant</a></p>
+<p class="ref">Milne, M., &amp; Givoni, B. (1979). Architectural design based on climate. In D. Watson (Ed.), <em>Energy conservation through building design</em> (pp. 96–113). McGraw-Hill.</p>
+<p class="ref">NOAA Global Monitoring Laboratory. (n.d.). <em>NOAA solar calculator</em>. <a href="https://gml.noaa.gov/grad/solcalc/">https://gml.noaa.gov/grad/solcalc/</a></p>
+<p class="ref">Perez, R., Ineichen, P., Seals, R., Michalsky, J., &amp; Stewart, R. (1990). Modeling daylight availability and irradiance components from direct and global irradiance. <em>Solar Energy, 44</em>(5), 271–289. <a href="https://doi.org/10.1016/0038-092X(90)90055-H">https://doi.org/10.1016/0038-092X(90)90055-H</a></p>
+<p class="ref">Reda, I., &amp; Andreas, A. (2004). Solar position algorithm for solar radiation applications. <em>Solar Energy, 76</em>(5), 577–589. <a href="https://doi.org/10.1016/j.solener.2003.12.003">https://doi.org/10.1016/j.solener.2003.12.003</a></p>
+<p class="ref">Tartarini, F., &amp; Schiavon, S. (2020). pythermalcomfort: A Python package for thermal comfort research. <em>SoftwareX, 12</em>, 100578. <a href="https://doi.org/10.1016/j.softx.2020.100578">https://doi.org/10.1016/j.softx.2020.100578</a></p>
+<p class="ref">U.S. Department of Energy. (2024). <em>EnergyPlus version 24.2 documentation: Engineering reference; Auxiliary programs</em>. <a href="https://energyplus.net/documentation">https://energyplus.net/documentation</a></p>
+<p class="ref">VDI. (2007). <em>VDI 4710 Blatt 2: Meteorologische Daten in der technischen Gebäudeausrüstung: Gradtage</em> [Withdrawn]. Verein Deutscher Ingenieure.</p>
 <p class="src">Source: <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/docs/methods/macro-clima.md">docs/methods/macro-clima.md</a></p>
 <div class="next"><a href="../methods/map.html">← Clima Map</a><a href="../methods/climate.html">Future and urban climate →</a></div></article></div>
 </body>

@@ -12,6 +12,7 @@
   --f-body: "IBM Plex Sans", system-ui, sans-serif; --f-data: "IBM Plex Mono", ui-monospace, monospace }
 
 * { box-sizing: border-box }
+.ref { padding-left: 2em; text-indent: -2em; font-size: 14px }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 var(--f-body) }
 .wrap { max-width: 1080px; margin: 0 auto; padding: 48px max(20px, env(safe-area-inset-left, 0px)) 64px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 48px }
 nav.toc { font-size: 14px; position: sticky; top: 16px; align-self: start }
@@ -75,17 +76,18 @@ separate climate study.</p>
 <p><strong>Warming levels, not future years.</strong> The weather file is adjusted to represent +1.5, +2 or +3 °C of global warming
 above the pre-industrial period (1850–1900). These are warming levels, not projections for specific calendar years.</p>
 <p>The timing of each warming level depends on future emissions, while regional climate changes at a given level depend
-much less on the pathway taken to reach it. This approach follows the IPCC Sixth Assessment Report (AR6) Atlas.</p>
+much less on the pathway taken to reach it. This approach follows the IPCC Sixth Assessment Report (AR6) Atlas (Gutiérrez et al., 2021; Iturbide et al.,
+2021).</p>
 <h3>How it works</h3>
 <p>The calculation follows five steps:</p>
 <ol>
 <li><strong>Identify the region.</strong> The latitude and longitude of the weather file are used to identify the corresponding
-   IPCC AR6 reference region, prioritising land regions.</li>
+   IPCC AR6 reference region (Iturbide et al., 2020), prioritising land regions.</li>
 <li><strong>Establish the file's reference period.</strong> The middle year of the period represented by the typical weather file
    is identified from its comments (Period of Record) or filename (TMYx.YYYY-YYYY). If neither is available, 2010 is
    assumed.</li>
 <li><strong>Calculate the climate change.</strong> For each month, the calculation uses the median change across 35 CMIP6 climate
-   models, comparing the 1995–2014 baseline with the 20-year period around the year each model reaches the selected
+   models (Eyring et al., 2016), comparing the 1995–2014 baseline with the 20-year period around the year each model reaches the selected
    warming level. All four SSP scenarios are included. The 10th and 90th percentiles show the range of model results.</li>
 <li><strong>Account for warming already present.</strong> The warming that has already occurred between the 1995–2014 baseline and
    the middle year of the weather file is subtracted. Older weather files therefore receive a larger adjustment than
@@ -167,9 +169,19 @@ Clima.</p>
 <p>Both modifiers are checked against their cited reference data and models, rather than against direct measurements of
 future or urban conditions.</p>
 <p>Future climate adjustments are checked against IPCC Atlas data, official reference regions and the pyepwmorph
-implementation of weather-file morphing: see <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/future-climate">future climate</a>.</p>
+implementation of weather-file morphing (McCarty, n.d.): see <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/future-climate">future climate</a>.</p>
 <p>The urban heat island calculation is checked against an independent implementation of the diagnostic equation
 published by Theeuwes et al. (2017): see <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation/urban-heat-island">urban heat island</a>.</p>
+<h2>References</h2>
+<!-- refs: gutierrez2021 iturbide2021 iturbide2020 eyring2016 belcher2005 theeuwes2017 mccarty -->
+
+<p class="ref">Belcher, S. E., Hacker, J. N., &amp; Powell, D. S. (2005). Constructing design weather data for future climates. <em>Building Services Engineering Research and Technology, 26</em>(1), 49–61. <a href="https://doi.org/10.1191/0143624405bt112oa">https://doi.org/10.1191/0143624405bt112oa</a></p>
+<p class="ref">Eyring, V., Bony, S., Meehl, G. A., Senior, C. A., Stevens, B., Stouffer, R. J., &amp; Taylor, K. E. (2016). Overview of the Coupled Model Intercomparison Project Phase 6 (CMIP6) experimental design and organization. <em>Geoscientific Model Development, 9</em>(5), 1937–1958. <a href="https://doi.org/10.5194/gmd-9-1937-2016">https://doi.org/10.5194/gmd-9-1937-2016</a></p>
+<p class="ref">Gutiérrez, J. M., Jones, R. G., Narisma, G. T., Alves, L. M., Amjad, M., Gorodetskaya, I. V., Grose, M., Klutse, N. A. B., Krakovska, S., Li, J., Martínez-Castro, D., Mearns, L. O., Mernild, S. H., Ngo-Duc, T., van den Hurk, B., &amp; Yoon, J.-H. (2021). Atlas. In V. Masson-Delmotte et al. (Eds.), <em>Climate change 2021: The physical science basis. Contribution of Working Group I to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change</em> (pp. 1927–2058). Cambridge University Press. <a href="https://doi.org/10.1017/9781009157896.021">https://doi.org/10.1017/9781009157896.021</a></p>
+<p class="ref">Iturbide, M., Fernández, J., Gutiérrez, J. M., Bedia, J., Cimadevilla, E., Díez-Sierra, J., Manzanas, R., Casanueva, A., Baño-Medina, J., Milovac, J., Herrera, S., Cofiño, A. S., San Martín, D., García-Díez, M., Hauser, M., Huard, D., &amp; Yelekçi, Ö. (2021). <em>Repository supporting the implementation of FAIR principles in the IPCC-WGI Atlas</em> (Version v2.0-final) [Computer software]. Zenodo. <a href="https://doi.org/10.5281/zenodo.5171760">https://doi.org/10.5281/zenodo.5171760</a></p>
+<p class="ref">Iturbide, M., Gutiérrez, J. M., Alves, L. M., Bedia, J., Cerezo-Mota, R., Cimadevilla, E., Cofiño, A. S., Di Luca, A., Faria, S. H., Gorodetskaya, I. V., Hauser, M., Herrera, S., Hennessy, K., Hewitt, H. T., Jones, R. G., Krakovska, S., Manzanas, R., Martínez-Castro, D., Narisma, G. T., … Vera, C. S. (2020). An update of IPCC climate reference regions for subcontinental analysis of climate model data: Definition and aggregated datasets. <em>Earth System Science Data, 12</em>(4), 2959–2970. <a href="https://doi.org/10.5194/essd-12-2959-2020">https://doi.org/10.5194/essd-12-2959-2020</a></p>
+<p class="ref">McCarty, J. (n.d.). <em>pyepwmorph</em> (Version 3.6.1) [Computer software]. <a href="https://github.com/justinfmccarty/pyepwmorph">https://github.com/justinfmccarty/pyepwmorph</a></p>
+<p class="ref">Theeuwes, N. E., Steeneveld, G. J., Ronda, R. J., &amp; Holtslag, A. A. M. (2017). A diagnostic equation for the daily maximum urban heat island effect for cities in northwestern Europe. <em>International Journal of Climatology, 37</em>(1), 443–454. <a href="https://doi.org/10.1002/joc.4717">https://doi.org/10.1002/joc.4717</a></p>
 <p class="src">Source: <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/docs/methods/climate-scenarios.md">docs/methods/climate-scenarios.md</a></p>
 <div class="next"><a href="../methods/macro.html">← Macro Clima</a><a href="../methods/micro.html">Micro Clima →</a></div></article></div>
 </body>

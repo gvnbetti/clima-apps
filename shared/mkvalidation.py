@@ -20,6 +20,12 @@ for model, used, ref, res, folder in body:
             f'<td><a href="{GH}/tree/main/validation/{f}">Report</a></td></tr>')
 lim = re.search(r'## Known limits\n(.*?)\n\n', md, re.S).group(1)
 items = ''.join(f'<li>{inline(" ".join(x.split()))}</li>' for x in re.split(r'\n- ', '\n' + lim.strip())[1:])
+refs = md[md.index('<!-- refs:'):].split('-->', 1)[1].strip().split('\n\n')
+def refhtml(t):
+    t = html.escape(t)
+    t = re.sub(r'\*([^*]+)\*', r'<i>\1</i>', t)
+    return re.sub(r'(https?://[^\s,<]+[^\s,<.])', r'<a href="\1">\1</a>', t)
+refs_html = ''.join(f'<p class="ref">{refhtml(r)}</p>' for r in refs)
 date = re.findall(r'([0-9]+ \w+\s+[0-9]{4})', md[md.index('All results were produced'):][:200])[-1].replace('\n', ' ')
 res_files = [str(p.relative_to(ROOT)) for p in (ROOT / 'validation').rglob('*') if p.suffix in ('.md', '.json') and '_work' not in p.parts and p.name != 'README.md' and 'history' not in p.parts]
 commit = subprocess.run(['git', 'log', '-1', '--format=%h', '--', *res_files], cwd=ROOT, capture_output=True, text=True).stdout.strip()
@@ -48,6 +54,7 @@ table {{ width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1
 th, td {{ text-align: left; vertical-align: top; padding: 10px 12px; border-top: 1px solid var(--line) }}
 thead th {{ font: 600 11px var(--f-data); text-transform: uppercase; letter-spacing: .06em; color: var(--mute); border-top: 0 }}
 tbody th {{ font-weight: 600; width: 24% }} tbody th span {{ display: block; font-weight: 400; color: var(--mute); font-size: 13px }}
+.ref {{ padding-left: 2em; text-indent: -2em; font-size: 14px; max-width: 760px }}
 .stamp {{ font: 13px var(--f-data); color: var(--mute) }}
 @media (max-width: 720px) {{ thead {{ display: none }} table, tbody, tr, th, td {{ display: block; width: 100% }}
   tr {{ border-top: 1px solid var(--line); padding: 6px 0 }} th, td {{ border: 0; padding: 4px 14px }} tbody th {{ width: auto }}
@@ -67,6 +74,9 @@ footer {{ margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line)
 
   <h2>Known limits</h2>
   <ul>{items}</ul>
+
+  <h2>References</h2>
+  {refs_html}
 
   <h2>Methods</h2>
   <p>What each app computes, with its models, assumptions and limits: <a href="methods.html">Methods</a>. Full overview of the studies in the repository: <a href="{GH}/tree/main/validation">validation</a>.</p>

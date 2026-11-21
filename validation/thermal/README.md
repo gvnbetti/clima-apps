@@ -1,8 +1,8 @@
 # Thermal model
 
-**What is checked.** The hourly room model of Room Clima: EN ISO 52016-1 (hourly method) with three changes, written in
-JavaScript (`room/src/core.js`, `Iso52016`). The reference is EnergyPlus 24.2. EnergyPlus itself is first checked
-against ASHRAE Standard 140.
+**What is checked.** The hourly room model of Room Clima: EN ISO 52016-1 (ISO, 2017; hourly method) with three changes, written in
+JavaScript (`room/src/core.js`, `Iso52016`). The reference is EnergyPlus 24.2 (Crawley et al., 2001). EnergyPlus itself is first
+checked against ASHRAE Standard 140 (ASHRAE, 2020a).
 
 **Result in short.**
 - EnergyPlus 24.2 falls within 43 of 44 Standard 140 ranges, so it can serve as the reference.
@@ -13,17 +13,18 @@ against ASHRAE Standard 140.
   programmes, and overheating 14 % above EnergyPlus over 14 climates.
 
 The three changes to EN ISO 52016-1, used by Room Clima (`Sweep.simulate`):
-1. Exterior convection from wind (DOE-2 correlation, as EnergyPlus), with the weather station's wind speed; the window
-   core resistance is taken from the rated U-value with EN 673 surface films.
+1. Exterior convection from wind (DOE-2 correlation, as EnergyPlus; U.S. Department of Energy, 2024), with the weather station's wind speed; the window
+   core resistance is taken from the rated U-value with EN 673 surface films (CEN, 2011).
 2. Glazing transmission by angle of incidence instead of a constant factor.
 3. Transmitted sun is spread over the opaque inner surfaces only, not over the glass (`solOnWindows: false`).
-Blinds enter as the DIN 4108-2 reduction factor F_C on the solar gain of the glazing, with the closed blind's added
+Blinds enter as the DIN 4108-2 (DIN, 2013) reduction factor F_C on the solar gain of the glazing, with the closed blind's added
 thermal resistance.
 
 ## Study 1: Standard 140 and the engine in 14 climates (`engine/`)
 
 **Base cases.** The ASHRAE Standard 140-2020 building envelope cases as implemented in the LBL Modelica Buildings
-library (BESTEST package 11.1.0, Standard 140-2020 with Addendum b): a single zone 8 × 6 × 2.7 m with 12 m² of
+library (Wetter et al., 2014; BESTEST package 11.1.0, Lawrence Berkeley National Laboratory, 2024; Standard 140-2020
+with Addendum b, ASHRAE, 2023): a single zone 8 × 6 × 2.7 m with 12 m² of
 glazing, light (600 series) and heavy (900 series), with set points, night ventilation, setback, overhangs and
 free-floating variants.
 
@@ -43,7 +44,7 @@ and SHGC 0.760 that EnergyPlus computes for this glazing, a check `ep_run.py` re
 
 **Reference.** Annual loads are judged against the acceptance ranges of Addendum b. Peak loads and free-floating
 temperatures are judged against the range of the six reference programmes (BSIMAC, CSE, DeST, EnergyPlus, ESP-r,
-TRNSYS), as given in the Modelica library. The test runs in Denver, TMY3, the climate the standard is defined for.
+TRNSYS), as given in the Modelica library. The test runs in Denver, TMY3 (Wilcox & Marion, 2008), the climate the standard is defined for.
 Beyond Denver, EnergyPlus is the reference in 14 climates (Köppen A to D, 11° to 62° N; `engine/climates.py`), on
 cases 600, 620, 650, 900, 920, 950, 600FF and 900FF.
 
@@ -93,7 +94,7 @@ above the reference range. Room Clima does not report peak loads.
 
 **How EnergyPlus sees the same room.** Constructions, windows, frame, wall reveal and outdoor shading are those of the
 app. The app's own hourly operation is imposed on EnergyPlus:
-- the air change of the window openings (EN 16798-7, single-sided, wind off) plus base air;
+- the air change of the window openings (EN 16798-7, single-sided, wind off; CEN, 2017) plus base air;
 - the blind state of each window (switchable glazing: SHGC g × F_C, and U with the blind's added resistance);
 - the internal gains, 100 % convective as in DIN 4108-2.
 
@@ -119,7 +120,8 @@ the limit is reached by few degree-hours. The bias is known and stated in the ap
 - Model against model: no measured room. Outside Denver the reference is one programme, EnergyPlus.
 - One zone. Neighbouring rooms are at the same temperature (adiabatic). No ground contact.
 - The airflow through open windows (EN 16798-7) is not compared here. The same air change is given to both models.
-- The DIN 4108-2 check in the app uses the bundled weather. A formal proof uses the DWD test reference year.
+- The DIN 4108-2 check in the app uses the bundled weather. A formal proof uses the DWD test reference year (Bundesinstitut für Bau-,
+  Stadt- und Raumforschung, 2017).
 
 ## How to rerun
 ```
@@ -132,3 +134,30 @@ EnergyPlus 24.2.0 (build 94a887817b); Node 22; Python 3.13 with numpy, pandas, s
 
 `room-types/history/` keeps the run of 19 November 2026 (three climates, the earlier Mannheim weather file) for
 comparison.
+
+## References
+<!-- refs: iso52016 crawley2001 ashrae140 usdoe2024 cen673 din4108 wetter2014 modelica_bestest ashrae140b wilcox2008 cen16798_7 bbsr2017 -->
+
+ASHRAE. (2020a). *ANSI/ASHRAE Standard 140-2020: Method of test for evaluating building performance simulation software*. American Society of Heating, Refrigerating and Air-Conditioning Engineers.
+
+ASHRAE. (2023). *Addendum b to ANSI/ASHRAE Standard 140-2020* [Software acceptance criteria]. American Society of Heating, Refrigerating and Air-Conditioning Engineers.
+
+Bundesinstitut für Bau-, Stadt- und Raumforschung. (2017). *Ortsgenaue Testreferenzjahre von Deutschland für mittlere, extreme und zukünftige Witterungsverhältnisse*. BBSR; Deutscher Wetterdienst.
+
+CEN. (2011). *EN 673:2011 Glass in building: Determination of thermal transmittance (U value): Calculation method*. European Committee for Standardization.
+
+CEN. (2017). *EN 16798-7:2017 Energy performance of buildings: Ventilation for buildings: Part 7: Calculation methods for the determination of air flow rates in buildings including infiltration (Module M5-5)*. European Committee for Standardization.
+
+Crawley, D. B., Lawrie, L. K., Winkelmann, F. C., Buhl, W. F., Huang, Y. J., Pedersen, C. O., Strand, R. K., Liesen, R. J., Fisher, D. E., Witte, M. J., & Glazer, J. (2001). EnergyPlus: Creating a new-generation building energy simulation program. *Energy and Buildings, 33*(4), 319–331. https://doi.org/10.1016/S0378-7788(00)00114-6
+
+DIN. (2013). *DIN 4108-2:2013-02 Wärmeschutz und Energie-Einsparung in Gebäuden: Teil 2: Mindestanforderungen an den Wärmeschutz*. Beuth.
+
+ISO. (2017). *ISO 52016-1:2017 Energy performance of buildings: Energy needs for heating and cooling, internal temperatures and sensible and latent heat loads: Part 1: Calculation procedures*. International Organization for Standardization.
+
+Lawrence Berkeley National Laboratory. (2024). *Modelica Buildings library, package Buildings.ThermalZones.Detailed.Validation.BESTEST* (Version 11.1.0) [Computer software]. https://simulationresearch.lbl.gov/modelica
+
+U.S. Department of Energy. (2024). *EnergyPlus version 24.2 documentation: Engineering reference; Auxiliary programs*. https://energyplus.net/documentation
+
+Wetter, M., Zuo, W., Nouidui, T. S., & Pang, X. (2014). Modelica Buildings library. *Journal of Building Performance Simulation, 7*(4), 253–270. https://doi.org/10.1080/19401493.2013.765506
+
+Wilcox, S., & Marion, W. (2008). *Users manual for TMY3 data sets* (NREL/TP-581-43156). National Renewable Energy Laboratory.

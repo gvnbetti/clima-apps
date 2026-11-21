@@ -26,4 +26,14 @@ Minh City. They hold the fields the apps use: air and dew point temperature, pre
 radiation, wind speed. Global horizontal radiation is recomputed from direct and diffuse; other fields carry EPW missing
 codes.
 
-TMYx: Lawrie and Crawley, climate.onebuilding.org. TMY3: NREL. CWEC2020: Environment and Climate Change Canada.
+TMYx: Lawrie and Crawley (2022), climate.onebuilding.org. TMY3: Wilcox and Marion (2008), NREL. CWEC2020: Environment
+and Climate Change Canada (2020).
+
+## References
+<!-- refs: lawrie2022 wilcox2008 eccc2020 -->
+
+Environment and Climate Change Canada. (2020). *Canadian Weather Year for Energy Calculation (CWEC 2020)* [Data set]. Government of Canada.
+
+Lawrie, L. K., & Crawley, D. B. (2022). *Development of global typical meteorological years (TMYx)*. Climate.OneBuilding.Org. https://climate.onebuilding.org
+
+Wilcox, S., & Marion, W. (2008). *Users manual for TMY3 data sets* (NREL/TP-581-43156). National Renewable Energy Laboratory.

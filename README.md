@@ -36,6 +36,8 @@ shared/       climamods.js: the calculation core shared by Macro, Micro and Room
               mklanding.py: writes index.html, previews drawn from the repository's data;
               mkvalidation.py: writes validation.html from validation/README.md;
               mkmethods.py: writes methods.html and methods/*.html from docs/methods/*.md;
+              bib.py: every reference, in APA style; mkrefs.py: writes the reference list of each method and
+              validation page from the keys in its "<!-- refs: ... -->" line (run before mkmethods/mkvalidation);
               fonts/ (IBM Plex, OFL), icons/ (the five logos)
 docs/         methods/: what each app computes, with its models, assumptions and sources
 validation/   verification and validation of every model, by model: reports, scripts and results

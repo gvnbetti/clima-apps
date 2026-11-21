@@ -54,35 +54,41 @@ thead th { font: 600 11px var(--f-data); text-transform: uppercase; letter-spaci
 <div class="wrap"><nav class="toc" aria-label="Method pages"><b>Methods</b><a href="../methods.html">Overview</a><a href="../methods/map.html" aria-current=page>Clima Map</a><a href="../methods/macro.html">Macro Clima</a><a href="../methods/climate.html">Future and urban climate</a><a href="../methods/micro.html">Micro Clima</a><a href="../methods/room.html">Room Clima</a><a href="../methods/room-carbon.html">Room Clima: carbon</a></nav>
 <article><h1>Clima Map: method</h1>
 <h2>What it is for</h2>
-<p>Finding a typical-year weather file for a site. Clima Map computes nothing about the climate itself; it helps choose
-the station whose climate is closest to the site's, then hands the file to the other apps.</p>
+<p>Finding a representative weather file for a given location.</p>
+<p>Clima Map does not calculate or simulate climate conditions. Its purpose is to help identify the weather station whose
+climate is most relevant to the site, and to select and download a suitable weather file for use in the other apps.</p>
 <h2>How it works</h2>
-<ul>
-<li><strong>Stations.</strong> The catalogue of Climate.OneBuilding.org and the EnergyPlus weather collection, as used in Macro Clima
-  (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/macro/data/stations.js"><code>macro/data/stations.js</code></a>): 29,787 stations and 67,686 files. Entries of the same station listed under several
-  source folders are merged: same name, within about 2 km.</li>
-<li><strong>Climate type.</strong> The Köppen-Geiger class given in the catalogue for each station.</li>
-<li><strong>Nearest stations.</strong> Great-circle distance from the chosen point. Elevation is shown so that a station with similar
-  surroundings can be preferred.</li>
-<li><strong>Place search.</strong> OpenStreetMap's Nominatim service, only on request (Enter), as its usage policy requires.</li>
-<li><strong>Files.</strong> Downloaded directly from their source as ZIP files. The other apps read the ZIP as downloaded.</li>
-<li><strong>Map.</strong> OpenStreetMap tiles, no account or key.</li>
-</ul>
+<p><strong>Weather stations.</strong> The station catalogue combines data from Climate.OneBuilding.org and the EnergyPlus weather
+collection, as used in Macro Clima (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/macro/data/stations.js"><code>macro/data/stations.js</code></a>). It currently contains 29,787 stations and 67,686
+weather files. Entries referring to the same station across different source folders are merged when their names
+match and their locations are within approximately 2 km.</p>
+<p><strong>Climate classification.</strong> Each station is associated with a Köppen-Geiger climate classification, as provided in the
+source catalogue.</p>
+<p><strong>Distance and elevation.</strong> Clima Map calculates the great-circle distance between the selected location and each
+station. Station elevation is also displayed, helping identify stations with similar geographical conditions.</p>
+<p><strong>Place search.</strong> Location searches use OpenStreetMap's Nominatim service. Requests are only sent when the user
+explicitly submits a search, in accordance with its usage policy.</p>
+<p><strong>Weather files.</strong> Files are downloaded directly from their original source as ZIP archives. The other apps can read
+these archives directly, without requiring the user to unpack them.</p>
+<p><strong>Map.</strong> The map uses OpenStreetMap tiles and requires no account or API key.</p>
 <h2>Assumptions</h2>
-<ul>
-<li>The nearest station is not always the best one. Elevation, distance to the coast and the station's surroundings
-  (airport, city, valley) matter as much as distance. The map shows them; the choice is the user's.</li>
-<li>Where a station has several files (TMYx periods, TMY3, IWEC, national sets), the most recent TMYx period is the
-  usual choice: it is built from the most recent years.</li>
-</ul>
+<p>The closest station is not necessarily the most representative one. Elevation, distance from the coast and local
+surroundings, such as an airport, an urban area or a valley, can all influence the relevance of a weather file. Clima
+Map makes these factors visible, but leaves the final choice to the user.</p>
+<p>Where several files are available for the same station, such as different TMYx periods, TMY3, IWEC or national
+weather datasets, the most recent TMYx period is generally a good starting point, as it draws on the most recent
+available years.</p>
 <h2>Limits</h2>
-<ul>
-<li>The catalogue was read in 2026 and does not include the newest TMYx periods for every station.</li>
-<li>A typical year contains typical weather, not extremes. Heat waves and cold spells are under-represented by
-  construction.</li>
-</ul>
+<p>The station catalogue was compiled in 2026 and may not include the latest TMYx periods for every station.</p>
+<p>Typical-year weather files represent typical conditions rather than extreme events. Heat waves, cold spells and other
+unusual weather conditions are therefore under-represented by design. They should not be used to assess
+extreme-weather risk.</p>
 <h2>Validation</h2>
-<p>No calculation to check. The station list is the source catalogue, merged as described.</p>
+<p>Clima Map does not perform climate calculations or simulations that require numerical validation. Its output is based
+on the published station catalogue and the original weather files, with station entries consolidated as described
+above.</p>
+<p>The reliability of the selection therefore depends on the accuracy and completeness of the source data, as well as
+the user's assessment of how representative a station is for the site.</p>
 <p class="src">Source: <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/docs/methods/clima-map.md">docs/methods/clima-map.md</a></p>
 <div class="next"><a href="../methods.html">← Overview</a><a href="../methods/macro.html">Macro Clima →</a></div></article></div>
 </body>

@@ -1,30 +1,51 @@
 # Clima Map: method
 
 ## What it is for
-Finding a typical-year weather file for a site. Clima Map computes nothing about the climate itself; it helps choose
-the station whose climate is closest to the site's, then hands the file to the other apps.
+Finding a representative weather file for a given location.
+
+Clima Map does not calculate or simulate climate conditions. Its purpose is to help identify the weather station whose
+climate is most relevant to the site, and to select and download a suitable weather file for use in the other apps.
 
 ## How it works
-- **Stations.** The catalogue of Climate.OneBuilding.org and the EnergyPlus weather collection, as used in Macro Clima
-  (`macro/data/stations.js`): 29,787 stations and 67,686 files. Entries of the same station listed under several
-  source folders are merged: same name, within about 2 km.
-- **Climate type.** The Köppen-Geiger class given in the catalogue for each station.
-- **Nearest stations.** Great-circle distance from the chosen point. Elevation is shown so that a station with similar
-  surroundings can be preferred.
-- **Place search.** OpenStreetMap's Nominatim service, only on request (Enter), as its usage policy requires.
-- **Files.** Downloaded directly from their source as ZIP files. The other apps read the ZIP as downloaded.
-- **Map.** OpenStreetMap tiles, no account or key.
+**Weather stations.** The station catalogue combines data from Climate.OneBuilding.org and the EnergyPlus weather
+collection, as used in Macro Clima (`macro/data/stations.js`). It currently contains 29,787 stations and 67,686
+weather files. Entries referring to the same station across different source folders are merged when their names
+match and their locations are within approximately 2 km.
+
+**Climate classification.** Each station is associated with a Köppen-Geiger climate classification, as provided in the
+source catalogue.
+
+**Distance and elevation.** Clima Map calculates the great-circle distance between the selected location and each
+station. Station elevation is also displayed, helping identify stations with similar geographical conditions.
+
+**Place search.** Location searches use OpenStreetMap's Nominatim service. Requests are only sent when the user
+explicitly submits a search, in accordance with its usage policy.
+
+**Weather files.** Files are downloaded directly from their original source as ZIP archives. The other apps can read
+these archives directly, without requiring the user to unpack them.
+
+**Map.** The map uses OpenStreetMap tiles and requires no account or API key.
 
 ## Assumptions
-- The nearest station is not always the best one. Elevation, distance to the coast and the station's surroundings
-  (airport, city, valley) matter as much as distance. The map shows them; the choice is the user's.
-- Where a station has several files (TMYx periods, TMY3, IWEC, national sets), the most recent TMYx period is the
-  usual choice: it is built from the most recent years.
+The closest station is not necessarily the most representative one. Elevation, distance from the coast and local
+surroundings, such as an airport, an urban area or a valley, can all influence the relevance of a weather file. Clima
+Map makes these factors visible, but leaves the final choice to the user.
+
+Where several files are available for the same station, such as different TMYx periods, TMY3, IWEC or national
+weather datasets, the most recent TMYx period is generally a good starting point, as it draws on the most recent
+available years.
 
 ## Limits
-- The catalogue was read in 2026 and does not include the newest TMYx periods for every station.
-- A typical year contains typical weather, not extremes. Heat waves and cold spells are under-represented by
-  construction.
+The station catalogue was compiled in 2026 and may not include the latest TMYx periods for every station.
+
+Typical-year weather files represent typical conditions rather than extreme events. Heat waves, cold spells and other
+unusual weather conditions are therefore under-represented by design. They should not be used to assess
+extreme-weather risk.
 
 ## Validation
-No calculation to check. The station list is the source catalogue, merged as described.
+Clima Map does not perform climate calculations or simulations that require numerical validation. Its output is based
+on the published station catalogue and the original weather files, with station entries consolidated as described
+above.
+
+The reliability of the selection therefore depends on the accuracy and completeness of the source data, as well as
+the user's assessment of how representative a station is for the site.

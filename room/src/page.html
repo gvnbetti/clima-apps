@@ -2224,7 +2224,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
       return `<button type="button" data-ds="${id}" aria-pressed="${on}" class="${on ? "on" : ""}${r.t && r.t.all ? "" : " miss"}" title="${escA(cap(note) + ". " + pkgNumbers(rec, r) + (r.t && r.t.all ? "." : ". Misses: " + missTxt(r) + "."))}"><b>${lab}</b><small>${pkgEffect(rec, r)}</small></button>`; };
     const main = DS4.filter((d) => !d[4]), more = DS4.filter((d) => d[4]);
     h += `<div class="dsel" role="group" aria-label="Designs to compare at this facade">${main.map(btn).join("")}${DS4.some(([, , r]) => FS.keyOf(r.dz) === kNow) ? "" : `<button type="button" class="on wi" aria-pressed="true" disabled><b>Your design</b><small>changed by hand</small></button>`}</div>`;
-    if (more.length) h += `<div class="dmore"><span class="small">More options, each also ${rec.t.all ? "meeting every target" : "about as close to the targets"}:</span><div class="dsel" role="group" aria-label="More designs at this facade">${more.map(btn).join("")}</div></div>`;
+    if (more.length) h += `<details class="dmore" id="moredet"${st.moreOpen || more.some((d) => FS.keyOf(d[2].dz) === kNow) ? " open" : ""}><summary>More options <span class="small">${more.length} other designs, each also ${rec.t.all ? "meeting every target" : "about as close to the targets"}</span></summary><div class="dsel" role="group" aria-label="More designs at this facade">${more.map(btn).join("")}</div></details>`;
     const measO = meas.filter((p) => !FS.SHARED.includes(p)).concat(meas.filter((p) => FS.SHARED.includes(p))), nOwn = meas.filter((p) => !FS.SHARED.includes(p)).length;
     h += `<div class="sw">${measO.map((p, iP) => (iP === 0 ? `<div class="swg">This room</div>` : iP === nOwn ? `<div class="swg">Whole building</div>` : "") + (() => { const L = LVa(p), it = core && core.items[p], k = it ? (it.tie ? 7 : it.k) : 7;
       return `<div class="swr"><div class="swh"><b>${NAME4[p]}</b><span class="small">${FS.SHARED.includes(p) ? "building-wide: every facade" : "this facade only"}${p === "wwr" && wwrRange(sc, a) ? `; ${rangeTxt(wwrRange(sc, a))} differ little` : ""}${(p === "dayAch" || p === "nightAch") && dz[p] ? `; ${openTxt(p, dz, sc)}` : ""}</span></div><div class="swo" role="group" aria-label="${NAME4[p]}">${L.map((v) => {
@@ -2259,6 +2259,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   function bindFacPanel(sc, B) {
     const a = st.fa, rec = B.best.per[a]; if (!rec) return;
     const pk = $("pkgdet"); if (pk) pk.ontoggle = () => { st.pkgOpen = pk.open; };
+    const mo = $("moredet"); if (mo) mo.ontoggle = () => { st.moreOpen = mo.open; };
     document.querySelectorAll("#v4fac .swo button").forEach((b) => b.onclick = () => {
       const p = b.dataset.p, v = b.dataset.v.startsWith("n") ? +b.dataset.v.slice(1) : b.dataset.v;
       const dz = Object.assign({}, st.wi && st.wi.sc === sc && st.wi.a === a ? st.wi.dz : rec.dz, { [p]: v });

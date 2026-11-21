@@ -22,7 +22,7 @@ The heat island is checked in `urban-heat-island/`.
   0.969 on average over 12 cases. Where the best design differs, taking Micro Clima's best costs at most 0.3 % of hours
   without thermal stress.
 - **Shared core.** Since 21 November 2026 the sun position, sun on walls (Perez), saturation pressure, SolarCal table and
-  coefficient, UTCI, future climate and heat island come from the calculation core shared with Macro and Room Clima
+  coefficient, sky longwave estimate (Clark and Allen), UTCI, future climate and heat island come from the calculation core shared with Macro and Room Clima
   (`shared/climamods.js`). All checks above were rerun on that code.
 
 ## Code verification (`verify_dump.js`, `verify.py`, results in `verification.md`)

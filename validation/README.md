@@ -16,7 +16,8 @@ results; the scripts that produce them; and the result files they write. Every s
 
 ## Shared calculation core
 Since 21 November 2026 Macro, Micro and Room Clima compute sun position, sun on surfaces (Perez), psychrometrics,
-SolarCal, UTCI, future climate and the urban heat island with the same code, `shared/climamods.js`, copied verbatim from
+SolarCal, sky longwave (file data, or Clark and Allen where missing), UTCI (inputs outside the polynomial's range held at
+its edge), future climate and the urban heat island with the same code, `shared/climamods.js`, copied verbatim from
 Macro Clima. The studies it affects (thermal, room types, daylight, climate reading, outdoor comfort, urban heat island)
 were rerun on that code on 21 November 2026; the future-climate code itself did not change.
 

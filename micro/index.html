@@ -345,7 +345,7 @@ table.meas td.num small { color: var(--mute); font: 11px var(--f-data) }
    Sun position (NOAA), sun on surfaces (Perez 1990), psychrometrics (Hyland-Wexler, as psychrolib), SolarCal (ASHRAE 55),
    sky longwave, UTCI (Broede et al. 2012), urban heat island (Theeuwes et al. 2017) and future climate (IPCC AR6 Atlas).
    The code below is copied verbatim from Macro Clima (core.js and app.js) by shared/mkmods.py;
-   do not edit it here: change Macro Clima and regenerate. Source fingerprint 104ba3161862.
+   do not edit it here: change Macro Clima and regenerate. Source fingerprint ee68aab076a3.
    Data: window.CLIMA_FUTURE (future.js) and window.CLIMA_REGIONS (regions.js), as in Macro Clima. */
 (function (root) {
   "use strict";
@@ -507,6 +507,18 @@ table.meas td.num small { color: var(--mute); font: 11px var(--f-data) }
     const pa = utciPvap(tdb) * rh / 100 / 10;
     return utciPoly(tdb, vv, tr - tdb, pa);
   }
+  /* UTCI for every hour, as used by Macro, Micro and Room Clima: inputs outside the polynomial's range (air -50 to 50 °C,
+     radiant minus air -30 to 70 K, wind 0.5 to 17 m/s) are held at its edge, so extreme hours keep their stress class
+     instead of dropping out of the counts. fl = 1 when air, the radiant difference or a wind above 17 m/s was held
+     (wind below 0.5 m/s is the polynomial's own floor and is not flagged). */
+  function utciLimited(tdb, tr, v, rh) {
+    let fl = 0;
+    if (!(v >= 0.5)) v = 0.5; else if (v > 17) { v = 17; fl = 1; }
+    let d = tr - tdb; if (d < -30) { d = -30; fl = 1; } else if (d > 70) { d = 70; fl = 1; }
+    if (tdb < -50 || tdb > 50) fl = 1;
+    const t = Math.max(-50, Math.min(50, tdb));
+    return { u: utciPoly(t, v, d, utciPvap(t) * rh / 100 / 10), fl };
+  }
   const UTCI_CLASSES = [
     [-Infinity, -40, "extreme cold stress"], [-40, -27, "very strong cold stress"], [-27, -13, "strong cold stress"], [-13, 0, "moderate cold stress"],
     [0, 9, "slight cold stress"], [9, 26, "no thermal stress"], [26, 32, "moderate heat stress"], [32, 38, "strong heat stress"], [38, 46, "very strong heat stress"], [46, Infinity, "extreme heat stress"]];
@@ -618,7 +630,7 @@ table.meas td.num small { color: var(--mute); font: 11px var(--f-data) }
     const S0 = solarArrays(W.meta.lat, W.meta.lon, W.meta.tz), u = urbanHeatIsland(W, S0, opt.uhi.svf, opt.uhi.fveg);
     return { W: Object.assign({}, W, { dbt: u.dbt, rh: u.rh }), uhi: u, fut };
   }
-  const api = { FINGERPRINT: "104ba3161862", prepWeather, futureDelta, morphWeather, urbanHeatIsland, regionOf, futRegion, regName, fileYears, isNWEurope, AIRPORT, FUT_LEVELS, futLab, UHI_PRESETS, REG_NAMES, pws, dewFromPw, humRatio, pwFromW, enthalpy, wetBulb, solarArrays, sunPosition, T, poa, dniExtra, airmassKY, perezSkyClearness, fpStanding, solarCalDeltaMrt, FP_STANDING, ALT_RANGE, AZ_RANGE, SIGMA, skyTemperature, longwaveDeltaMrt, utci, utciPoly, utciPvap, UTCI_CLASSES };
+  const api = { FINGERPRINT: "ee68aab076a3", prepWeather, futureDelta, morphWeather, urbanHeatIsland, regionOf, futRegion, regName, fileYears, isNWEurope, AIRPORT, FUT_LEVELS, futLab, UHI_PRESETS, REG_NAMES, pws, dewFromPw, humRatio, pwFromW, enthalpy, wetBulb, solarArrays, sunPosition, T, poa, dniExtra, airmassKY, perezSkyClearness, fpStanding, solarCalDeltaMrt, FP_STANDING, ALT_RANGE, AZ_RANGE, SIGMA, skyTemperature, longwaveDeltaMrt, utci, utciLimited, utciPoly, utciPvap, UTCI_CLASSES };
   root.ClimaMods = api; // also global in Node, so code that embeds this core (Micro Clima's engine) finds it there too
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);
@@ -762,14 +774,16 @@ table.meas td.num small { color: var(--mute); font: 11px var(--f-data) }
   function prepare(wx, ctx) {
     const sp = solarPosition(wx.lat, wx.lon, wx.tz), n = 8760;
     const ghi = new Float32Array(n), lsky = new Float32Array(n);
-    let irOk = 0; for (let i = 0; i < n; i++) if (wx.ir[i] > 50) irOk++;
-    const useIr = irOk > 8000;
+    let irMissing = 0;
     for (let i = 0; i < n; i++) {
       ghi[i] = wx.dhi[i] + (sp.el[i] > 0 ? wx.dni[i] * Math.sin(sp.el[i] * D2R) : 0);
-      if (useIr) lsky[i] = wx.ir[i];
-      else { const td = Math.min(wx.td[i], wx.t[i]), e = 0.711 + 0.56 * td / 100 + 0.73 * (td / 100) * (td / 100); lsky[i] = Math.min(1, e + 0.08) * SIG * Math.pow(wx.t[i] + K0, 4); }
+      // sky longwave: the file's infrared radiation where present; otherwise Clark and Allen from dew point and opaque sky
+      // cover (5 tenths where the file has none), as EnergyPlus. Shared core, as Macro Clima.
+      if (!(wx.ir[i] > 0 && wx.ir[i] < 9999)) irMissing++;
+      const ts = CM.skyTemperature(wx.ir[i], wx.t[i], wx.td[i], wx.osc ? wx.osc[i] : NaN) + K0;
+      lsky[i] = 0.95 * CM.SIGMA * ts * ts * ts * ts;
     }
-    const c = { name: wx.name, lat: wx.lat, lon: wx.lon, el: sp.el, az: sp.az, t: wx.t, td: wx.td, dni: wx.dni, dhi: wx.dhi, ws: wx.ws, ghi, lsky, irEstimated: !useIr, dniNight: 0 };
+    const c = { name: wx.name, lat: wx.lat, lon: wx.lon, el: sp.el, az: sp.az, t: wx.t, td: wx.td, dni: wx.dni, dhi: wx.dhi, ws: wx.ws, ghi, lsky, irEstimated: irMissing > n / 2, dniNight: 0 };
     for (let i = 0; i < 8760; i++) if (sp.el[i] <= 0 && wx.dni[i] > 0) c.dniNight++; // reported to the user; beam is ignored below the horizon
     const nb = neighbourhood(c, ctx);
     c.ta = nb.ta; c.rh = nb.rh; c.uhi = nb.uhi; c.dcool = nb.dcool; c.nbInfo = nb.info;
@@ -869,14 +883,9 @@ table.meas td.num small { color: var(--mute); font: 11px var(--f-data) }
   function utciRaw(tdb, tr, v, rh) { // shared core: Broede et al. 2012 polynomial, as Macro Clima and pythermalcomfort
     return CM.utciPoly(tdb, v, tr - tdb, CM.utciPvap(tdb) * rh / 100 / 10);
   }
-  // returns value with inputs held inside the polynomial's validity range; flag bit set when anything was clamped
-  function utci(ta, tr, v, rh) {
-    let fl = 0;
-    if (v < 0.5) v = 0.5; else if (v > 17) { v = 17; fl = 1; }
-    let d = tr - ta; if (d < -30) { d = -30; fl = 1; } else if (d > 70) { d = 70; fl = 1; }
-    if (ta < -50 || ta > 50) fl = 1;
-    return { u: utciRaw(Math.max(-50, Math.min(50, ta)), Math.max(-50, Math.min(50, ta)) + d, v, rh), fl };
-  }
+  // inputs held at the edge of the polynomial's range, flag set when anything was held: shared core (as Macro and Room Clima)
+  const utci = (ta, tr, v, rh) => CM.utciLimited(ta, tr, v, rh);
+
 
   // ------------------------------------------------------------------ one scenario
   // sc = {s, g, w, e} indices; opt = {leaf: Uint8Array(12) leaf-on/deployed months, screen: Uint8Array(12) screen months}
@@ -1169,7 +1178,7 @@ table.meas td.num small { color: var(--mute); font: 11px var(--f-data) }
     utci: { t: "UTCI and its stress classes", h: "The Universal Thermal Climate Index: the air temperature of a reference environment that would cause the same physiological response as the actual conditions. Ten classes from extreme cold to extreme heat stress.",
       w: "UTCI combines air temperature, mean radiant temperature, wind speed at 10 m and humidity through a multi-node model of human thermoregulation with an adaptive clothing model. The stress classes were derived from the simulated physiological responses, not from comfort votes. 9 to 26 °C is \"no thermal stress\".",
       y: "It is the most widely used outdoor comfort index and responds to all four drivers that design can change: sun and shade (radiant temperature), wind, and, at neighbourhood scale, air temperature.",
-      a: "Calculated with the operational polynomial of Bröde et al. (2012), as implemented in pythermalcomfort; results match that library exactly. Inputs outside the polynomial's range (wind above 17 m/s, radiant temperature more than 70 K above or 30 K below air temperature) are held at its limits and counted in a notice.", src: ["brode12", "ptc"] },
+      a: "Calculated with the operational polynomial of Bröde et al. (2012), as implemented in pythermalcomfort; results match that library exactly. Inputs outside the polynomial's range (air below −50 or above 50 °C, wind above 17 m/s, radiant temperature more than 70 K above or 30 K below air temperature) are held at its limits and counted in a notice. Macro Clima and Room Clima do the same, with the same code (shared calculation core).", src: ["brode12", "ptc"] },
     accept: { t: "Acceptable hours and points", h: "An occupied hour is acceptable when UTCI is between 9 and 26 °C. Points are percentage points of occupied hours.",
       w: "Acceptable hours: occupied hours with UTCI in the no thermal stress class. Heat stress hours: above 26 °C; strong heat stress: above 32 °C. Cold stress hours: below 9 °C.",
       y: "One number that compares designs and climates, and that architects and clients can relate to: how many hours the space is pleasant to use.",
@@ -1283,7 +1292,7 @@ table.meas td.num small { color: var(--mute); font: 11px var(--f-data) }
     const t = col(6, 99.9, 15);
     const td = Float64Array.from(rows.map((r, i) => { const x = +r[7]; return !isFinite(x) || x >= 99.9 ? t[i] - 5 : x; }));
     return { name: h[1] || fname, file: fname, comments: L.slice(1, 8), cc: h[3] || "", koppen: "", source: "Uploaded: " + fname, lat: +h[6], lon: +h[7], tz: +h[8], elev: +h[9] || 0,
-      t, td, ir: col(12, 9999, 0), dni: col(14, 9999, 0), dhi: col(15, 9999, 0), ws: col(21, 999, 0) };
+      t, td, ir: col(12, 9999, 0), dni: col(14, 9999, 0), dhi: col(15, 9999, 0), ws: col(21, 999, 0), osc: col(22, 99, NaN) };
   }
   function useText(text, fname, out) {
     try { const w = parseEPW(text, fname); st.wxList.push(w); fillWx(); selectWx(st.wxList.length - 1); out.textContent = ""; }
@@ -1552,7 +1561,7 @@ self.onmessage = (m) => { const d = m.data;
     const faces = MC.wallFacesFor(vals.e);
     const list = []; vals.s.forEach((s) => vals.g.forEach((g) => vals.w.forEach((wi) => vals.e.forEach((e) => list.push({ s, g, w: wi, e })))));
     const fw = futureOf(w), wm = fw.w;
-    const scen = [], key = new Map(), wxMsg = { name: w.name, lat: w.lat, lon: w.lon, tz: w.tz, t: wm.t, td: wm.td, ir: wm.ir, dni: w.dni, dhi: w.dhi, ws: w.ws };
+    const scen = [], key = new Map(), wxMsg = { name: w.name, lat: w.lat, lon: w.lon, tz: w.tz, t: wm.t, td: wm.td, ir: wm.ir, osc: w.osc, dni: w.dni, dhi: w.dhi, ws: w.ws };
     const c = MC.prepare(wxMsg, ctx);
     let done = 0; const t0 = performance.now();
     const status = () => { $("bar").style.width = (100 * done / list.length).toFixed(1) + "%"; $("status").textContent = `Simulating ${done} of ${list.length} scenarios, 8,760 hours each`; };
@@ -1622,7 +1631,7 @@ self.onmessage = (m) => { const d = m.data;
       if (R.ctx.svf < 0.2 || R.ctx.svf > 0.9 || R.ctx.fveg > 0.4) n.push(["warm", `The heat island model was fitted for sky view factors between 0.2 and 0.9 and vegetation fractions up to 0.4. Sky view factor ${R.ctx.svf.toFixed(2)} and vegetation ${R.ctx.fveg.toFixed(2)} lie outside that range, so the heat island is extrapolated.`]);
     }
     if (c.dniNight > 24) n.push(["warm", `This weather file reports direct sun in ${N0(c.dniNight)} hours when the sun is below the horizon, which points to a time shift or a fault in the file. These values are ignored. Check the file's source if daytime results look shifted.`]);
-    if (c.irEstimated) n.push(["warm", "This weather file has no usable sky infrared data. Sky longwave radiation is estimated from dew point, which makes night-time and shaded values less certain."]);
+    if (c.irEstimated) n.push(["warm", "This weather file has no usable sky infrared data for most hours. Sky longwave radiation is estimated from dew point and cloud cover (Clark and Allen, as Macro Clima and EnergyPlus), which makes night-time and shaded values less certain."]);
     if (R.flags) n.push(["info", `${N0(R.flags)} scenario-hours fell outside the range of the UTCI polynomial and were held at its limits. ${qm("utci", "UTCI")}`]);
     n.push(["info", `Wind shelter, wind in enclosures and the moisture of permeable paving and gravel are placeholders; other values are sourced or derived. How the app was checked: ${qm("verify", "verification")}`]);
     $("notes").innerHTML = n.map(([k, t]) => `<p class="${k === "info" ? "info" : ""}">${t}</p>`).join("");

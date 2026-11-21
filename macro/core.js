@@ -312,6 +312,18 @@
     const pa = utciPvap(tdb) * rh / 100 / 10;
     return utciPoly(tdb, vv, tr - tdb, pa);
   }
+  /* UTCI for every hour, as used by Macro, Micro and Room Clima: inputs outside the polynomial's range (air -50 to 50 °C,
+     radiant minus air -30 to 70 K, wind 0.5 to 17 m/s) are held at its edge, so extreme hours keep their stress class
+     instead of dropping out of the counts. fl = 1 when air, the radiant difference or a wind above 17 m/s was held
+     (wind below 0.5 m/s is the polynomial's own floor and is not flagged). */
+  function utciLimited(tdb, tr, v, rh) {
+    let fl = 0;
+    if (!(v >= 0.5)) v = 0.5; else if (v > 17) { v = 17; fl = 1; }
+    let d = tr - tdb; if (d < -30) { d = -30; fl = 1; } else if (d > 70) { d = 70; fl = 1; }
+    if (tdb < -50 || tdb > 50) fl = 1;
+    const t = Math.max(-50, Math.min(50, tdb));
+    return { u: utciPoly(t, v, d, utciPvap(t) * rh / 100 / 10), fl };
+  }
   const UTCI_CLASSES = [
     [-Infinity, -40, "extreme cold stress"], [-40, -27, "very strong cold stress"], [-27, -13, "strong cold stress"], [-13, 0, "moderate cold stress"],
     [0, 9, "slight cold stress"], [9, 26, "no thermal stress"], [26, 32, "moderate heat stress"], [32, 38, "strong heat stress"], [38, 46, "very strong heat stress"], [46, Infinity, "extreme heat stress"]];
@@ -742,8 +754,9 @@
     }
     X.dmrt = dmrt; X.dmrtShade = dmrtShade; X.dlw = dlw; X.tsky = tsky; X.mrt = mrt; X.mrtShade = mrtShade; X.dmrtCBE = dmrtCBE; X.irMissing = irMissing;
     const sw = new Float32Array(N), sn = new Float32Array(N), hw = new Float32Array(N), hn = new Float32Array(N);
-    for (let i = 0; i < N; i++) { const t = W.dbt[i], rh = W.rh[i], v = W.ws[i] <= 0.5 ? 0.6 : Math.min(16.9, W.ws[i]); sw[i] = utci(t, mrt[i], v, rh); sn[i] = utci(t, mrt[i], 0.5, rh); hw[i] = utci(t, mrtShade[i], v, rh); hn[i] = utci(t, mrtShade[i], 0.5, rh); }
-    X.utci = { sunWind: sw, sunStill: sn, shadeWind: hw, shadeStill: hn };
+    let held = 0;
+    for (let i = 0; i < N; i++) { const t = W.dbt[i], rh = W.rh[i], v = W.ws[i] <= 0.5 ? 0.6 : Math.min(16.9, W.ws[i]); const a1 = utciLimited(t, mrt[i], v, rh), a2 = utciLimited(t, mrt[i], 0.5, rh), a3 = utciLimited(t, mrtShade[i], v, rh), a4 = utciLimited(t, mrtShade[i], 0.5, rh); sw[i] = a1.u; sn[i] = a2.u; hw[i] = a3.u; hn[i] = a4.u; if (a1.fl || a2.fl || a3.fl || a4.fl) held++; }
+    X.utci = { sunWind: sw, sunStill: sn, shadeWind: hw, shadeStill: hn }; X.utciHeld = held;
     X.adaptive = adaptiveBands(daily.mean);
     X.extremes = extremes(W, daily);
     X.rain = drivingRain(W);
@@ -752,6 +765,6 @@
     return X;
   }
 
-  const api = { N, MDAYS, MSTART, MONTHS, MONTHS_LONG, FIELDS, T, parseEPW, sunPosition, solarArrays, sunPathLines, pws, humRatio, pwFromW, dewFromPw, wetBulb, enthalpy, psychroArrays, poa, dniExtra, airmassKY, perezSkyClearness, surfaceIrradiation, ORIENT, fpStanding, solarCalDeltaMrt, skyTemperature, longwaveDeltaMrt, solarCalDeltaMrtCBE, utci, utciPvap, UTCI_CLASSES, utciClass, pmv, dailyStats, runningMeanEN, prevailingMean, adaptiveBands, degreeDays, gradtagzahl, extremes, runs, windRose, WIND_BINS, seasonOf, drivingRain, CC_DEFAULT, CC_KEYS, comfortCurves, curveAt, strategyZones, strategyCover, skyClass, processWeather, PV, pvPrep, pvRun, pvMap, pvPotential, pvRoof, urbanHeatIsland, isNWEurope, regionOf, futureDelta, morphWeather, dailyFromMonthly, maskingAnglePassias, iamMR, iamMRdiffuse, pvInverter };
+  const api = { N, MDAYS, MSTART, MONTHS, MONTHS_LONG, FIELDS, T, parseEPW, sunPosition, solarArrays, sunPathLines, pws, humRatio, pwFromW, dewFromPw, wetBulb, enthalpy, psychroArrays, poa, dniExtra, airmassKY, perezSkyClearness, surfaceIrradiation, ORIENT, fpStanding, solarCalDeltaMrt, skyTemperature, longwaveDeltaMrt, solarCalDeltaMrtCBE, utci, utciLimited, utciPvap, UTCI_CLASSES, utciClass, pmv, dailyStats, runningMeanEN, prevailingMean, adaptiveBands, degreeDays, gradtagzahl, extremes, runs, windRose, WIND_BINS, seasonOf, drivingRain, CC_DEFAULT, CC_KEYS, comfortCurves, curveAt, strategyZones, strategyCover, skyClass, processWeather, PV, pvPrep, pvRun, pvMap, pvPotential, pvRoof, urbanHeatIsland, isNWEurope, regionOf, futureDelta, morphWeather, dailyFromMonthly, maskingAnglePassias, iamMR, iamMRdiffuse, pvInverter };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Clima = api;
 })(this);

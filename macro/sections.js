@@ -358,7 +358,7 @@
     const o = R.overcastMrt;
     if (o.hours) out.push(`On the ${n(fmt(o.hours) + " daytime hours", "c-dmrt")} with more than 80 % diffuse radiation, sunlight adds ${n(fmt(o.now, 1) + " K", "c-dmrt")} to the mean radiant temperature in the open on average. CBE Clima gives ${n(fmt(o.cbe, 1) + " K", "c-dmrt")} for the same hours because it took diffuse radiation as 0.2 × direct normal rather than the measured value.`);
     const lw = ctx.X.dlw; let sn = 0, cn = 0, mn = 0; for (let i = 0; i < N; i++) if (ctx.X.alt[i] <= 0) { sn += lw[i]; cn++; if (lw[i] < mn) mn = lw[i]; }
-    out.push(`The colder sky takes ${n(fmt(-sn / cn, 1) + " K", "c-dlw")} off the mean radiant temperature at night on average, up to ${n(fmt(-mn, 1) + " K", "c-dlw")} on the clearest nights.${ctx.X.irMissing > N / 2 ? " The file has no sky infrared radiation; it was estimated from dew point and cloud cover." : ""}`);
+    out.push(`The colder sky takes ${n(fmt(-sn / cn, 1) + " K", "c-dlw")} off the mean radiant temperature at night on average, up to ${n(fmt(-mn, 1) + " K", "c-dlw")} on the clearest nights.${ctx.X.irMissing > N / 2 ? " The file has no sky infrared radiation; it was estimated from dew point and cloud cover." : ""}${ctx.X.utciHeld ? ` In ${ctx.X.utciHeld} hours the conditions lie outside the UTCI polynomial's range; they are counted with the inputs held at its edge.` : ""}`);
     return out;
   };
   S.readings.quality = function (ctx) {

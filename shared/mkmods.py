@@ -61,7 +61,7 @@ js = f'''/* Clima Toolbox calculation core, shared by Macro Clima, Micro Clima a
     const S0 = solarArrays(W.meta.lat, W.meta.lon, W.meta.tz), u = urbanHeatIsland(W, S0, opt.uhi.svf, opt.uhi.fveg);
     return {{ W: Object.assign({{}}, W, {{ dbt: u.dbt, rh: u.rh }}), uhi: u, fut }};
   }}
-  const api = {{ FINGERPRINT: "{h}", prepWeather, futureDelta, morphWeather, urbanHeatIsland, regionOf, futRegion, regName, fileYears, isNWEurope, AIRPORT, FUT_LEVELS, futLab, UHI_PRESETS, REG_NAMES, pws, dewFromPw, humRatio, pwFromW, enthalpy, wetBulb, solarArrays, sunPosition, T, poa, dniExtra, airmassKY, perezSkyClearness, fpStanding, solarCalDeltaMrt, FP_STANDING, ALT_RANGE, AZ_RANGE, SIGMA, skyTemperature, longwaveDeltaMrt, utci, utciPoly, utciPvap, UTCI_CLASSES }};
+  const api = {{ FINGERPRINT: "{h}", prepWeather, futureDelta, morphWeather, urbanHeatIsland, regionOf, futRegion, regName, fileYears, isNWEurope, AIRPORT, FUT_LEVELS, futLab, UHI_PRESETS, REG_NAMES, pws, dewFromPw, humRatio, pwFromW, enthalpy, wetBulb, solarArrays, sunPosition, T, poa, dniExtra, airmassKY, perezSkyClearness, fpStanding, solarCalDeltaMrt, FP_STANDING, ALT_RANGE, AZ_RANGE, SIGMA, skyTemperature, longwaveDeltaMrt, utci, utciLimited, utciPoly, utciPvap, UTCI_CLASSES }};
   root.ClimaMods = api; // also global in Node, so code that embeds this core (Micro Clima's engine) finds it there too
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 }})(typeof window !== "undefined" ? window : globalThis);

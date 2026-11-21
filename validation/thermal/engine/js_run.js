@@ -1,11 +1,21 @@
 // The app's thermal engine (EN ISO 52016-1 hourly method, from the Room Clima build) on the Standard 140 cases, in Denver
 // and in the 14 validation climates, with the same control logic as the EnergyPlus models (ideal loads to the set points).
-// Two variants: the standard as written, and the settings Room Clima uses (wind-driven exterior convection at station
-// wind speed, angle-dependent glazing transmission, transmitted sun not absorbed by the glazing itself). Output: WORK/thermal_engine/js/<climate>/<case>.json
+// Variants: the standard as written; each of Room Clima's four changes alone; and all four together, as Room Clima runs
+// the engine. The four changes: (1) wind-driven exterior convection at station wind speed (DOE-2), (2) angle-dependent
+// glazing transmission, (3) transmitted sun absorbed by the opaque surfaces only, (4) long-wave exchange with the sky
+// over the square root of the sky view factor (Walton, as EnergyPlus). Output: WORK/thermal_engine/js/<variant>/<climate>/<case>.json
 const fs = require('fs'), path = require('path'), { WORK, WX } = require('../../lib/paths.js'), H = require('../../lib/app.js'), G = H.G;
 const D = path.join(WORK, 'thermal_engine'), SPEC = JSON.parse(fs.readFileSync(path.join(D, 'cases.json'))), CASES = SPEC.cases;
 const CLIMATES = JSON.parse(require('child_process').execSync(`python3 -c "import json,climates;print(json.dumps(climates.CLIMATES))"`, { cwd: __dirname }));
-const VARIANTS = { written: {}, room: { wind: { terrain: 'station' }, fw: 'angle', solOnWindows: false } };   // as Sweep.simulate in room/src/core.js
+const WRITTEN = { skySplit: false, fw: 0.9 };                     // EN ISO 52016-1 as written: fixed 20 W/m2K exterior convection, constant 0.9 on g, sun on all inner surfaces, full sky view
+const VARIANTS = {
+  written: WRITTEN,
+  wind: Object.assign({}, WRITTEN, { wind: { terrain: 'station' } }),
+  angle: Object.assign({}, WRITTEN, { fw: 'angle' }),
+  opaque: Object.assign({}, WRITTEN, { solOnWindows: false }),
+  sky: Object.assign({}, WRITTEN, { skySplit: true }),
+  room: { wind: { terrain: 'station' }, fw: 'angle', solOnWindows: false, skySplit: true },   // as Sweep.simulate in room/src/core.js
+};
 // Window of the standard (two panes of 3 mm clear glass, 12 mm air): U and SHGC from EnergyPlus's own window calculation
 const WIN = { U: 2.74, g: 0.760 };
 function readWx(f) {

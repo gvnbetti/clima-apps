@@ -10,6 +10,7 @@ body.rc-running #runp { display: block !important }
 #results > .evh { order: 20 } #results > #evpc { order: 21 } #results > .ev { order: 22 }
 main { display: flex; flex-direction: column } main > #settings { order: 30 } main > #results { order: 10 } main > #empty { order: 5 }
 details.pkgs { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 10px } details.pkgs > summary { cursor: pointer; font: 600 12px var(--f-data); text-transform: uppercase; letter-spacing: .06em; color: var(--mute) }
+.missnote { background: var(--warm-soft); border-left: 3px solid var(--warm); padding: 8px 12px; margin: 4px 0 12px; font-size: 13.5px; border-radius: 4px }
 .g4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px }
 .g4 .fcard { gap: 3px; padding: 8px 10px; border-width: 1.5px }
 .g4 .fch b { font-size: 15px } .g4 .c3wrap svg { max-height: 92px }
@@ -3360,7 +3361,13 @@ self.onmessage=(e)=>{const m=e.data;
     st.cache.GS = { key, v: best }; return best;
   }
   function buildResult(sc) {
-    const t = typeSets(sc); if (!t || !t.full.length) return null;
+    const t = typeSets(sc); if (!t) return null;
+    if (!t.full.length) { // no glass, insulation and mass found at every facade: show each facade's own best design rather than nothing
+      const per = {}; t.A.forEach((a) => { const f = facade(sc, a), rs = f.ok.length ? f.ok : f.rows; per[a] = pickTie(rs, (r) => r.q); });
+      if (t.A.some((a) => !per[a])) return null;
+      const b0 = per[t.A[0]], best = { shared: FS.SHARED.reduce((o, p) => { o[p] = b0.dz[p]; return o; }, {}), per, k4: SH4.map((p) => b0.dz[p]).join("|"), mixed: true };
+      return { A: t.A, best, next: [], own: best, global: false, mixed: true, meetAll: t.A.every((a) => per[a].t && per[a].t.all), miss: t.A.filter((a) => !(per[a].t && per[a].t.all)) };
+    }
     const g = globalShared(), full = t.full;
     const best = (g && full.find((e) => e.k4 === g)) || full[0];
     return { A: t.A, best, next: full.filter((e) => e !== best).slice(0, 2), own: full[0], global: !!(g && best.k4 === g), meetAll: t.A.every((a) => best.per[a].t && best.per[a].t.all), miss: t.A.filter((a) => !(best.per[a].t && best.per[a].t.all)) };
@@ -4524,7 +4531,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     // building facades and room types (inputs: change what is simulated)
     $("ori").innerHTML = AZN.map((n, a) => `<label class="chk"><input type="checkbox" value="${a}"${st.ori.includes(a) ? " checked" : ""}> ${n}</label>`).join("");
     $("types").innerHTML = S.SCENARIOS.map((sc) => `<label class="chk"><input type="checkbox" value="${sc}"${st.types.includes(sc) ? " checked" : ""}> ${SCLAB[sc]}</label>`).join("");
-    const oriNote = () => { const n = facTotal(); $("orinote").textContent = `${n} facade${n === 1 ? "" : "s"} to search${st.types.includes("corner") || st.types.includes("corner_top") ? `; corner rooms at ${listJoin(facList("corner").map((a) => orientLabel("corner", a))) || "no pair of facades 90° apart"}` : ""}.`; };
+    const oriNote = () => { const n = facTotal(); $("orinote").textContent = `${n} facade${n === 1 ? "" : "s"} to search${st.types.includes("corner") || st.types.includes("corner_top") ? `; corner rooms at ${listJoin(facList("corner").map((a) => orientLabel("corner", a))) || "no pair of facades 90° apart"}` : ""}.${(st.types.includes("corner") || st.types.includes("corner_top")) && !facList("corner").length ? " A corner room faces two neighbouring directions, for example north and east: tick a facade at right angles to the ones chosen." : ""}`; };
     $("ori").onchange = () => { st.ori = [...document.querySelectorAll("#ori input:checked")].map((x) => +x.value); oriNote(); setStale(true); };
     $("types").onchange = () => { st.types = S.SCENARIOS.filter((sc) => document.querySelector(`#types input[value="${sc}"]`).checked); oriNote(); setStale(true); };
     oriNote();
@@ -4920,7 +4927,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const F = st.fac[sc][a], vNow = cur ? coolVerdict(cur, sc, a).v : null;
     const flipTag = (p, v) => { if (!vNow || vNow === "wait" || v === dz[p] || !F) return ""; const x = F.byKey.get(FS.keyOf(Object.assign({}, dz, { [p]: v }))); if (!x) return "";
       const v2 = coolVerdict({ dz: x.dz, r: x.r }, sc, a).v; if (v2 === "wait" || v2 === vNow) return ""; return `<span class="flip${RANKV[v2] < RANKV[vNow] ? " gd" : ""}">${VSHORT[v2]}</span>`; };
-    let h = `<div class="v4h"><h2>${orientFull(sc, a)} ${sc === "cellular" ? "facade" : "facades"}, ${SCLAB[sc].toLowerCase()}</h2><span class="small">${wi ? "What if: your changes are in blue." : "The recommended design. Pick other choices to see their effect."} A label under a choice shows where it changes the cooling result.</span></div><div class="fpg">`;
+    let h = `<div class="v4h"><h2>${orientFull(sc, a)} ${sc === "cellular" ? "facade" : "facades"}, ${SCLAB[sc].toLowerCase()}</h2><span class="small">${wi ? "What if: your changes are in blue." : "The recommended design. Pick other choices to see their effect."} A label under a choice shows where it changes the cooling result.</span></div>${cur && cur.t && !cur.t.all ? `<p class="missnote"><b>No design found meets every target here.</b> Shown: the one that comes closest. ${cap(missTxt(cur))}. Change the targets under Reading, or allow more strategies in the inputs.</p>` : ""}${B.mixed ? `<p class="missnote">No single choice of glass, insulation and mass was found that suits every facade of this room type; each facade shows its own best design.</p>` : ""}<div class="fpg">`;
     const DS4 = designSet(sc, a, rec), kNow = FS.keyOf(dz);
     h += `<div class="dsel" role="group" aria-label="Designs to compare at this facade">${DS4.map(([id, lab, r, note]) => { const on = FS.keyOf(r.dz) === kNow, K = carbonOf(r);
       return `<button type="button" data-ds="${id}" aria-pressed="${on}" class="${on ? "on" : ""}${r.t && r.t.all ? "" : " miss"}" title="${cap(note)}"><b>${lab}</b><small>${id === "rec" ? r.D.toFixed(2) : (r.D - rec.D >= 0 ? "+" : "−") + Math.abs(r.D - rec.D).toFixed(2)} score · ${fmt(Math.round(K.tot))} kg</small></button>`; }).join("")}${DS4.some(([, , r]) => FS.keyOf(r.dz) === kNow) ? "" : `<button type="button" class="on wi" aria-pressed="true" disabled><b>Your design</b><small>changed by hand</small></button>`}</div>

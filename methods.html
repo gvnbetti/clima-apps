@@ -54,56 +54,67 @@ thead th { font: 600 11px var(--f-data); text-transform: uppercase; letter-spaci
 <div class="wrap"><nav class="toc" aria-label="Method pages"><b>Methods</b><a href="methods.html" aria-current=page>Overview</a><a href="methods/map.html">Clima Map</a><a href="methods/macro.html">Macro Clima</a><a href="methods/climate.html">Future and urban climate</a><a href="methods/micro.html">Micro Clima</a><a href="methods/room.html">Room Clima</a><a href="methods/room-carbon.html">Room Clima: carbon</a></nav>
 <article><h1>Methods</h1>
 <h2>Background</h2>
-<p>Buildings have always been about protecting people and adapting to climate. Understanding the relation between a
-building and its climate, a city and its climate, anything we build and its climate, should be one of the bases of
-any design. Not the only one, but a fundamental one. It matters even more now: the energy used to heat and cool
-buildings is a major driver of global emissions, and the climate the buildings stand in is changing.</p>
-<p>In practice, climate-adaptive and bioclimatic design are still treated as specialist tasks. They often need
-specialised software and specialised knowledge.</p>
-<p>CBE Clima was born from the idea of making climate data easy to access and easy to read, without specialised tools or
-specialised knowledge: lowering the barrier to entry. Clima Toolbox follows the same ethos, builds on the same
-experience, and goes a step further.</p>
-<p>Clima Map and Macro Clima rebuild and extend what CBE Clima does: easy access to weather files and an easy reading of
-them. Three things are part of them from the start:
-- <strong>Future climate.</strong> Every weather file can be read at +1.5, +2 and +3 °C of global warming.
-- <strong>Comparison.</strong> Every reading is set against other climates.
-- <strong>The city.</strong> Weather files are usually recorded at airports or in open country, while many of the buildings we
-  design stand in cities. Urban modifiers bring the reading closer to the place being designed.</p>
-<p>Micro Clima and Room Clima act as recommendation systems. They run through thousands of what-if scenarios and suggest
-which combinations of a few parameters, the ones that matter in most projects, create a more comfortable outdoor or
-indoor climate.</p>
-<p>Making something easy to access does not mean making it simpler than it needs to be. A lot of mathematics runs
-underneath these apps, and we try to be as transparent about it as we can: that is the role of the methods and
-validation pages. Some assumptions are self-evident; others an expert user may want to challenge. All the tools are
-free to use and free to inspect, in the hope that others will help make them better.</p>
-<h2>The four apps</h2>
-<ol>
-<li><strong>Clima Map</strong> finds the right weather file for a site.</li>
-<li><strong>Macro Clima</strong> reads the climate: comfort, sun, wind, sky, rain, and the strategies that suit it, today, under
-   future warming and in a city.</li>
-<li><strong>Micro Clima</strong> tests design moves for an outdoor space: shade, ground, wind shelter, enclosure.</li>
-<li><strong>Room Clima</strong> tests a room and its facade: window, glazing, shading, mass, ventilation, and the energy, comfort,
-   daylight and carbon that follow.</li>
-</ol>
-<h2>Principles</h2>
+<p>Buildings have always been about protecting people and adapting to climate. Understanding the relationship between a
+building and its climate, a city and its climate, and ultimately anything we build and the climate it stands in,
+should be one of the foundations of design. Not the only one, but a fundamental one. It matters even more now: the
+energy used to heat and cool buildings is a major driver of global emissions, while the climate in which buildings
+stand is changing.</p>
+<p>In practice, climate-adaptive and bioclimatic design are still often treated as specialist tasks, requiring
+specialised software and knowledge.</p>
+<p>CBE Clima was born from the idea that climate data should be easy to access and easy to understand, without
+specialised tools or expertise. The aim was to lower the barrier to entry. Clima Toolbox follows the same ethos,
+builds on that experience, and takes it a step further.</p>
+<p>Clima Map and Macro Clima extend what CBE Clima set out to do: make weather files accessible and climate data easy to
+read. Three things are built into them from the start:</p>
 <ul>
-<li><strong>Concept stage.</strong> Inputs are the ones known early: a place, a type of space, a few dimensions, a list of options.
-  Where a detail is not known, the apps use a stated typical value rather than ask for it.</li>
-<li><strong>Comparisons, not predictions.</strong> The apps rank design options on the same climate and the same assumptions.
-  Differences between options are more reliable than any single absolute number, and the apps are written to be
-  read that way.</li>
-<li><strong>Fixed targets.</strong> Scores are measured against fixed limits taken from standards (comfort bands, overheating
-  limits, daylight levels), never against the best option of the run. A design that misses a target is shown as
-  missing it, however good the alternatives.</li>
-<li><strong>Every assumption visible.</strong> Each constant has a unit, a status (standard, secondary source, decision, assumption)
-  and a source. Room Clima keeps them in one register; Macro and Micro Clima list them in their guides. Where a value
-  is a placeholder, it is called one.</li>
-<li><strong>Established models, checked.</strong> The apps use published models (EN ISO 52016-1, Perez, UTCI, Theeuwes, IPCC AR6
-  Atlas, Radiance's sky model) and are checked against the tools the field relies on: EnergyPlus, Radiance, pvlib,
-  pythermalcomfort, Ladybug. The checks compare models with models; see <a href="https://github.com/gvnbetti/clima-toolbox/tree/main/validation">validation</a>.</li>
-<li><strong>In the browser.</strong> Nothing is installed and weather files stay on the user's computer. Every calculation runs in
-  the page, which also keeps the models small enough to read.</li>
+<li><strong>Future climate.</strong> Every weather file can be explored under +1.5, +2 and +3 °C of global warming.</li>
+<li><strong>Comparison.</strong> Every climate reading can be understood in relation to other climates.</li>
+<li><strong>The city.</strong> Weather files are usually recorded at airports or in open country, while many of the buildings we
+  design stand in cities. Urban modifiers bring the climate data closer to the actual conditions of the place being
+  designed.</li>
 </ul>
+<p>Micro Clima and Room Clima take this a step further. They work as design recommendation systems, running thousands of
+what-if scenarios to identify which combinations of a few key parameters can create more comfortable outdoor and
+indoor environments.</p>
+<p>Making something easy to access does not mean making it simpler than it needs to be. A considerable amount of
+mathematics runs underneath these apps, and we try to be as transparent about it as possible. That is the purpose of
+the methods and validation pages. Some assumptions are self-evident; others are there for expert users to question and
+challenge. All the tools are free to use and free to inspect, in the hope that others will help us make them better.</p>
+<h2>The four apps</h2>
+<p><strong>Clima Map</strong> finds the most appropriate weather file for a given location.</p>
+<p><strong>Macro Clima</strong> helps understand the climate: comfort, sun, wind, sky and rain, and the design strategies that respond
+to them. It explores present conditions, future warming and the influence of the city.</p>
+<p><strong>Micro Clima</strong> explores how design choices shape the outdoor environment, testing the effects of shade, ground
+materials, wind protection and enclosure.</p>
+<p><strong>Room Clima</strong> explores the relationship between a room and its facade, testing windows, glazing, shading, thermal mass
+and ventilation, and their effects on energy use, comfort, daylight and carbon.</p>
+<h2>Principles</h2>
+<h3>Designed for the early stages</h3>
+<p>The apps focus on the information available at the beginning of a project: a location, a type of space, a few
+dimensions and a set of design options. When details are not yet known, they use clearly stated typical values rather
+than requiring information that may not exist yet.</p>
+<h3>Explore alternatives, not predict outcomes</h3>
+<p>The apps compare design options under the same climate conditions and assumptions. The differences between
+alternatives are generally more reliable than any single absolute result. The tools are designed primarily to help
+understand these differences and support informed design decisions.</p>
+<h3>Performance against fixed targets</h3>
+<p>Results are measured against fixed thresholds drawn from established standards and guidance, such as comfort ranges,
+overheating limits and daylight requirements. They are never measured against the best-performing option in a
+particular run. If a design does not meet a target, it is shown as such, regardless of how it compares with the
+alternatives.</p>
+<h3>Open about assumptions</h3>
+<p>Every assumption is documented, with its unit, source and status: standard, secondary source, design decision or
+assumption. Room Clima brings these into a single register, while Macro Clima and Micro Clima document them in their
+respective guides. Placeholder values are explicitly identified.</p>
+<h3>Established models, independently checked</h3>
+<p>The apps build on published scientific models and methods, including EN ISO 52016-1, Perez, UTCI, Theeuwes, the IPCC
+AR6 Atlas and Radiance's sky model. Their results are checked against established simulation tools used in the field,
+including EnergyPlus, Radiance, pvlib, pythermalcomfort and Ladybug. These comparisons are model-to-model validations,
+rather than comparisons with measured building performance. See <a href="validation.html">Validation</a> for details.</p>
+<h3>Everything runs in the browser</h3>
+<p>There is nothing to install, and weather files remain on the user's computer. All calculations run directly in the
+browser. The underlying models are kept compact and transparent, so that their assumptions and methods can be
+inspected.</p>
 <h2>Method pages</h2>
 <div class="tw"><table>
 <thead>

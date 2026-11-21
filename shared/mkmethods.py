@@ -54,6 +54,7 @@ def links(h, out):
                 p = (SRC / base).resolve().relative_to(ROOT); href = f'{GH}/{"tree" if base.endswith("/") or (ROOT / p).is_dir() else "blob"}/main/{p.as_posix()}'
         return f'href="{href}"'
     h = re.sub(r'href="([^"]+)"', fix, h)
+    h = h.replace(f'href="{GH}/tree/main/validation">Validation<', f'href="{up}validation.html">Validation<')
     def code(m):  # repository paths written as code become links
         t = m.group(1); p = t.split(' ')[0]
         if re.match(r'^(validation|room|macro|micro|map|shared|docs)/[\w./-]*$', p) and (ROOT / p).exists():

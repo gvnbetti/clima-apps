@@ -20,10 +20,11 @@ APPS = [('map', 'Clima Map', 'map/index.html', 'Find a weather file'), ('macro',
 svg = lambda k, s: f'<svg width="{s}" height="{s}" viewBox="0 0 64 64" aria-hidden="true">{GLYPH[k]}</svg>'
 
 CSS = '''<style>
+:root{color-scheme:light}
 .csb{--csb-bg:#fbfbf9;--csb-ink:#18201f;--csb-mute:#5b6663;--csb-line:#d6dad5;--csb-on:#e6e9e4;display:flex;align-items:center;gap:4px 18px;flex-wrap:wrap;
  padding:6px max(16px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px));background:var(--csb-bg);color:var(--csb-ink);border-bottom:1px solid var(--csb-line);
  font:500 13px/1.2 "IBM Plex Sans",system-ui,-apple-system,sans-serif;position:relative;z-index:50}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .csb{--csb-bg:#1a201f;--csb-ink:#e7ebe8;--csb-mute:#9aa5a1;--csb-line:#2f3836;--csb-on:#232b29}}
+
 .csb a{color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:7px;border-radius:5px}
 .csb svg{flex:none;display:block}
 .csb-home{font-size:15px;padding:3px 4px}.csb-home b{font-weight:600}.csb-home span{font-weight:300}

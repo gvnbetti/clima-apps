@@ -16,7 +16,7 @@ SITE = {md: out for md, out, _ in PAGES}
 CSS = '''<style>
 :root { --bg: #f1f2ef; --panel: #fbfbf9; --ink: #18201f; --mute: #5b6663; --line: #d6dad5; --accent: #23614f;
   --f-body: "IBM Plex Sans", system-ui, sans-serif; --f-data: "IBM Plex Mono", ui-monospace, monospace }
-@media (prefers-color-scheme: dark) { :root { --bg: #131817; --panel: #1a201f; --ink: #e7ebe8; --mute: #9aa5a1; --line: #2f3836; --accent: #6cc0a3; color-scheme: dark } }
+
 * { box-sizing: border-box }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 var(--f-body) }
 .wrap { max-width: 1080px; margin: 0 auto; padding: 48px max(20px, env(safe-area-inset-left, 0px)) 64px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 48px }

@@ -413,6 +413,8 @@ self.onmessage=(e)=>{const m=e.data;
   // ------------------------------------------------------------ words
   const AZN = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const orientLabel = (sc, a) => sc === "cellular" ? AZN[a] : AZN[a] + " + " + AZN[(a + 2) % 8];
+  const AZF = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
+  const orientFull = (sc, a) => cap1(sc === "cellular" ? AZF[a] : AZF[a] + " and " + AZF[(a + 2) % 8]);
   const MASSW = { light: "light construction", medium: "medium mass (masonry outer walls, suspended ceiling)", heavy: "heavy mass (exposed slab, lightweight partitions)", vheavy: "very heavy mass (exposed slab, masonry partitions)" };
   const MASSN = { light: "Light", medium: "Medium", heavy: "Heavy", vheavy: "Very heavy" };
   const FIXW = { none: "no added shading", oh05: "overhang 0.5 m", oh10: "overhang 1.0 m", fin05: "side fins 0.5 m", box05: "frame 0.5 m" };
@@ -1077,14 +1079,16 @@ self.onmessage=(e)=>{const m=e.data;
   const PUNIT = { D: "of 100", S: "of 100", C: "K·h/a", E: UE, din: "K·h/a", hum: "hours" };
   const SQRT = { C: 1, din: 1, hum: 1 };
   const BETTER = { D: "up", S: "up", C: "down", E: "down", din: "down", hum: "down" };
+  const PCNAME = { D: "Score", S: "Daylight", C: "Overheating", E: "Energy", din: "DIN 4108-2", hum: "Humid hours" }; // short axis titles
   function axes() {
     const cat = MEASURES(st.scen);
-    return cat.map((k) => ({ k, cat: true, levels: LVa(k) })).concat(["D", "S", "C", "E", "din", "hum"].map((k) => ({ k, cat: false })));
+    // a measure with a single level (not tested in this run) gets no axis
+    return cat.filter((k) => LVa(k).length > 1).map((k) => ({ k, cat: true, levels: LVa(k) })).concat(["D", "S", "C", "E", "din", "hum"].map((k) => ({ k, cat: false })));
   }
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   let PX = null;
   function renderExplorer() {
-    const fa = facade(st.scen, st.fa), cv = $("pc"), box = cv.parentElement, nAx = axes().length, Wd = Math.max(box.clientWidth - 2, 30 + 40 + 92 * (nAx - 1)), Hd = 340, dpr = window.devicePixelRatio || 1;
+    const fa = facade(st.scen, st.fa), cv = $("pc"), box = cv.parentElement, nAx = axes().length, Wd = Math.max(box.clientWidth - 10, 40 + 40 + 52 * (nAx - 1)), Hd = 340, dpr = window.devicePixelRatio || 1;
     if (cv.width !== Math.round(Wd * dpr) || cv.height !== Math.round(Hd * dpr)) { cv.width = Math.round(Wd * dpr); cv.height = Math.round(Hd * dpr); cv.style.width = Wd + "px"; cv.style.height = Hd + "px"; }
     const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, Wd, Hd);
     $("pctitle").textContent = `All options at this facade (${SCLAB[st.scen].toLowerCase()}, ${orientLabel(st.scen, st.fa)})`;
@@ -1109,12 +1113,14 @@ self.onmessage=(e)=>{const m=e.data;
     g.globalAlpha = 1; g.textBaseline = "middle";
     AX.forEach((ax, i) => {
       const x = xs[i]; g.strokeStyle = line; g.lineWidth = 1; g.beginPath(); g.moveTo(x, T); g.lineTo(x, T + H); g.stroke();
-      g.fillStyle = ax.cat ? ink : acc; g.textAlign = "center"; g.font = "600 11px " + cssVar("--f-body"); const words = PNAME[ax.k].split(" ");
-      if (words.length > 1) { g.fillText(words[0], x, 8); g.fillText(words.slice(1).join(" "), x, 20); } else g.fillText(PNAME[ax.k], x, 14);
-      g.font = "12px " + cssVar("--f-data"); g.fillStyle = mute; g.fillText(ax.cat ? "" : (BETTER[ax.k] === "up" ? "↑ " : "↓ ") + (ax.k === "S" ? (st.dlm === "EN" ? "rating, 0 to 100" : "%") : PUNIT[ax.k]), x, 33);
+      g.fillStyle = ax.cat ? ink : acc; g.textAlign = "center"; g.font = "600 10.5px " + cssVar("--f-body"); const nm = PCNAME[ax.k] || PNAME[ax.k], words = nm.split(" ");
+      if (words.length > 1) { g.fillText(words[0], x, 8); g.fillText(words.slice(1).join(" "), x, 20); } else g.fillText(nm, x, 14);
+      g.font = "10px " + cssVar("--f-data"); g.fillStyle = mute; g.fillText(ax.cat ? "" : (BETTER[ax.k] === "up" ? "↑ " : "↓ ") + (ax.k === "S" ? (st.dlm === "EN" ? "rating, 0 to 100" : "%") : PUNIT[ax.k]), x, 33);
       if (ax.cat) { const ex = st.excl[ax.k] || new Set();
+        g.font = "10.5px " + cssVar("--f-body");
         ax.levels.forEach((lv) => { const y = yOf(ax, lv), off = ex.has(lv), t = levelLabel(ax.k, lv), w = g.measureText(t).width;
-          g.globalAlpha = off ? 0.45 : 1; g.textAlign = "center"; g.lineJoin = "round"; g.lineWidth = 4; g.strokeStyle = cssVar("--panel"); g.strokeText(t, x, y); g.fillStyle = off ? mute : ink; g.fillText(t, x, y);
+          g.globalAlpha = 1; g.fillStyle = cssVar("--panel"); g.fillRect(x - w / 2 - 3, y - 7, w + 6, 14); g.strokeStyle = line; g.lineWidth = 1; g.strokeRect(x - w / 2 - 3, y - 7, w + 6, 14);
+          g.globalAlpha = off ? 0.45 : 1; g.textAlign = "center"; g.fillStyle = off ? mute : ink; g.fillText(t, x, y);
           if (off) { g.strokeStyle = mute; g.beginPath(); g.moveTo(x - w / 2, y); g.lineTo(x + w / 2, y); g.stroke(); } g.globalAlpha = 1; });
       } else {
         g.fillStyle = mute; g.textAlign = "right"; g.font = "9.5px " + cssVar("--f-data");
@@ -2004,7 +2010,11 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     if (!B) { $("v4tiles").innerHTML = ""; $("v4glance").innerHTML = `<p class="wait">${st.running || st.topping ? "The design appears when the facades of this room type have been searched." : "No combination of the facades scores above 0. Check the required daylight minimum and the comfort limit under Reading."}</p>`; $("v4dec").innerHTML = ""; $("v4fac").innerHTML = ""; $("v5verd").innerHTML = ""; $("v5cool").innerHTML = ""; $("coolsum").innerHTML = ""; return; }
     if (!A.includes(st.fa)) st.fa = A[0];
     $("v4tiles").innerHTML = tilesHtml(sc, B); $("v5verd").innerHTML = verdictHtml(sc, B);
-    $("v5cool").innerHTML = coolHtml(sc, B); $("coolsum").innerHTML = coolSum(sc, B); bindCool();
+    { // cooling refers to the design shown in the facade panel (recommended, a package or changed by hand)
+      const fa = st.fa, rec = B.best.per[fa], wi = st.wi && st.wi.sc === sc && st.wi.a === fa ? st.wi : null, cur = (wi && wiRow(sc, fa, wi.dz)) || rec;
+      const Bc = Object.assign({}, B, { A: [fa], best: Object.assign({}, B.best, { per: Object.assign({}, B.best.per, { [fa]: cur }) }) });
+      $("coolh").textContent = `Does this room need cooling? ${orientFull(sc, fa)}, ${wi ? "the design shown above" : "the recommended design"}`;
+      $("v5cool").innerHTML = coolHtml(sc, Bc); $("coolsum").innerHTML = coolSum(sc, Bc); bindCool(); }
     $("v4glance").innerHTML = glanceHtml(sc, B); document.querySelectorAll("#v4glance .fcard").forEach((b) => b.onclick = () => { st.fa = +b.dataset.a; st.wi = null; st.sel = null; renderAll(); });
     $("v4dec").innerHTML = decisionsHtml(sc, B); document.querySelectorAll("#v4dec .why").forEach((b) => b.onclick = () => { st.why = st.why === b.dataset.k ? null : b.dataset.k; renderV4(); });
     $("v4fac").innerHTML = facPanelHtml(sc, B); bindFacPanel(sc, B);
@@ -2104,7 +2114,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const keep = items.filter((it) => it.same && !it.small && !core.covered.has(it.p)).sort((x, y) => y.maxSev - x.maxSev);
     const adapt = items.filter((it) => !it.same && !it.small && !core.covered.has(it.p));
     const yours = items.filter((it) => it.small && !core.covered.has(it.p));
-    let h = `<div class="v4h"><h2>Decisions</h2><span class="small">For the priorities chosen above. Green outline: the stronger the green, the more priority settings keep this choice best.</span></div>`;
+    let h = `<div class="v4h"><h2>Recommendations</h2><span class="small">For the priorities chosen above, across all facades of this room type. Green outline: the stronger the green, the more priority settings keep this choice best.</span></div>`;
     if (B.global) { const d = SH4.filter((q) => B.own && B.own.shared[q] !== B.best.shared[q]);
       h += `<p class="small">Glass, insulation and mass are chosen once for the whole building, over every room type tested.${d.length ? ` On its own the ${SCLAB[sc].toLowerCase()} would take ${listJoin(d.map((q) => lvWord(q, B.own.shared[q])))} (mean score ${pts(B.own.mean)} against ${pts(B.best.mean)}).` : ""}</p>`; }
     h += `<h3 class="v4k">Keep at every facade</h3><div class="dgrid">${keep.map((it) => card(it, (it.p === "wwr" ? winRangeTxt(sc, B) : it.p === "mass" ? massDep(sc, B) : ventTxt(it, B.best.per[B.A[0]].dz)) + edgeTxt(it.p, it.chosen))).join("")}${core.pairs.map((pr) => `<article class="dcard" style="border-color:${GREEN(7)};border-width:3px"><div class="dch"><div><span class="small">${cap(pr.x.label)}</span><b>At least one of the two</b></div></div><p>Without either: ${deltaTxt(pr.worst)}${at(pr.worst)}. The two stand in for each other here, so the choice between them is free.</p></article>`).join("")}</div>`;
@@ -2158,7 +2168,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const F = st.fac[sc][a], vNow = cur ? coolVerdict(cur, sc, a).v : null;
     const flipTag = (p, v) => { if (!vNow || vNow === "wait" || v === dz[p] || !F) return ""; const x = F.byKey.get(FS.keyOf(Object.assign({}, dz, { [p]: v }))); if (!x) return "";
       const v2 = coolVerdict({ dz: x.dz, r: x.r }, sc, a).v; if (v2 === "wait" || v2 === vNow) return ""; return `<span class="flip${RANKV[v2] < RANKV[vNow] ? " gd" : ""}">${VSHORT[v2]}</span>`; };
-    let h = `<div class="v4h"><h2>${orientLabel(sc, a)} ${sc === "cellular" ? "facade" : "facades"}, ${SCLAB[sc].toLowerCase()}</h2><span class="small">${wi ? "What if: your changes are in blue." : "The recommended design. Pick other choices to see their effect."} A label under a choice shows where it changes the cooling result.</span></div><div class="fpg">`;
+    let h = `<div class="v4h"><h2>${orientFull(sc, a)} ${sc === "cellular" ? "facade" : "facades"}, ${SCLAB[sc].toLowerCase()}</h2><span class="small">${wi ? "What if: your changes are in blue." : "The recommended design. Pick other choices to see their effect."} A label under a choice shows where it changes the cooling result.</span></div><div class="fpg">`;
     const DS4 = designSet(sc, a, rec), kNow = FS.keyOf(dz);
     h += `<div class="dsel" role="group" aria-label="Designs to compare at this facade">${DS4.map(([id, lab, r, note]) => { const on = FS.keyOf(r.dz) === kNow, K = carbonOf(r);
       return `<button type="button" data-ds="${id}" aria-pressed="${on}" class="${on ? "on" : ""}${r.t && r.t.all ? "" : " miss"}" title="${cap(note)}"><b>${lab}</b><small>${id === "rec" ? r.D.toFixed(2) : (r.D - rec.D >= 0 ? "+" : "−") + Math.abs(r.D - rec.D).toFixed(2)} score · ${fmt(Math.round(K.tot))} kg</small></button>`; }).join("")}${DS4.some(([, , r]) => FS.keyOf(r.dz) === kNow) ? "" : `<button type="button" class="on wi" aria-pressed="true" disabled><b>Your design</b><small>changed by hand</small></button>`}</div>
@@ -2191,7 +2201,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     }
     if (wi) h += `<button type="button" class="ghost" id="wireset">Back to the recommended design</button>`;
     h += `</div></div>`;
-    h += packagesHtml(sc, a, rec);
+    h += `<details class="pkgs" id="pkgdet"${st.pkgOpen ? " open" : ""}><summary>Other packages at this facade</summary>${packagesHtml(sc, a, rec).replace(/^<h3 class="v4k">Other packages at this facade<\/h3>/, "")}</details>`;
     // comparison with the picks
     const base = cur || rec, PD = presetDesigns(sc), names = { balanced: "Balanced", daylight: "Daylight first", comfort: "Comfort first", energy: "Energy first" };
     const cell = (v, ref, d, goodUp, txt) => { if (!ref) return `<td>${v}</td>`; const dv = d, none = Math.abs(dv) < (txt === "dl" ? 1 : txt === "C" ? 1 : 0.1); return `<td>${v} <small style="color:${none ? "var(--mute)" : (dv > 0) === goodUp ? "var(--cool)" : "var(--warm)"}">${none ? "" : txt === "dl" ? dlDelta(dv) : (dv > 0 ? "+" : "−") + fmt(txt === "C" ? Math.round(Math.abs(dv)) : Math.abs(dv))}</small></td>`; };
@@ -2202,6 +2212,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   }
   function bindFacPanel(sc, B) {
     const a = st.fa, rec = B.best.per[a]; if (!rec) return;
+    const pk = $("pkgdet"); if (pk) pk.ontoggle = () => { st.pkgOpen = pk.open; };
     document.querySelectorAll("#v4fac .swo button").forEach((b) => b.onclick = () => {
       const p = b.dataset.p, v = b.dataset.v.startsWith("n") ? +b.dataset.v.slice(1) : b.dataset.v;
       const dz = Object.assign({}, st.wi && st.wi.sc === sc && st.wi.a === a ? st.wi.dz : rec.dz, { [p]: v });
@@ -2325,7 +2336,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     const A = B.A, rows = A.map((a) => B.best.per[a]), V = rows.map((r, i) => coolVerdict(r, sc, A[i])), cap = st.ceilCap, lim = dinLim(), ref = C.DIN_REF[st.region], nOcc = nOccNow();
     const m = MODELS[st.model], mlab = m.label + (m.cats.length ? ", " + m.catLabel(st.cat[st.model]).replace(/^Category/, "category") : "");
     const fa = A.includes(st.fa) ? st.fa : A[0], vi = V[A.indexOf(fa)], g = st.gainRun, gd = DIN_GAIN[st.use], recFa = B.best.per[fa];
-    let h = `<p class="small">The recommended design at each facade, with internal gains of ${fmt(Math.round(g * 10) / 10)} W/m² in occupied hours.</p>`;
+    let h = `<p class="small">The design shown above, with internal gains of ${fmt(Math.round(g * 10) / 10)} W/m² in occupied hours.</p>`;
     h += `<ul class="cvlist">${A.map((a, i) => `<li><b class="fl">${orientLabel(sc, a)}</b><span><span class="cvd ${V[i].v}">${VSHORT[V[i].v]}</span> ${coolSentence(V[i])}</span></li>`).join("")}</ul>`;
     h += `<p class="small"><label>Allowed time above the band <input id="maxout" type="number" min="0" max="50" step="0.5" value="${st.maxOut}" style="width:64px"> % of occupied hours</label> · <label>Chilled ceiling <input id="ceilcap" type="number" min="10" max="200" step="5" value="${cap}" style="width:64px"> W/m² floor at 10 K</label></p>`;
     h += `<details class="figs" id="coolfigs"${st.coolFigs ? " open" : ""}><summary>Show the figures</summary><div class="tw"><table class="coolt"><thead><tr><th>Facade</th><th>DIN 4108-2, K·h/a above ${ref} °C (limit ${fmt(lim)})</th><th>Time above the band (limit ${fmt(st.maxOut)}%)</th><th>Peak cooling load, W/m² (of which fresh air)</th><th>Ceiling needed at 10 K, W/m² (dry-weather peak)</th><th>Hours a ceiling alone falls short</th><th>Humid hours, above 12 g/kg</th></tr></thead><tbody>${A.map((a, i) => { const x = V[i];

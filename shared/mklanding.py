@@ -145,8 +145,7 @@ page = f'''<!DOCTYPE html>
 <style>
 :root {{ --bg: #f1f2ef; --panel: #fbfbf9; --ink: {INK}; --mute: {MUTE}; --line: {LINE}; --soft: {SOFT}; --accent: {ACC}; --sun: {SUN};
   --f-disp: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif; --f-body: "IBM Plex Sans", system-ui, sans-serif; --f-data: "IBM Plex Mono", ui-monospace, monospace }}
-@media (prefers-color-scheme: dark) {{ :root {{ --bg: #131817; --panel: #1a201f; --ink: #e7ebe8; --mute: #9aa5a1; --line: #2f3836; --soft: #232b29; --accent: #6cc0a3; color-scheme: dark }}
-  .pv {{ background: #f6f6f3; }} }}
+
 * {{ box-sizing: border-box }}
 body {{ margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--f-body) }}
 .wrap {{ max-width: 1180px; margin: 0 auto; padding: 0 max(20px, env(safe-area-inset-left, 0px)) }}
@@ -177,7 +176,7 @@ body {{ margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(
 .body ul {{ margin: 0 0 18px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px }}
 .body li {{ font-size: 13px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; color: var(--mute) }}
 .go {{ margin-top: auto; align-self: flex-start; color: #fff; background: var(--accent); text-decoration: none; font-weight: 500; padding: 9px 16px; border-radius: 6px }}
-@media (prefers-color-scheme: dark) {{ .go {{ color: #10201b }} }}
+
 .go:hover {{ filter: brightness(1.1) }}
 .facts {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; padding: 64px 0 24px; border-bottom: 1px solid var(--line) }}
 @media (max-width: 860px) {{ .facts {{ grid-template-columns: 1fr }} }}

@@ -15,10 +15,7 @@
   --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #6250d6;
   --f-disp: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif; --f-body: "IBM Plex Sans", system-ui, sans-serif; --f-data: "IBM Plex Mono", ui-monospace, monospace;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #131817; --panel: #1a201f; --ink: #e7ebe8; --mute: #9aa5a1; --line: #2f3836; --soft: #232b29;
-  --accent: #6cc0a3; --accent-soft: #1f3a32; --warm: #e5856b; --warm-soft: #3d2620; --cool: #7fb0dc; --out: #6f7a77; --grey: #3a4442;
-  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #9085e9; color-scheme: dark } }
+
 * { box-sizing: border-box }
 [hidden] { display: none !important }
 html { scroll-padding-top: 56px }
@@ -145,10 +142,11 @@ table.t td.r, table.t th.r { text-align: right; font-family: var(--f-data) }
 </style>
 </head>
 <body><!-- clima-studio-bar --><style>
+:root{color-scheme:light}
 .csb{--csb-bg:#fbfbf9;--csb-ink:#18201f;--csb-mute:#5b6663;--csb-line:#d6dad5;--csb-on:#e6e9e4;display:flex;align-items:center;gap:4px 18px;flex-wrap:wrap;
  padding:6px max(16px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px));background:var(--csb-bg);color:var(--csb-ink);border-bottom:1px solid var(--csb-line);
  font:500 13px/1.2 "IBM Plex Sans",system-ui,-apple-system,sans-serif;position:relative;z-index:50}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .csb{--csb-bg:#1a201f;--csb-ink:#e7ebe8;--csb-mute:#9aa5a1;--csb-line:#2f3836;--csb-on:#232b29}}
+
 .csb a{color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:7px;border-radius:5px}
 .csb svg{flex:none;display:block}
 .csb-home{font-size:15px;padding:3px 4px}.csb-home b{font-weight:600}.csb-home span{font-weight:300}
@@ -218,9 +216,6 @@ table.t td.r, table.t th.r { text-align: right; font-family: var(--f-data) }
         <div class="lab">Claude Inspection</div>
         <button class="btn" id="inspect">Ask Claude to critique the readings</button>
         <div class="hint" id="insphint">Claude reads the written readings and the numbers behind them and points out unclear sentences or patterns the rules missed. It does not write the readings.</div>
-      </div>
-      <div class="grp">
-        <div class="seg" id="themeSeg"><button data-v="auto" aria-pressed="true">Auto</button><button data-v="light" aria-pressed="false">Light</button><button data-v="dark" aria-pressed="false">Dark</button></div>
       </div>
     </aside>
     <main id="main"><div class="loading">Loading the weather file</div></main>

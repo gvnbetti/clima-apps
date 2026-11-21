@@ -5,9 +5,11 @@ body.rc-running #runp { display: block !important }
 #results:not([hidden]) { display: flex; flex-direction: column }
 #results > * { order: 50 }
 #results > #modband { order: 1 } #results > #v4prio { order: 2 } #results > #finedet { order: 3 } #results > #ttabs { order: 4 }
-#results > #v5verd { order: 5 } #results > #v4tiles { order: 6 } #results > #v4dec { order: 7 } #results > #v4glance { order: 8 }
-#results > #facbox { order: 9 } #results > #notes { order: 10 } #results > #cooldet { order: 11 } #results > #aibox { order: 12 }
-#results > #runp { order: 13 } #results > .evh { order: 20 } #results > #evpc { order: 21 } #results > .ev { order: 22 }
+#results > #v4glance { order: 5 } #results > #facbox { order: 6 } #results > #cooldet { order: 7 } #results > #v4dec { order: 8 }
+#results > #verddet { order: 10 } #results > #notedet { order: 11 } #results > #aibox { order: 12 } #results > #runp { order: 13 }
+#results > .evh { order: 20 } #results > #evpc { order: 21 } #results > .ev { order: 22 }
+main { display: flex; flex-direction: column } main > #settings { order: 30 } main > #results { order: 10 } main > #empty { order: 5 }
+details.pkgs { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 10px } details.pkgs > summary { cursor: pointer; font: 600 12px var(--f-data); text-transform: uppercase; letter-spacing: .06em; color: var(--mute) }
 .g4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px }
 .g4 .fcard { gap: 3px; padding: 8px 10px; border-width: 1.5px }
 .g4 .fch b { font-size: 15px } .g4 .c3wrap svg { max-height: 92px }
@@ -15,10 +17,11 @@ body.rc-running #runp { display: block !important }
 .g4 .dinl { font-size: 11px; color: var(--mute); margin: 0 } .g4 .dinl.bad { color: var(--warm) }
 .g4 .fm b { font-size: 13px }
 </style></head><body><!-- clima-studio-bar --><style>
+:root{color-scheme:light}
 .csb{--csb-bg:#fbfbf9;--csb-ink:#18201f;--csb-mute:#5b6663;--csb-line:#d6dad5;--csb-on:#e6e9e4;display:flex;align-items:center;gap:4px 18px;flex-wrap:wrap;
  padding:6px max(16px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px));background:var(--csb-bg);color:var(--csb-ink);border-bottom:1px solid var(--csb-line);
  font:500 13px/1.2 "IBM Plex Sans",system-ui,-apple-system,sans-serif;position:relative;z-index:50}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .csb{--csb-bg:#1a201f;--csb-ink:#e7ebe8;--csb-mute:#9aa5a1;--csb-line:#2f3836;--csb-on:#232b29}}
+
 .csb a{color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:7px;border-radius:5px}
 .csb svg{flex:none;display:block}
 .csb-home{font-size:15px;padding:3px 4px}.csb-home b{font-weight:600}.csb-home span{font-weight:300}
@@ -43,12 +46,8 @@ body.rc-running #runp { display: block !important }
   --accent: #23614f; --accent-soft: #d5e6df; --warm: #b2452c; --warm-soft: #f3dcd4; --ok: #2f6b3c; --band: rgba(35,97,79,.14); --cool: #3f6f9a; --sun: #a87613; --out: #8b9592; --sea: #dfe6e6; --landfill: #f7f7f3; --border: #c3cac6; --dot: rgba(35,97,79,.55);
   --f-disp: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif; --f-body: "IBM Plex Sans", system-ui, sans-serif; --f-data: "IBM Plex Mono", ui-monospace, monospace;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #131817; --panel: #1a201f; --ink: #e7ebe8; --mute: #9aa5a1; --line: #2f3836; --soft: #232b29;
-  --accent: #6cc0a3; --accent-soft: #1f3a32; --warm: #e5856b; --warm-soft: #3d2620; --ok: #82c68f; --band: rgba(108,192,163,.16); --cool: #7fb0dc; --sun: #e0b04f; --out: #6f7a77; --sea: #0e1413; --landfill: #222a28; --border: #3a4542; --dot: rgba(108,192,163,.6); color-scheme: dark } }
-:root[data-theme="dark"] {
-  --bg: #131817; --panel: #1a201f; --ink: #e7ebe8; --mute: #9aa5a1; --line: #2f3836; --soft: #232b29;
-  --accent: #6cc0a3; --accent-soft: #1f3a32; --warm: #e5856b; --warm-soft: #3d2620; --ok: #82c68f; --band: rgba(108,192,163,.16); --cool: #7fb0dc; --sun: #e0b04f; --out: #6f7a77; --sea: #0e1413; --landfill: #222a28; --border: #3a4542; --dot: rgba(108,192,163,.6); color-scheme: dark }
+
+
 * { box-sizing: border-box }
 body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--f-body); }
 .wrap { max-width: 1320px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -429,7 +428,7 @@ details.ev.in { margin-top: 14px }
       <div id="results" hidden>
       <div class="modband" id="modband" hidden></div>
       <div class="ttabs" id="ttabs" role="group" aria-label="Room type"></div>
-      <div id="notes"></div>
+      <details class="v4s v4card ev" id="notedet"><summary>Notes on this run <span class="small">weather file, location and model</span></summary><div id="notes"></div></details>
       <section class="aibox" id="aibox" hidden><h2>Critical review by Claude</h2>
         <p class="sub">Claude reads the full results of this run, looks for likely errors and weak points, and writes a critical summary. Then you can ask it questions; it can look up the options already evaluated and simulate a specific design. It uses only the numbers computed here, and its text is marked.</p>
         <div class="aiconn"><span class="small" id="aiconnnote"></span>
@@ -444,11 +443,12 @@ details.ev.in { margin-top: 14px }
       <details class="fine" id="finedet"><summary>Fine-tune the priorities</summary><div class="fgrid1"><div id="tri"></div><div><p class="small" id="wtxt"></p><button id="weq" type="button" class="link">Equal weights</button>
         <p class="small">Click a small triangle: the closer to a corner, the more that result counts. The same triangle always gives the same weights.</p></div></div></details>
       <section class="v4card runp" id="runp" hidden aria-live="polite"></section>
-      <section class="v4s v4card" id="v5verd"></section>
-      <section class="v4tiles" id="v4tiles"></section>
+      <details class="v4s v4card ev" id="verddet"><summary>All rooms compared <span class="small">verdict per facade, summary figures, other conditions, carbon</span></summary>
+      <section class="v4s" id="v5verd"></section>
+      <section class="v4tiles" id="v4tiles"></section></details>
       <section class="v4s" id="v4dec"></section>
       <section class="v4s v4card" id="v4glance"></section>
-      <details class="v4s v4card coold" id="cooldet"><summary><span class="cdh"><span class="h2l">Do these rooms need cooling?</span><span class="coolsum" id="coolsum"></span></span></summary><div id="v5cool"></div></details>
+      <details class="v4s v4card coold" id="cooldet"><summary><span class="cdh"><span class="h2l" id="coolh">Does this room need cooling?</span><span class="coolsum" id="coolsum"></span></span></summary><div id="v5cool"></div></details>
       <section class="v4s v4card" id="facbox">
         <div id="v4fac"></div>
         <details class="ev in" id="evdet"><summary>How the room behaves through the year <span class="small">comfort diagram, hottest week, every hour, comfort under every standard, daylight readings</span></summary>

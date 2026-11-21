@@ -17,7 +17,7 @@
     .map(([k, n, p]) => `<a href="${BASE + p}" target="_blank" rel="noopener"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true">${ICON[k]}</svg>${n}</a>`).join("");
 
   // ------------------------------------------------------------ map
-  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const dark = false; // light theme only, as the whole site
   const map = L.map("map", { worldCopyJump: true, minZoom: 2, maxZoom: 16, zoomControl: true }).setView([30, 10], 3);
   // OpenStreetMap standard tiles (no key); toned down to the apps' greys by a CSS filter on the tile pane
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19,

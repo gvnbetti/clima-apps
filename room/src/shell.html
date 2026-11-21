@@ -1,4 +1,20 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body><!-- clima-studio-bar --><style>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+/* v16.4 layout: progress only while running; then priorities, room type, results by room, decisions, room selector, facade */
+body.rc-running #settings, body.rc-running #empty, body.rc-running #results > :not(#runp) { display: none !important }
+body.rc-running #runp { display: block !important }
+#results:not([hidden]) { display: flex; flex-direction: column }
+#results > * { order: 50 }
+#results > #modband { order: 1 } #results > #v4prio { order: 2 } #results > #finedet { order: 3 } #results > #ttabs { order: 4 }
+#results > #v5verd { order: 5 } #results > #v4tiles { order: 6 } #results > #v4dec { order: 7 } #results > #v4glance { order: 8 }
+#results > #facbox { order: 9 } #results > #notes { order: 10 } #results > #cooldet { order: 11 } #results > #aibox { order: 12 }
+#results > #runp { order: 13 } #results > .evh { order: 20 } #results > #evpc { order: 21 } #results > .ev { order: 22 }
+.g4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px }
+.g4 .fcard { gap: 3px; padding: 8px 10px; border-width: 1.5px }
+.g4 .fch b { font-size: 15px } .g4 .c3wrap svg { max-height: 92px }
+.g4 .fcv { display: flex; gap: 6px; align-items: center; flex-wrap: wrap } .g4 .fcard .cvd { margin: 0; font-size: 11px; padding: 1px 7px }
+.g4 .dinl { font-size: 11px; color: var(--mute); margin: 0 } .g4 .dinl.bad { color: var(--warm) }
+.g4 .fm b { font-size: 13px }
+</style></head><body><!-- clima-studio-bar --><style>
 .csb{--csb-bg:#fbfbf9;--csb-ink:#18201f;--csb-mute:#5b6663;--csb-line:#d6dad5;--csb-on:#e6e9e4;display:flex;align-items:center;gap:4px 18px;flex-wrap:wrap;
  padding:6px max(16px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px));background:var(--csb-bg);color:var(--csb-ink);border-bottom:1px solid var(--csb-line);
  font:500 13px/1.2 "IBM Plex Sans",system-ui,-apple-system,sans-serif;position:relative;z-index:50}

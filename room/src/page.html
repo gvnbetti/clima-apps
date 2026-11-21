@@ -144,7 +144,7 @@ self.onmessage=(e)=>{const m=e.data;
     st.gen++; const gen = st.gen;
     st.dl = { cellular: {}, corner: {} }; st.fac = FAC(); st.prog = FAC(); st.build = {};
     AI.review = null; AI.chat = []; if (typeof renderReview === "function") { renderReview(); renderChat(); }
-    st.coolClimate = null; if (st.wAuto) { st.w = EQW.slice(); st.wAuto = false; } st.zoom = {}; st.wwrFine = []; st.wwrBy = {}; st.refine = null; st.runDl = runKey4(); st.topping = null; st.wi = null; st.balCache = {}; st.fmap = {}; fmPending.clear(); st.evals = 0; st.dlDone = 0; st.running = true; st.sel = null; st.rate = null; st.autoT = st.autoU = null; st.cache = {};
+    st.coolClimate = null; if (st.wAuto) { st.w = EQW.slice(); st.wAuto = false; } st.zoom = {}; st.wwrFine = []; st.wwrBy = {}; st.refine = null; st.runDl = runKey4(); st.topping = null; st.wi = null; st.balCache = {}; st.fmap = {}; fmPending.clear(); st.evals = 0; st.dlDone = 0; st.running = true; st.mainRun = true; st.sel = null; st.rate = null; st.autoT = st.autoU = null; st.cache = {};
     st.scenR = {}; scenPending.clear(); st.scenLv = scenLevel(); st.tm = {}; st.nDin = 0; st.nScen = 0;
     const eng = forEngine(st.wx);
     st.ctxWx = Object.assign({}, eng, G.solarPosition(eng.lat, eng.lon, eng.tz));
@@ -529,6 +529,9 @@ self.onmessage=(e)=>{const m=e.data;
     else if (st.running) { const R0 = runState(); setStatus(`${Math.round(100 * R0.frac)}%: ${st.dlDone < st.dlTotal ? `daylight ${st.dlDone} of ${st.dlTotal}` : `${evals.toLocaleString("en-GB")} designs, ${facCount()} of ${nF} facades finished`}; ${mmss(R0.el)} so far, about ${mmss(R0.left)} left`); }
     else if (st.fac) setStatus(`${nF} facades, ${st.evals.toLocaleString("en-GB")} options searched (${(2 * st.evals).toLocaleString("en-GB")} simulated years), ${Math.round(st.elapsed || el)} s on ${NW} workers`);
     if (st.running && !st.stale && st.wmode === "inline") $("status").textContent += " (running in the page: slower, and the page pauses while a facade is searched)";
+    // while the run is going, the results panel shows only its progress (body.rc-running, see the CSS)
+    if (st.mainRun && st.tm && !runState().busy) st.mainRun = false;
+    document.body.classList.toggle("rc-running", !!st.mainRun);
     if (!st.fac) return;
     if (st.tm) { const rp = runPanelHtml(); $("runp").innerHTML = rp; $("runp").hidden = !rp; }
     if (!facList(st.scen).includes(st.fa)) st.fa = facList(st.scen)[0];
@@ -2049,22 +2052,21 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     return c;
   }
   function glanceHtml(sc, B) {
-    const A = B.A, cellOf = (a) => sc === "cellular" ? CELL[a] : CELL[(a + 1) % 8];
-    const ring = sc === "cellular" || A.every((a) => a % 2 === 0);
+    // compact selector: one card per room, in the order of the facades, a small 3D view and the three results
+    const A = B.A;
     const cards = A.map((a) => {
-      const r = B.best.per[a], fm = fmapOf(sc, r.dz, a), on = a === st.fa, pos = ring ? cellOf(a) : null;
-      const svg = fm ? room3d(fm, S.PARAMS.azimuth[a], { psi: S.PARAMS.azimuth[a] + 35, th: 30 }) : `<span class="c3wait">Drawing the room…</span>`;
-      return `<button type="button" class="fcard${on ? " on" : ""}" data-a="${a}" aria-pressed="${on}"${pos ? ` style="grid-column:${pos[0]};grid-row:${pos[1]}"` : ""}>
-        <span class="fch"><b>${orientLabel(sc, a)}</b><span>${Math.round(r.dz.wwr * 100)}% window${(() => { const rg = wwrRange(sc, a); return rg ? ` <small>(${rangeTxt(rg)}: little difference)</small>` : ""; })()}</span></span>${(() => { const v = coolVerdict(r, sc, a).v; return `<span class="cvd ${v}">${VSHORT[v]}</span>`; })()}${dinRule() ? (() => { const c = dinComply(sc, a, r, true); return `<span class="small dinl">${c.exact ? (c.ok ? `DIN 4108-2: complies, ${fmt(Math.round(c.kh))} of ${fmt(dinLim())} K·h/a` : `DIN 4108-2: fails, ${fmt(Math.round(c.kh))} of ${fmt(dinLim())} K·h/a`) : "DIN 4108-2: checking…"}</span>`; })() : ""}
+      const r = B.best.per[a], fm = fmapOf(sc, r.dz, a), on = a === st.fa;
+      const svg = fm ? room3d(fm, S.PARAMS.azimuth[a], { psi: S.PARAMS.azimuth[a] + 35, th: 30 }) : `<span class="c3wait">Drawing…</span>`;
+      const v = coolVerdict(r, sc, a).v;
+      const din = dinRule() ? (() => { const c = dinComply(sc, a, r, true); return c.exact ? `<span class="dinl${c.ok ? "" : " bad"}">DIN ${c.ok ? "✓" : "✗"} ${fmt(Math.round(c.kh))}/${fmt(dinLim())}</span>` : `<span class="dinl">DIN …</span>`; })() : "";
+      return `<button type="button" class="fcard${on ? " on" : ""}" data-a="${a}" aria-pressed="${on}" title="${chips4(sc, r.dz).join(", ")}">
+        <span class="fch"><b>${orientLabel(sc, a)}</b><span>${Math.round(r.dz.wwr * 100)}% window</span></span>
         <span class="c3wrap">${svg}</span>
-        <span class="chips">${chips4(sc, r.dz).map((c) => `<span>${c}</span>`).join("")}</span>
+        <span class="fcv"><span class="cvd ${v}">${VSHORT[v]}</span>${din}</span>
         <span class="fm"><span><b class="dl">${dlVal(r.m.S)}</b> daylight</span><span><b class="oh">${fmt(Math.round(r.m.C))}</b> K·h/a</span><span><b class="en">${fmt(r.m.E)}</b> ${UE}</span></span></button>`;
     }).join("");
-    const lat = st.wx.lat, sun = lat >= 23.44 ? "Midday sun from the south" : lat <= -23.44 ? "Midday sun from the north" : "Midday sun high, from north or south by season";
-    const plan = ring ? `<div class="plan4" style="grid-column:2;grid-row:2"><div class="sq"><span class="pn">N</span><span>${SCLAB[sc]}${sc === "cellular" ? ": one facade each" : ": two facades each"}</span></div><span class="small">${sun}, latitude ${Math.abs(lat).toFixed(1)}° ${lat >= 0 ? "N" : "S"}</span></div>` : "";
-    const head = `<div class="v4h"><h2>The design at a glance</h2><span class="small">Each room in 3D with its recommended design; the floor is shaded by ${st.dlm === "S" ? "useful daylight" : "useful daylight (300 to 3,000 lx)"}, darker where it is useful for more hours. Drag the large view below to turn it. Select a room for its settings and alternatives below. The label on each room is the cooling result, explained in the next box.</span></div>`;
-    const strip = ring ? "" : `<p class="small">With these directions the corner rooms cannot all sit in one building: the cards compare a corner room in each orientation, ordered by direction.</p>`;
-    return head + strip + `<div class="${ring ? "ring4" : "strip4"}">${plan}${cards}</div>`;
+    const head = `<div class="v4h"><h2>Rooms</h2><span class="small">Select a room to open its design and alternatives below. Floor shading: ${st.dlm === "S" ? "useful daylight" : "useful daylight (300 to 3,000 lx)"}, darker where it is useful for more hours.</span></div>`;
+    return head + `<div class="g4">${cards}</div>`;
   }
   // ---- decisions (follow the current priorities)
   function whyBars(c) {

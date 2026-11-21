@@ -538,6 +538,7 @@ self.onmessage=(e)=>{const m=e.data;
     if (st.tm) { const rp = runPanelHtml(); $("runp").innerHTML = rp; $("runp").hidden = !rp; }
     if (!facList(st.scen).includes(st.fa)) st.fa = facList(st.scen)[0];
     $("notes").innerHTML = notesHtml(); readingLine();
+    { const nN = $("notes").children.length, el = $("notecount"); if (el) el.textContent = nN ? `${nN} note${nN === 1 ? "" : "s"}` : "none"; }
     maybeTopUp(); renderTypeTabs(); renderV4(); aiConn(); renderFacade();
     if ($("evpc").open) renderExplorer();
     if ($("evdet").open) { autoSel(); if (st.sel) renderDetail(); } else $("detail").innerHTML = "";
@@ -558,10 +559,11 @@ self.onmessage=(e)=>{const m=e.data;
     return n.map((x) => `<p>${x}</p>`).join("");
   }
   // the reading in one sentence; the settings open from it
-  function readingLine() {
-    const m = MODELS[st.model], cat = m.cats.length ? ", " + m.catLabel(st.cat[st.model]).replace(/^Category/, "category") : "";
-    $("readline").innerHTML = `Scored for <b>${DLNAME[st.dlm].toLowerCase().replace("(udi)", "(UDI)")}</b> (minimum: ${FLOORNAME[st.floor]}), <b>comfort by ${m.label}${cat}</b> ${`with a limit of ${fmt(limitNow())} K·h/a`}, and <b>${st.mode === "cool" ? `energy for heating and cooling to ${coolTxt()}` : "energy for heating"}</b> (COP ${st.mode === "cool" ? st.copH + " / " + st.copC : st.copH}; target ${fmt(targetNow())}, limit ${fmt(upperNow())} kWh/m²a). Daylight target ${Math.round(dlTNow() * 100)}${st.dlm === "EN" ? " (minimum level)" : "%"}. Priorities: ${wTxt()}. Fixed scales: designs that meet every target come first.${st.locNote && !st.modelManual ? ` <span class="small">Comfort model set from the location (${st.locNote.replace(/\.$/, "")}); change it in the reading panel.</span>` : ""}`;
+  function readingLine() { // v17: the targets in one line; the full reading panel folds out
+    const m = MODELS[st.model], cat = m.cats.length ? " " + m.catLabel(st.cat[st.model]).replace(/^Category /, "cat. ").replace(/ \(.*\)$/, "") : "";
+    $("readline").innerHTML = `<b>Targets</b> daylight ${Math.round(dlTNow() * 100)}${st.dlm === "EN" ? " (EN 17037 level)" : "% useful"} · overheating ≤ ${fmt(limitNow())} K·h/a (${esc(m.label.replace(/ \(.*\)/, ""))}${cat}) · energy ≤ ${fmt(upperNow())} ${UE}${dinRule() ? " · DIN 4108-2" : ""}`;
   }
+
   function renderTypeTabs() {
     $("ttabs").innerHTML = st.types.map((sc) => `<button type="button" data-v="${sc}" aria-pressed="${sc === st.scen}">${SCLAB[sc]}<small>${facList(sc).map((a) => orientLabel(sc, a)).join(", ") || "no facade pair"}</small></button>`).join("");
     document.querySelectorAll("#ttabs button").forEach((b) => b.onclick = () => { st.scen = b.dataset.v; renderAll(); });
@@ -1678,6 +1680,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   const reread = () => { if (st.fac) renderAll(); };
   // v16: parameter register and version notes, written into Method and limits from the register itself
   const CHANGES = [
+    ["v17", "21 Nov 2026", "Shared calculation core with Macro and Micro Clima (sun, sun on surfaces, psychrometrics; daylight sun from the core). Layout: only the progress while a run is on; then targets in one line, what matters most, room type, room cards with a tick or cross per target, the +2 °C and poor-operation checks and carbon; the selected facade with three designs (recommended, lower carbon, more daylight) and the other packages as More options, each named by what it changes and what that does, numbers on hover; the switches grouped by this room and whole building; cooling folded under the design; recommendations as short cards with the details under Why?; the rest folded. A design is always shown, with a notice when none meets every target. Light theme only."],
     ["v16, phase 3.4", "19 Nov 2026", "Progress: a panel at the top of the results while a run is on, with the share done, time so far and time left (from the measured time per daylight variant, per design and per check, over the workers), counts per stage (daylight variants, designs simulated, DIN checks and scenario runs) and a small bar per facade; the finer window sizes in 5% steps have their own block. The status line under Run gives the same in short."],
     ["v16, phase 3.3", "18 Nov 2026", "Facade panel: buttons above the switches for the recommended design, the other packages, the lowest-carbon design and the best design under each priority; each sets all switches, with score gap and carbon on the button. Carbon added to the results beside the switches. Refinement daylight again for every fixed shading type, so the finer window sizes do not favour the shading already picked."],
     ["v16, phase 3.2", "17 Nov 2026", "Faster runs: daylight only for the room types and orientations chosen, refinement daylight only for the fixed shading of the picks, and the search no longer extends the trade-off front from designs far from every target (largest shortfall above 100%). Carbon: the lowest-carbon design that meets every target is searched for after the front and shown with the packages; among designs within 0.01 in score, the one with less whole-life carbon is recommended."],
@@ -1887,7 +1890,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     shading: (v) => ["None", "Interior", "Exterior"][v], dayAch: (v) => ({ 0: "Closed", 1: "Tilt", 2: "Open" })[v], nightAch: (v) => ({ 0: "None", 1: "Tilt", 5: "Across storeys" })[v], fans: (v) => v ? "Fans" : "None", roof: (v) => v === "cool" ? "Cool" : "Standard" };
   // ---- confidence: how many of the 7 priority settings keep a choice best at every facade
   const GREEN = (k) => k >= 7 ? "#1a7f37" : k >= 6 ? "#2f8f4a" : k >= 5 ? "#4f9f63" : k >= 4 ? "#79b689" : k >= 3 ? "#a3ccad" : "#c9dfcf";
-  const robTxt = (k) => k >= 7 ? "Best in all 7 priority settings" : k >= 5 ? `Best in ${k} of 7 priority settings` : `Depends on priorities: best in ${k} of 7`;
+  const robTxt = (k) => k >= 7 ? "Holds whatever the priorities" : k >= 5 ? "Holds for most priorities" : "Depends on the priorities";
   // ---- building option under balanced priorities, for "what changed"
   function balancedOf(sc) {
     if (sameW(st.w, EQW)) return buildResult(sc);
@@ -2027,7 +2030,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   }
   function prioHtml(sc, B) {
     const cur = PRESETS.find((p) => sameW(st.w, normW(p[2])));
-    let h = `<div class="v4h"><h2>What matters most to you?</h2><span class="small">Re-ranks the options already simulated. The like-for-like comparisons for a new design follow within seconds.</span></div><div class="v4pre" role="group" aria-label="Priorities">`;
+    let h = `<div class="v4h"><h2>What matters most to you?</h2></div><div class="v4pre" role="group" aria-label="Priorities">`;
     h += PRESETS.map(([k, lab, w, sub]) => `<button type="button" data-k="${k}" aria-pressed="${cur && cur[0] === k}"><b>${lab}</b><span>${sub}</span></button>`).join("");
     h += `</div>${cur ? "" : `<p class="small">Custom priorities from the triangle: ${wTxt()}.</p>`}`;
     if (B && !sameW(st.w, EQW)) {
@@ -2067,6 +2070,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     c.push(MASSN[dz.mass] + " mass"); if (sc === "corner_top") c.push(SHORT4.roof(dz.roof) + " roof");
     return c;
   }
+  const tk = (ok) => ok ? `<i class="tk ok" aria-label="meets the target">✓</i>` : `<i class="tk no" aria-label="misses the target">✗</i>`;
   function glanceHtml(sc, B) {
     // compact selector: one card per room, in the order of the facades, a small 3D view and the three results
     const A = B.A;
@@ -2079,7 +2083,8 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
         <span class="fch"><b>${orientLabel(sc, a)}</b><span>${Math.round(r.dz.wwr * 100)}% window</span></span>
         <span class="c3wrap">${svg}</span>
         <span class="fcv"><span class="cvd ${v}">${VSHORT[v]}</span>${din}</span>
-        <span class="fm"><span><b class="dl">${dlVal(r.m.S)}</b> daylight</span><span><b class="oh">${fmt(Math.round(r.m.C))}</b> K·h/a</span><span><b class="en">${fmt(r.m.E)}</b> ${UE}</span></span></button>`;
+        <span class="fm"><span>Daylight<b>${tk(r.t.A1 && r.t.S)} ${dlVal(r.m.S)}</b></span><span>Comfort<b>${tk(r.t.C)} ${fmt(Math.round(r.m.C))}</b><small>K·h/a</small></span><span>Energy<b>${tk(r.t.E)} ${fmt(r.m.E)}</b><small>${UE}</small></span></span>
+        <span class="fsc">${SCN().map(([sk, lab]) => { const x = scenOf(sk, sc, a, r); return x ? `<span>${tk(x.share == null || x.share <= st.maxOut)} ${lab}</span>` : `<span class="small">${lab} …</span>`; }).join("")}<span class="small">${fmt(Math.round(carbonOf(r).tot))} kg CO₂e/m²</span></span></button>`;
     }).join("");
     const head = `<div class="v4h"><h2>Rooms</h2><span class="small">Select a room to open its design and alternatives below. Floor shading: ${st.dlm === "S" ? "useful daylight" : "useful daylight (300 to 3,000 lx)"}, darker where it is useful for more hours.</span></div>`;
     return head + `<div class="g4">${cards}</div>`;
@@ -2112,15 +2117,14 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
       const rows = [w, it.nearest && w && it.nearest.level !== w.level ? it.nearest : null].filter(Boolean);
       return `<article class="dcard" style="border-color:${GREEN(k)};border-width:${k >= 5 ? 3 : 2}px">
         <div class="dch"><div><span class="small">${NAME4[it.p]}</span><b>${choice4(it.p, it.lv0)}</b>${it.tie ? `<span class="small">Or as chosen per facade (${(() => { const g = new Map(); B.A.forEach((a, i) => g.set(it.chosen[i], (g.get(it.chosen[i]) || []).concat(orientLabel(sc, a)))); return [...g.entries()].map(([lv, as]) => `${SHORT4[it.p](lv).toLowerCase()} at ${as.join(", ")}`).join("; "); })()}): little difference.</span>` : ""}</div>${FS.SHARED.includes(it.p) ? `<span class="tagb">Building-wide</span>` : ""}</div>
-        <div class="imp"><span>Impact</span><span>${it.maxSev >= BIG ? "High" : it.maxSev >= 2 ? "Medium" : "Low"}</span></div><div class="ibar"><i style="width:${Math.max(4, Math.min(100, it.maxSev / 25 * 100)).toFixed(0)}%"></i></div>
-        <p>${w ? `Instead ${lcF(choice4(it.p, w.level))}: ${deltaTxt(w)}${at(w)}.` : ""}${extra || ""}${nsTxt(it.p)}</p>
+        <p>${w ? `Instead ${lcF(choice4(it.p, w.level))}: ${deltaTxt(w)}${at(w)}.` : ""} <span class="imp2">${it.maxSev >= BIG ? "High" : it.maxSev >= 2 ? "Medium" : "Low"} impact</span></p>
         <div class="dcf"><span class="rob" style="color:${k >= 5 ? GREEN(7) : "var(--mute)"}">${robTxt(it.k)}</span>${rows.length ? `<button type="button" class="why ghost" data-k="${key}">${open ? "Hide" : "Why?"}</button>` : ""}</div>
-        ${open ? `<div class="whyb">${rows.map((c) => `<span class="wt">Instead: ${lcF(choice4(it.p, c.level))}${at(c)}</span>${whyBars(c)}`).join("")}<span class="small">The same design with only this measure changed, simulated${it.est ? "; some values are estimates while the exact runs finish" : ""}. Orange: worse. Blue: better.</span></div>` : ""}</article>`;
+        ${open ? `<div class="whyb">${extra || nsTxt(it.p) ? `<p class="small">${extra || ""}${nsTxt(it.p)}</p>` : ""}${rows.map((c) => `<span class="wt">Instead: ${lcF(choice4(it.p, c.level))}${at(c)}</span>${whyBars(c)}`).join("")}<span class="small">The same design with only this measure changed, simulated${it.est ? "; some values are estimates while the exact runs finish" : ""}. Orange: worse. Blue: better.</span></div>` : ""}</article>`;
     };
     const keep = items.filter((it) => it.same && !it.small && !core.covered.has(it.p)).sort((x, y) => y.maxSev - x.maxSev);
     const adapt = items.filter((it) => !it.same && !it.small && !core.covered.has(it.p));
     const yours = items.filter((it) => it.small && !core.covered.has(it.p));
-    let h = `<div class="v4h"><h2>Recommendations</h2><span class="small">For the priorities chosen above, across all facades of this room type. Green outline: the stronger the green, the more priority settings keep this choice best.</span></div>`;
+    let h = `<div class="v4h"><h2>Recommendations</h2><span class="small">For the whole building, at every facade of this room type. Green: the choice holds whatever the priorities.</span></div>`;
     if (B.global) { const d = SH4.filter((q) => B.own && B.own.shared[q] !== B.best.shared[q]);
       h += `<p class="small">Glass, insulation and mass are chosen once for the whole building, over every room type tested.${d.length ? ` On its own the ${SCLAB[sc].toLowerCase()} would take ${listJoin(d.map((q) => lvWord(q, B.own.shared[q])))} (mean score ${pts(B.own.mean)} against ${pts(B.best.mean)}).` : ""}</p>`; }
     h += `<h3 class="v4k">Keep at every facade</h3><div class="dgrid">${keep.map((it) => card(it, (it.p === "wwr" ? winRangeTxt(sc, B) : it.p === "mass" ? massDep(sc, B) : ventTxt(it, B.best.per[B.A[0]].dz)) + edgeTxt(it.p, it.chosen))).join("")}${core.pairs.map((pr) => `<article class="dcard" style="border-color:${GREEN(7)};border-width:3px"><div class="dch"><div><span class="small">${cap(pr.x.label)}</span><b>At least one of the two</b></div></div><p>Without either: ${deltaTxt(pr.worst)}${at(pr.worst)}. The two stand in for each other here, so the choice between them is free.</p></article>`).join("")}</div>`;
@@ -2131,7 +2135,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
           return `<div class="dcf"><span class="rob">${robTxt(it.k)}</span>${per.length ? `<button type="button" class="why ghost" data-k="${key}">${open ? "Hide" : "Why?"}</button>` : ""}</div>${open ? `<div class="whyb">${per.map((c) => `<span class="wt">${orientLabel(sc, c.a)}: instead ${lcF(choice4(it.p, c.level))}</span>${whyBars(c)}`).join("")}<span class="small">At each facade the alternative that changes the result most, with only this measure changed, simulated. Orange: worse. Blue: better.</span></div>` : ""}`; })()}</article>`; }).join("")}</div>`;
     if (yours.length) h += `<h3 class="v4k">Your call: little difference in the simulation</h3><div class="ychips">${yours.map((it) => `<span>${NAME4[it.p]} <small>(the design uses ${SHORT4[it.p](it.lv0)}${(it.p === "dayAch" || it.p === "nightAch") && it.lv0 ? `; ${openTxt(it.p, B.best.per[B.A[0]].dz, sc)}` : ""})</small></span>`).join("")}</div><p class="small">Every alternative tested changes daylight by ${TH.S} percentage points or less, overheating by less than ${TH.C} K·h/a and energy by less than ${TH.E} ${UE}, at every facade. Other criteria, such as price, carbon or appearance, can decide.</p>`;
     if (core.avoid.length) h += `<h3 class="v4k">Avoid</h3><div class="dgrid">${core.avoid.map((x) => `<article class="dcard avoid"><div class="dch"><div><span class="small">${NAME4[x.p]}</span><b>${choice4(x.p, x.lv)}</b></div></div><p>A large difference at every facade, up to ${deltaTxt(x.c)}${at(x.c)}.</p></article>`).join("")}</div>`;
-    if (core.two.length) h += `<h3 class="v4k">What you gain and what you give up</h3><ul class="gain">${core.two.map((x) => `<li><b>${choice4(x.p, x.level)}</b>${at(x)} instead of ${lcF(choice4(x.p, B.best.per[x.a].dz[x.p]))}: ${deltaTxt(x)}.</li>`).join("")}</ul>`;
+    if (false && core.two.length) h += `<h3 class="v4k">What you gain and what you give up</h3><ul class="gain">${core.two.map((x) => `<li><b>${choice4(x.p, x.level)}</b>${at(x)} instead of ${lcF(choice4(x.p, B.best.per[x.a].dz[x.p]))}: ${deltaTxt(x)}.</li>`).join("")}</ul>`;
     return h;
   }
   // ---- the facade panel: what-if switches from the recommended design, results, comparison with the picks
@@ -2158,13 +2162,53 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   }
   /* v16 phase 3.3 (Giovanni, 18 November 2026): the designs worth comparing at this facade as buttons above the switches.
      Each button sets every switch to that design; changing a switch afterwards makes it your own design. */
+  /* v17 (Giovanni, 21 November 2026): three designs first (recommended, lower carbon, more daylight), then the packages as
+     "More options", each named by what it changes and what that does; the numbers on hover. */
+  const escA = (x) => String(x).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   function designSet(sc, a, rec) {
-    const out = [["rec", "Recommended", rec, "the recommended design"]], seen = new Set([FS.keyOf(rec.dz)]);
-    const add = (id, lab, r, note) => { if (!r) return; const k = FS.keyOf(r.dz); if (seen.has(k)) return; seen.add(k); out.push([id, lab, r, note]); };
-    packagesOf(sc, a, rec).forEach((r, i) => add("p" + i, "Package " + String.fromCharCode(65 + i), r, rec.t.all ? "also meets every target" : "about as close to the targets"));
-    const lc = lowCarbonOf(sc, a); if (lc) add("lc", "Lowest carbon", lc, "least whole-life carbon among the designs that meet every target");
-    const PD = presetDesigns(sc); PRESETS.forEach(([k, nm]) => { const r = PD[k] && PD[k].best.per[a]; add("pr" + k, nm, r, "best with the priority " + nm.toLowerCase()); });
+    const out = [["rec", "Recommended", rec, "the recommended design", 0]], seen = new Set([FS.keyOf(rec.dz)]);
+    const add = (id, lab, r, note, row) => { if (!r) return; const k = FS.keyOf(r.dz); if (seen.has(k)) return; seen.add(k); out.push([id, lab, r, note, row]); };
+    const lc = lowCarbonOf(sc, a); if (lc) add("lc", "Lower carbon", lc, "the least whole-life carbon among the designs that meet every target", 0);
+    const f = facade(sc, a), ok = (f ? f.ok : []).filter((r) => r.t && r.t.all);
+    const md = ok.length ? ok.reduce((b, r) => (pts(r.m.S) > pts(b.m.S) || (pts(r.m.S) === pts(b.m.S) && r.q > b.q) ? r : b), ok[0]) : null;
+    if (md && pts(md.m.S) - pts(rec.m.S) > TH.S) add("md", "More daylight", md, "the most daylight among the designs that meet every target", 0);
+    packagesOf(sc, a, rec).forEach((r, i) => add("p" + i, pkgLabel(sc, rec, r), r, rec.t.all ? "also meets every target" : "about as close to the targets", 1));
     return out;
+  }
+  // what a design changes against the recommended one, in words: the two measures that matter most, then "+n more"
+  const PKORD = ["wwr", "shading", "fixed", "gglass", "mass", "nightAch", "dayAch", "uglass", "opaque", "fans", "roof"];
+  function measWord(p, v, b) {
+    const n = (x) => +String(x).replace(/[^0-9.]/g, "");
+    if (p === "wwr") return `${v > b ? "More" : "Less"} glass (${Math.round(v * 100)}%)`;
+    if (p === "shading") return ["No blinds", "Interior blinds", "Exterior blinds"][v] || SHORT4[p](v);
+    if (p === "fixed") return v === "none" ? "No fixed shading" : SHORT4[p](v);
+    if (p === "gglass") return v > b ? `Clearer glass (g ${v})` : `Solar control glass (g ${v})`;
+    if (p === "uglass") return v > b ? "Double glazing" : "Triple glazing";
+    if (p === "opaque") return `${n(v) > n(b) ? "Less" : "More"} wall insulation`;
+    if (p === "mass") { const o = ["light", "medium", "heavy", "vheavy"]; return o.indexOf(v) > o.indexOf(b) ? "Heavier construction" : "Lighter construction"; }
+    if (p === "dayAch") return v ? `${SHORT4[p](v)} by day` : "Windows closed by day";
+    if (p === "nightAch") return v ? `Night airing (${SHORT4[p](v).toLowerCase()})` : "No night airing";
+    if (p === "fans") return v ? "Ceiling fans" : "No fans";
+    return `${NAME4[p]}: ${SHORT4[p](v)}`;
+  }
+  function pkgLabel(sc, rec, r) {
+    const ch = PKORD.filter((p) => r.dz[p] !== undefined && r.dz[p] !== rec.dz[p]);
+    return ch.slice(0, 2).map((p, i) => { const w = measWord(p, r.dz[p], rec.dz[p]); return i ? w.charAt(0).toLowerCase() + w.slice(1) : w; }).join(" + ") + (ch.length > 2 ? ` +${ch.length - 2} more` : "");
+  }
+  function pkgEffect(rec, r) { // plain words; thresholds as everywhere: 3 daylight points, 100 K·h/a, 1 kWh/m²a
+    if (r === rec) return "best for your priorities";
+    const c = delta(rec, r), w = [];
+    if (c.dS > TH.S) w.push("more daylight"); else if (c.dS < -TH.S) w.push("less daylight");
+    if (c.dC >= BIG * TH.C) w.push("much warmer"); else if (c.dC >= TH.C) w.push("warmer"); else if (c.dC >= TH.C / 2) w.push("a little warmer");
+    else if (c.dC <= -TH.C) w.push("cooler");
+    if (c.dE >= TH.E) w.push("more energy"); else if (c.dE <= -TH.E) w.push("less energy");
+    if (c.dK <= -20) w.push("less carbon"); else if (c.dK >= 20) w.push("more carbon");
+    return w.length ? listJoin(w) : "practically the same results";
+  }
+  function pkgNumbers(rec, r) {
+    const c = delta(rec, r), Y = Register.val("carbon.years"), sg = (x, d) => (x > 0 ? "+" : x < 0 ? "−" : "±") + fmt(Math.round(Math.abs(x) * d) / d);
+    return r === rec ? `Daylight ${dlVal(r.m.S)}, overheating ${fmt(Math.round(r.m.C))} K·h/a, energy ${fmt(r.m.E)} ${UE}, ${fmt(Math.round(carbonOf(r).tot))} kg CO₂e/m² over ${Y} years`
+      : `Against the recommended design: daylight ${sg(c.dS, 1)} points, overheating ${sg(c.dC, 1)} K·h/a, energy ${sg(c.dE, 10)} ${UE}, carbon ${sg(c.dK, 1)} kg CO₂e/m² over ${Y} years`;
   }
   function facPanelHtml(sc, B) {
     const a = st.fa, rec = B.best.per[a]; if (!rec) return "";
@@ -2173,16 +2217,19 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     // v8: a choice that changes the cooling result is marked on its button
     const F = st.fac[sc][a], vNow = cur ? coolVerdict(cur, sc, a).v : null;
     const flipTag = (p, v) => { if (!vNow || vNow === "wait" || v === dz[p] || !F) return ""; const x = F.byKey.get(FS.keyOf(Object.assign({}, dz, { [p]: v }))); if (!x) return "";
-      const v2 = coolVerdict({ dz: x.dz, r: x.r }, sc, a).v; if (v2 === "wait" || v2 === vNow) return ""; return `<span class="flip${RANKV[v2] < RANKV[vNow] ? " gd" : ""}">${VSHORT[v2]}</span>`; };
+      const v2 = coolVerdict({ dz: x.dz, r: x.r }, sc, a).v; if (v2 === "wait" || v2 === vNow) return ""; return `<span class="flip${RANKV[v2] < RANKV[vNow] ? " gd" : ""}">${{ none: "no cooling needed", ceil: "needs a chilled ceiling", sys: "needs air conditioning" }[v2] || VSHORT[v2]}</span>`; };
     let h = `<div class="v4h"><h2>${orientFull(sc, a)} ${sc === "cellular" ? "facade" : "facades"}, ${SCLAB[sc].toLowerCase()}</h2><span class="small">${wi ? "What if: your changes are in blue." : "The recommended design. Pick other choices to see their effect."} A label under a choice shows where it changes the cooling result.</span></div>${cur && cur.t && !cur.t.all ? `<p class="missnote"><b>No design found meets every target here.</b> Shown: the one that comes closest. ${cap(missTxt(cur))}. Change the targets under Reading, or allow more strategies in the inputs.</p>` : ""}${B.mixed ? `<p class="missnote">No single choice of glass, insulation and mass was found that suits every facade of this room type; each facade shows its own best design.</p>` : ""}<div class="fpg">`;
     const DS4 = designSet(sc, a, rec), kNow = FS.keyOf(dz);
-    h += `<div class="dsel" role="group" aria-label="Designs to compare at this facade">${DS4.map(([id, lab, r, note]) => { const on = FS.keyOf(r.dz) === kNow, K = carbonOf(r);
-      return `<button type="button" data-ds="${id}" aria-pressed="${on}" class="${on ? "on" : ""}${r.t && r.t.all ? "" : " miss"}" title="${cap(note)}"><b>${lab}</b><small>${id === "rec" ? r.D.toFixed(2) : (r.D - rec.D >= 0 ? "+" : "−") + Math.abs(r.D - rec.D).toFixed(2)} score · ${fmt(Math.round(K.tot))} kg</small></button>`; }).join("")}${DS4.some(([, , r]) => FS.keyOf(r.dz) === kNow) ? "" : `<button type="button" class="on wi" aria-pressed="true" disabled><b>Your design</b><small>changed by hand</small></button>`}</div>
-      <p class="small">Score: overall score from 0 to 1, against the recommended design. kg: whole-life carbon, kg CO₂e/m² over ${Register.val("carbon.years")} years. A design that does not meet every target is marked with a dashed border. Building-wide choices (glass, insulation, mass) of a design apply to every facade.</p>`;
-    h += `<div class="sw">${meas.map((p) => { const L = LVa(p), it = core && core.items[p], k = it ? (it.tie ? 7 : it.k) : 7;
+    const btn = ([id, lab, r, note]) => { const on = FS.keyOf(r.dz) === kNow;
+      return `<button type="button" data-ds="${id}" aria-pressed="${on}" class="${on ? "on" : ""}${r.t && r.t.all ? "" : " miss"}" title="${escA(cap(note) + ". " + pkgNumbers(rec, r) + (r.t && r.t.all ? "." : ". Misses: " + missTxt(r) + "."))}"><b>${lab}</b><small>${pkgEffect(rec, r)}</small></button>`; };
+    const main = DS4.filter((d) => !d[4]), more = DS4.filter((d) => d[4]);
+    h += `<div class="dsel" role="group" aria-label="Designs to compare at this facade">${main.map(btn).join("")}${DS4.some(([, , r]) => FS.keyOf(r.dz) === kNow) ? "" : `<button type="button" class="on wi" aria-pressed="true" disabled><b>Your design</b><small>changed by hand</small></button>`}</div>`;
+    if (more.length) h += `<div class="dmore"><span class="small">More options, each also ${rec.t.all ? "meeting every target" : "about as close to the targets"}:</span><div class="dsel" role="group" aria-label="More designs at this facade">${more.map(btn).join("")}</div></div>`;
+    const measO = meas.filter((p) => !FS.SHARED.includes(p)).concat(meas.filter((p) => FS.SHARED.includes(p))), nOwn = meas.filter((p) => !FS.SHARED.includes(p)).length;
+    h += `<div class="sw">${measO.map((p, iP) => (iP === 0 ? `<div class="swg">This room</div>` : iP === nOwn ? `<div class="swg">Whole building</div>` : "") + (() => { const L = LVa(p), it = core && core.items[p], k = it ? (it.tie ? 7 : it.k) : 7;
       return `<div class="swr"><div class="swh"><b>${NAME4[p]}</b><span class="small">${FS.SHARED.includes(p) ? "building-wide: every facade" : "this facade only"}${p === "wwr" && wwrRange(sc, a) ? `; ${rangeTxt(wwrRange(sc, a))} differ little` : ""}${(p === "dayAch" || p === "nightAch") && dz[p] ? `; ${openTxt(p, dz, sc)}` : ""}</span></div><div class="swo" role="group" aria-label="${NAME4[p]}">${L.map((v) => {
         const isRec = v === rec.dz[p], on = v === dz[p];
-        return `<button type="button" data-p="${p}" data-v="${typeof v === "number" ? "n" + v : v}" aria-pressed="${on}" class="${on ? (isRec ? "on" : "wi") : ""}" style="${isRec ? `box-shadow:0 0 0 ${k >= 5 ? 3 : 2}px ${GREEN(k)}` : ""}">${SHORT4[p](v)}${flipTag(p, v)}</button>`; }).join("")}</div></div>`; }).join("")}</div>`;
+        return `<button type="button" data-p="${p}" data-v="${typeof v === "number" ? "n" + v : v}" aria-pressed="${on}" class="${on ? (isRec ? "on" : "wi") : ""}" style="${isRec ? `box-shadow:0 0 0 ${k >= 5 ? 3 : 2}px ${GREEN(k)}` : ""}">${SHORT4[p](v)}${flipTag(p, v)}</button>`; }).join("")}</div></div>`; })()).join("")}</div>`;
     // results
     const show = cur || rec;
     h += `<div class="fpr"><div class="tohead"><span class="small">Drag to turn</span><span class="xbtn"><button type="button" class="ghost xb" data-x="fp3d|svg">SVG</button><button type="button" class="ghost xb" data-x="fp3d|png">PNG</button></span></div><div id="fp3d" class="fp3d"></div>`;
@@ -2207,13 +2254,6 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     }
     if (wi) h += `<button type="button" class="ghost" id="wireset">Back to the recommended design</button>`;
     h += `</div></div>`;
-    h += `<details class="pkgs" id="pkgdet"${st.pkgOpen ? " open" : ""}><summary>Other packages at this facade</summary>${packagesHtml(sc, a, rec).replace(/^<h3 class="v4k">Other packages at this facade<\/h3>/, "")}</details>`;
-    // comparison with the picks
-    const base = cur || rec, PD = presetDesigns(sc), names = { balanced: "Balanced", daylight: "Daylight first", comfort: "Comfort first", energy: "Energy first" };
-    const cell = (v, ref, d, goodUp, txt) => { if (!ref) return `<td>${v}</td>`; const dv = d, none = Math.abs(dv) < (txt === "dl" ? 1 : txt === "C" ? 1 : 0.1); return `<td>${v} <small style="color:${none ? "var(--mute)" : (dv > 0) === goodUp ? "var(--cool)" : "var(--warm)"}">${none ? "" : txt === "dl" ? dlDelta(dv) : (dv > 0 ? "+" : "−") + fmt(txt === "C" ? Math.round(Math.abs(dv)) : Math.abs(dv))}</small></td>`; };
-    const trow = (nm, r, ref) => `<tr${ref ? "" : ` class="rr"`}><th scope="row">${nm}</th>${cell(dlVal(r.m.S), ref, ref ? pts(r.m.S) - pts(ref.m.S) : 0, true, "dl")}${cell(fmt(Math.round(r.m.C)), ref, ref ? r.m.C - ref.m.C : 0, false, "C")}${cell(fmt(r.m.E), ref, ref ? r.m.E - ref.m.E : 0, false, "E")}<td class="small">${ref ? meas.filter((p) => r.dz[p] !== ref.dz[p]).map((p) => lcF(choice4(p, r.dz[p]))).join("; ") || "same design" : "the design above"}</td></tr>`;
-    h += `<h3 class="v4k">What you gain and what you give up at this facade</h3><div class="tw"><table class="cmp"><thead><tr><th>Design</th><th>Daylight, ${st.dlm === "EN" ? "rating" : "%"}</th><th>Overheating, K·h/a</th><th>Energy, ${UE}</th><th>Differs in</th></tr></thead><tbody>${trow(wi ? "Your design" : "Recommended", base, null)}${Object.keys(names).map((k) => { const d = PD[k] && PD[k].best.per[a]; return d && !(k === "balanced" && !wi && sameW(st.w, EQW)) ? trow(names[k], d, base) : ""; }).join("")}</tbody></table></div>
-      <p class="small">The design each priority button puts on top, at this facade. Building-wide choices (glass, insulation, mass) may differ from the design above. Blue: better than the design above. Orange: worse.</p>`;
     return h;
   }
   function bindFacPanel(sc, B) {

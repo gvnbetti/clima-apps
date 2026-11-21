@@ -17,6 +17,19 @@ details.pkgs { margin-top: 18px; border-top: 1px solid var(--line); padding-top:
 .g4 .fcv { display: flex; gap: 6px; align-items: center; flex-wrap: wrap } .g4 .fcard .cvd { margin: 0; font-size: 11px; padding: 1px 7px }
 .g4 .dinl { font-size: 11px; color: var(--mute); margin: 0 } .g4 .dinl.bad { color: var(--warm) }
 .g4 .fm b { font-size: 13px }
+
+/* v17 */
+main > #settings { order: 1 !important; margin-bottom: 14px } #settings > summary { font-size: 13.5px }
+#v4tiles { display: none } body:not(.rc-running) #runp { display: none !important }
+.g4 svg text { display: none }
+.g4 .fm { grid-template-columns: repeat(3, minmax(0, 1fr)) } .g4 .fm > span { display: flex; flex-direction: column; font-size: 11px; color: var(--mute) }
+.g4 .fm b { font-size: 13px; color: var(--ink); white-space: nowrap } .g4 .fm small { font-size: 10.5px } .tk { font-style: normal; font-weight: 700; margin-right: 2px } .tk.ok { color: var(--accent) } .tk.no { color: var(--warm) }
+.fsc { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 11px; color: var(--mute) }
+.dmore { margin-top: 8px } .dmore .dsel { margin-top: 4px } .dmore .dsel button { opacity: .92 }
+.dsel button small { display: block; white-space: normal; max-width: 220px }
+.swg { font: 600 11px var(--f-data); text-transform: uppercase; letter-spacing: .07em; color: var(--mute); margin: 14px 0 2px; padding-top: 8px; border-top: 1px solid var(--line) }
+.imp2 { font-size: 11.5px; color: var(--mute); white-space: nowrap }
+details.coold.in { margin-top: 14px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px }
 </style></head><body><!-- clima-studio-bar --><style>
 :root{color-scheme:light}
 .csb{--csb-bg:#fbfbf9;--csb-ink:#18201f;--csb-mute:#5b6663;--csb-line:#d6dad5;--csb-on:#e6e9e4;display:flex;align-items:center;gap:4px 18px;flex-wrap:wrap;
@@ -340,7 +353,7 @@ details.ev.in { margin-top: 14px }
 #v5verd p.lead { font-size: 15px; margin: 6px 0 } #v5verd p.lead.ok { color: var(--ok) } #v5verd p.lead.bad { color: var(--warm) } #v5verd ul.miss { margin: 4px 0 8px 18px; padding: 0 } b.bad { color: var(--warm) } .mute { color: var(--mute) } .vtab td, .vtab th { vertical-align: top }
 </style>
 <div class="wrap">
-  <header class="top"><h1>Room Clima <span class="aitag">v16 · phase 2</span></h1><span class="tag">What to build, facade by facade, for daylight, comfort and energy in this climate</span><span class="draft">Draft, not validated</span><button type="button" id="askbtn" class="askbtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg>Ask Claude</button></header>
+  <header class="top"><h1>Room Clima <span class="aitag">v17</span></h1><span class="tag">What to build, facade by facade, for daylight, comfort and energy in this climate</span><a class="draft" href="https://gvnbetti.github.io/clima-toolbox/validation.html" target="_blank" rel="noopener">Beta · validation</a><button type="button" id="askbtn" class="askbtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg>Ask Claude</button></header>
   <div class="grid">
     <aside>
       <h2 class="colh">Inputs</h2>
@@ -389,8 +402,8 @@ details.ev.in { margin-top: 14px }
       <details class="grp strat"><summary><span class="lab">Strategies to test</span> <span class="small" id="stratsum"></span></summary>
         <span class="small">Untick what is not feasible on this site: it is neither simulated nor recommended.</span>
         <div id="strat"></div><span class="err" id="straterr"></span></details>
-      <div class="grp"><label class="chk"><input type="checkbox" id="refwin"> Refine the window size in 5% steps</label>
-        <span class="small">Optional. After the search, sizes within 10 points of the best ones are added in 5% steps, and window size, fixed shading and blinds are searched again around them. Adds about half to two thirds to the run time. Ticking it after a run refines that run.</span></div>
+      <details class="grp strat"><summary><span class="lab">Advanced</span> <span class="small">finer window sizes</span></summary><label class="chk"><input type="checkbox" id="refwin"> Refine the window size in 5% steps</label>
+        <span class="small">Optional. After the search, sizes within 10 points of the best ones are added in 5% steps, and window size, fixed shading and blinds are searched again around them. Adds about half to two thirds to the run time. Ticking it after a run refines that run.</span></details>
       <div class="grp"><span class="lab">Comfort standard</span><select id="model" aria-label="Comfort standard"></select>
         <div id="catrow"><select id="cat" aria-label="Category"></select></div>
         <label class="chk" id="fanrow"><input type="checkbox" id="nafan"> Credit ceiling fans with the EN 16798-1 air speed allowance (+1.8 K at 0.9 m/s, in the hours the fans run). Not part of the German annex.</label>
@@ -399,7 +412,7 @@ details.ev.in { margin-top: 14px }
       <div class="grp"><button id="run" type="button" class="primary">Run</button><div class="progress"><div id="bar"></div></div><span id="status">Set the inputs, then run.</span></div>
     </aside>
     <main>
-      <details class="reading" id="settings"><summary><span class="colh">Reading</span> <span id="readline" class="readline">Choose the inputs and press Run.</span> <span class="link">Change</span></summary><p class="sub">These choices score the same calculation. A change of the daylight measure, minimum or comfort model completes the trade-off front in the background; only the missing designs are simulated.</p>
+      <details class="reading" id="settings"><summary><span class="colh">Reading</span> <span id="readline" class="readline">Choose the inputs and press Run.</span> <span class="link">Change targets and model</span></summary><p class="sub">These choices score the same calculation. A change of the daylight measure, minimum or comfort model completes the trade-off front in the background; only the missing designs are simulated.</p>
         <div class="rgrid">
           <div class="grp"><span class="lab">Daylight</span>
             <div class="seg" id="dlSeg" role="group" aria-label="Daylight measure"><button type="button" data-v="UDI">Useful daylight (UDI), %</button><button type="button" data-v="S">Daylight score S, %</button><button type="button" data-v="EN">EN 17037 rating</button></div>
@@ -428,7 +441,7 @@ details.ev.in { margin-top: 14px }
       <div id="results" hidden>
       <div class="modband" id="modband" hidden></div>
       <div class="ttabs" id="ttabs" role="group" aria-label="Room type"></div>
-      <details class="v4s v4card ev" id="notedet"><summary>Notes on this run <span class="small">weather file, location and model</span></summary><div id="notes"></div></details>
+      <details class="v4s v4card ev" id="notedet"><summary>Notes on this run <span class="small" id="notecount"></span></summary><div id="notes"></div></details>
       <section class="aibox" id="aibox" hidden><h2>Critical review by Claude</h2>
         <p class="sub">Claude reads the full results of this run, looks for likely errors and weak points, and writes a critical summary. Then you can ask it questions; it can look up the options already evaluated and simulate a specific design. It uses only the numbers computed here, and its text is marked.</p>
         <div class="aiconn"><span class="small" id="aiconnnote"></span>
@@ -448,9 +461,10 @@ details.ev.in { margin-top: 14px }
       <section class="v4tiles" id="v4tiles"></section></details>
       <section class="v4s" id="v4dec"></section>
       <section class="v4s v4card" id="v4glance"></section>
-      <details class="v4s v4card coold" id="cooldet"><summary><span class="cdh"><span class="h2l" id="coolh">Does this room need cooling?</span><span class="coolsum" id="coolsum"></span></span></summary><div id="v5cool"></div></details>
+
       <section class="v4s v4card" id="facbox">
         <div id="v4fac"></div>
+      <details class="coold in" id="cooldet"><summary><span class="cdh"><span class="h2l" id="coolh">Does this room need cooling?</span><span class="coolsum" id="coolsum"></span></span></summary><div id="v5cool"></div></details>
         <details class="ev in" id="evdet"><summary>How the room behaves through the year <span class="small">comfort diagram, hottest week, every hour, comfort under every standard, daylight readings</span></summary>
         <section id="detail"></section></details>
       </section>
@@ -463,24 +477,9 @@ details.ev.in { margin-top: 14px }
           <div class="pcbox"><canvas id="pc" aria-label="Parallel coordinates of the options at this facade"></canvas><div id="pctip" class="tip" hidden></div></div>
           <p class="small">Bold: the ten best. ↓ lower is better, ↑ higher is better. Overheating, DIN degree-hours and humid hours on a square-root scale. Hover to preview, click to open.</p>
           <p class="pcfoot"><span id="pccount"></span> <button id="pcreset" type="button" class="link" hidden>Clear ranges</button></p></div></details>
-      <details class="ev"><summary>Method and limits <span class="small">engines, standards, controls, scoring, search, parameter register, version notes</span></summary>
+      <details class="ev"><summary>Method and limits <span class="small">links to the method and validation pages, parameter register, version notes</span></summary>
       <section class="method"><h2>Method and limits</h2>
-      <p>Thermal engine: EN ISO 52016-1 hourly model with wind-driven exterior convection and angle-dependent glazing, validated against ASHRAE Standard 140 and EnergyPlus in 14 climates. Checked against EnergyPlus for the three room types (432 rooms, 3 climates, v15 controls): options ranked alike (rank correlation 0.98), hourly error 0.7 K, rooms about 0.45 K cooler on average and DIN degree-hours about 5% low. The comparison is to be repeated with the v16 controls. Windows sit 10 cm behind the inner face of the wall; the reveal, overhangs and fins shade the glass hour by hour from the same geometry as the daylight model.</p>
-      <p>Internal gains and schedules (interne Wärmeeinträge, Nutzungszeiten): every run uses those of DIN 4108-2, 8.4.2 b and e: dwellings 100 Wh/m² a day over all hours; offices and schools 144 Wh/m² a day over 7 to 18 h, Monday to Friday, no public holidays or school breaks. The year starts on a Monday. Energy figures use the same until the profiles of DIN V 18599-10 are added.</p>
-      <p>Summer protection check (sommerlicher Wärmeschutz, DIN 4108-2): each design shown is rerun with the conditions of 8.4.2 only: the standard's gains, all convective; base air change 0.5 1/h for dwellings and 4 A_G/V in use hours, 0.24 1/h outside, for other uses; heating to 20 or 21 °C; day ventilation up to 3 1/h when the room air is above 23 °C and above the outdoor air; night ventilation at the design's level, 2 1/h where windows can be opened at night or 5 1/h with air across storeys or a fan system, when the room air is above the heating setpoint and above the outdoor air, and only with sun protection reaching g_tot of 0.4 or less; blinds by irradiance on the window alone, and not at weekends when operated by hand in non-residential use; no fans, no cooling. Degree-hours above 25, 26 or 27 °C by summer region (Übertemperaturgradstunden), limit 1,200 K·h/a for dwellings and 500 K·h/a otherwise (Table 9). The region is chosen from figure 1 of the standard. The proof uses the 2011 test reference year of the region (Testreferenzjahr, 8.4.2 c); on any other weather file, the bundled ones included, the result is an indication. Elsewhere in the page the DIN figure of the design run is an estimate: same gains, the app's own controls.</p>
-      <p>Design runs (comfort and energy): windows open by day when the room air is above 23 °C, the outdoor air is at least 1 K cooler and at least 12 °C; at night after a warm day (operative temperature above 24 °C in the last presence period) when the room air is above the heating setpoint and at least 2 K warmer than outside. In both cases the air flow is reduced in the hour so that the operative temperature stays at least 2 K above the heating setpoint: windows never open while heating runs. Tested on 864 cases in three climates: no hour with open windows and heating; window ventilation adds at most 0.3 kWh/m²a of heating in medium and heavy rooms and up to 0.8 kWh/m²a in light rooms, where the cooled structure draws heat the next morning. Day ventilation: none or 3 1/h. Night ventilation: none, 2 1/h, or 5 1/h, the last only when ticked, since it needs air across storeys or a fan system. Blinds come down by the DIN 4108-2 irradiance thresholds when the room air is above 23 °C, so winter sun is kept; set "by hand" in the inputs, they stay up at weekends in non-residential use. The free opening area that ventilation needs is estimated for single-sided openings without wind (CIBSE AM10: Q = 0.6 A / 3 √(g h ΔT / T), ΔT 2 K by day and 3 K at night).</p>
-      <p>Comfort models: German annex (DIN EN 16798-1/NA): comfort temperature 22 °C up to 16 °C hourly mean outdoor temperature, then 18 + 0.25 θe, 26 °C from 32 °C; band ±1, ±2, ±3 K by category. Until v15 the band followed the running mean, which roughly doubled the degree-hours above it. The basis on the hourly temperature is in the standard (caption of figure NA.2); the formula and tolerances are from secondary sources until checked against the text of NA.4.1. EN 16798-1 and ASHRAE 55 adaptive models as before; their bands are held at the top value above the range of the model. Ceiling fans raise the upper limit by 1.8 K in the hours in which they run (until v15: in every hour at 25 °C or more).</p>
-      <p>Operation for energy: heating, and ideal cooling in occupied hours to the upper limit of the comfort standard (German annex: the upper edge of its band; EN 16798-1 and ASHRAE 55: fixed limits for cooled rooms, 26 °C by default; DIN 4108-2: the region's reference temperature). Delivered energy = heating need ÷ COP + cooling need ÷ COP + fan electricity, cooling including moisture removal above 12 g/kg. The cooled run is a mixed-mode building: windows stay shut while cooling runs, open by day only when the outdoor air is at least 2 K below the cooling limit and at most 12 g/kg, at night only when it is at most 12 g/kg. Overheating is always judged from the run without cooling.</p>
-      <p>Cooling need: in Germany (or with the DIN 4108-2 model) the summer protection check decides; elsewhere the chosen comfort standard: at most 5% of occupied hours above its band by default. Where cooling is needed, the loads are sized on the 99th percentile of the occupied cooling hours (the load exceeded in 1% of them), so a Monday morning after a hot weekend does not set the size. A chilled ceiling without air conditioning is enough when, with dew-point control, its rated capacity (at 10 K between room and mean water, less when the water must run warmer than 16 °C or than the room's dew point + 1 K) covers that load with the room at most at 12 g/kg (up to 75 W/m² floor), and the humid hours in which it falls short and the hours with room air above 12 g/kg each stay within 5% of occupied hours. Otherwise air conditioning is needed. Ideal loads are a first estimate, not a sizing; they include the fresh air at outdoor temperature.</p>
-      <p>Daylight: climate-based, in the page, validated against Radiance (sDA within about 1 point, ASE identical). Scored by one of four measures: useful daylight score S (default), useful daylight area, LEED sDA reduced when ASE is above 10%, or the EN 17037 rating as steps, with a minimum below which the score is 0 (EN 17037 minimum by default). Movable blinds do not yet enter the daylight results (planned for the next phase). Light transmittance by glazing: double 0.80 / 0.70 / 0.55 and triple 0.74 / 0.66 / 0.50 for g 0.60 / 0.45 / 0.30 (typical product values, an assumption).</p>
-      <p>Constructions: the room is cut at the mid-plane of the slabs and internal walls, which are adiabatic. Thermal mass levels, heat capacity seen from the room per m² floor (EN ISO 13786, cellular room): light (timber floor on dry screed, gypsum linings, stud partitions) about 100 kJ/m²K; medium (concrete slab with screed and suspended ceiling, sand-lime inner leaf, stud partitions) about 230; heavy (as medium with the slab soffit exposed over 70% of the ceiling) about 390, close to DIN V 18599 "schwer"; very heavy (heavy with 17.5 cm sand-lime partitions) about 700, not tested unless ticked. Shading factors F_C from DIN 4108-2 Table 7. Mass works mainly together with night ventilation.</p>
-      <p>Building-wide measures (glass, wall insulation, mass) are chosen once for all room types tested: the set with the highest mean score over every facade of every room type. Each room type keeps its own window, shading and ventilation choices. Every option includes the wall reveal of the chosen wall depth.</p>
-      <p>Scoring (v16 phase 3): fixed scales, never taken from the run. Daylight: the useful daylight share; target 40% (sufficient), words at 40, 60 and 80%. Comfort: 1 with no overheating, 0.5 at the limit, 1/3 at twice the limit. Energy: 1 at or below the target, 0.5 at the limit. The overall score is the weighted geometric mean, with the weights set in the priority triangle. Recommended design at each facade: among the designs that meet every target (daylight minimum, daylight target, comfort limit, energy limit and, in Germany, DIN 4108-2 as estimated in the design run), the one with the highest score; when none meets them all, the closest design: the smallest largest shortfall, each shortfall as a share of its target and weighted by the priorities, with the daylight minimum and DIN 4108-2 never traded. Other packages: every design that also meets every target and differs in two or more measures, best score first, with the score gap shown (up to five, near twins thinned). Overheating without cooling is free-running performance (thermal autonomy) over a typical year; it is not a passive survivability check (no power outage, no extreme week). Scenarios: the recommended design and the packages rerun at +2 °C (+3 °C when the run is at +2 °C) and with poor operation (blinds down on every other day only, no night ventilation). Carbon: embodied carbon of the elements the options change, with replacements over 50 years, plus delivered energy times the grid factor over 50 years; generic factors listed in the register, shown but not scored. Search (v16 phase 3.2): the front is not extended from designs whose largest shortfall exceeds 100%; afterwards a local search around the lowest-carbon design that meets every target; see search.prune in the register. Ties within 0.01 in score go to less whole-life carbon. Corner picks: the option with the smallest largest weighted shortfall, weight 0.6 on one metric and 0.2 on the others.</p>
-      <p>Recommendations: the building's facades are combined by taking, for each set of shared measures, each facade's best option with that set, and keeping the set with the highest mean score (checked against brute force). Each statement gives the modelled difference against the same option with only that measure changed. "Little difference": every alternative tested changes the result by less than 3 daylight points, 100 K·h/a and 1 kWh/m²a. "Avoid": a large difference (five times that) at every facade. Only the strategies ticked in the inputs are simulated and recommended.</p>
-      <p>Search: for each facade of the building, 60 designs at random, window ratio, outdoor shading and glazing drawn from those meeting the daylight minimum there, then four rounds of 30 variations of options on the Pareto front, then every single change of every design on the front, repeated until the front stops changing (at most 5,000 designs per facade). Checked against brute force at 7 facades in 3 climates (v3).</p>
-      <p>Weather files: gaps in air temperature, dew point and radiation are filled by linear interpolation in time and listed under the weather input; a file with more than 2% of hours missing in any of them is refused. Missing long-wave sky radiation is computed from dew point and sky cover (Clark and Allen). The bundled German file is a test reference year whose edition is not recorded; it stands for region C.</p>
-      <p>Weather modifiers, shared with Macro Clima and Micro Clima (same code, copied from Macro Clima and checked against it to 2·10⁻⁶ K): future climate shifts the file to a global warming level of +1.5, +2 or +3 °C by the monthly change of its IPCC AR6 region, measured from the middle of the file's years (2010 when the file does not state them); relative humidity is held, so the dew point rises, and long-wave sky radiation follows the temperature. The urban context adds an estimated heat island (Theeuwes et al. 2017) to the air temperature, full at night and 15 % of it at the sun's daily peak, with the vapour pressure held. Future change first, heat island on top. Sun, daylight and wind are unchanged. With a modifier on, every result uses the modified weather, the DIN 4108-2 check included, which is then a look ahead, not a proof.</p>
-      <p>Not included yet: humidity in the comfort metric (reported separately), construction cost and carbon, obstruction by neighbouring buildings. Supply air is outdoor air.</p>
+      <p>How Room Clima works, its assumptions and limits are described on the <a href="https://gvnbetti.github.io/clima-toolbox/methods/room.html" target="_blank" rel="noopener">method page</a>, with whole-life carbon on <a href="https://gvnbetti.github.io/clima-toolbox/methods/room-carbon.html" target="_blank" rel="noopener">its own page</a>. The checks against ASHRAE Standard 140, EnergyPlus and Radiance are on the <a href="https://gvnbetti.github.io/clima-toolbox/validation.html" target="_blank" rel="noopener">validation page</a>. Below: every value the app uses, with its source.</p>
       <h3>Parameter register</h3>
       <p class="small">Every value the engine and this page use, with its source. Standard: from the text of the standard named. Secondary: from a secondary source, to be checked against the standard. Decision: a modelling choice of this app, dated. Assumption: a typical value without a binding source.</p>
       <div class="tw"><table class="regt" id="regtable"></table></div>
@@ -3291,6 +3290,7 @@ self.onmessage=(e)=>{const m=e.data;
     if (st.tm) { const rp = runPanelHtml(); $("runp").innerHTML = rp; $("runp").hidden = !rp; }
     if (!facList(st.scen).includes(st.fa)) st.fa = facList(st.scen)[0];
     $("notes").innerHTML = notesHtml(); readingLine();
+    { const nN = $("notes").children.length, el = $("notecount"); if (el) el.textContent = nN ? `${nN} note${nN === 1 ? "" : "s"}` : "none"; }
     maybeTopUp(); renderTypeTabs(); renderV4(); aiConn(); renderFacade();
     if ($("evpc").open) renderExplorer();
     if ($("evdet").open) { autoSel(); if (st.sel) renderDetail(); } else $("detail").innerHTML = "";
@@ -3311,10 +3311,11 @@ self.onmessage=(e)=>{const m=e.data;
     return n.map((x) => `<p>${x}</p>`).join("");
   }
   // the reading in one sentence; the settings open from it
-  function readingLine() {
-    const m = MODELS[st.model], cat = m.cats.length ? ", " + m.catLabel(st.cat[st.model]).replace(/^Category/, "category") : "";
-    $("readline").innerHTML = `Scored for <b>${DLNAME[st.dlm].toLowerCase().replace("(udi)", "(UDI)")}</b> (minimum: ${FLOORNAME[st.floor]}), <b>comfort by ${m.label}${cat}</b> ${`with a limit of ${fmt(limitNow())} K·h/a`}, and <b>${st.mode === "cool" ? `energy for heating and cooling to ${coolTxt()}` : "energy for heating"}</b> (COP ${st.mode === "cool" ? st.copH + " / " + st.copC : st.copH}; target ${fmt(targetNow())}, limit ${fmt(upperNow())} kWh/m²a). Daylight target ${Math.round(dlTNow() * 100)}${st.dlm === "EN" ? " (minimum level)" : "%"}. Priorities: ${wTxt()}. Fixed scales: designs that meet every target come first.${st.locNote && !st.modelManual ? ` <span class="small">Comfort model set from the location (${st.locNote.replace(/\.$/, "")}); change it in the reading panel.</span>` : ""}`;
+  function readingLine() { // v17: the targets in one line; the full reading panel folds out
+    const m = MODELS[st.model], cat = m.cats.length ? " " + m.catLabel(st.cat[st.model]).replace(/^Category /, "cat. ").replace(/ \(.*\)$/, "") : "";
+    $("readline").innerHTML = `<b>Targets</b> daylight ${Math.round(dlTNow() * 100)}${st.dlm === "EN" ? " (EN 17037 level)" : "% useful"} · overheating ≤ ${fmt(limitNow())} K·h/a (${esc(m.label.replace(/ \(.*\)/, ""))}${cat}) · energy ≤ ${fmt(upperNow())} ${UE}${dinRule() ? " · DIN 4108-2" : ""}`;
   }
+
   function renderTypeTabs() {
     $("ttabs").innerHTML = st.types.map((sc) => `<button type="button" data-v="${sc}" aria-pressed="${sc === st.scen}">${SCLAB[sc]}<small>${facList(sc).map((a) => orientLabel(sc, a)).join(", ") || "no facade pair"}</small></button>`).join("");
     document.querySelectorAll("#ttabs button").forEach((b) => b.onclick = () => { st.scen = b.dataset.v; renderAll(); });
@@ -4431,6 +4432,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   const reread = () => { if (st.fac) renderAll(); };
   // v16: parameter register and version notes, written into Method and limits from the register itself
   const CHANGES = [
+    ["v17", "21 Nov 2026", "Shared calculation core with Macro and Micro Clima (sun, sun on surfaces, psychrometrics; daylight sun from the core). Layout: only the progress while a run is on; then targets in one line, what matters most, room type, room cards with a tick or cross per target, the +2 °C and poor-operation checks and carbon; the selected facade with three designs (recommended, lower carbon, more daylight) and the other packages as More options, each named by what it changes and what that does, numbers on hover; the switches grouped by this room and whole building; cooling folded under the design; recommendations as short cards with the details under Why?; the rest folded. A design is always shown, with a notice when none meets every target. Light theme only."],
     ["v16, phase 3.4", "19 Nov 2026", "Progress: a panel at the top of the results while a run is on, with the share done, time so far and time left (from the measured time per daylight variant, per design and per check, over the workers), counts per stage (daylight variants, designs simulated, DIN checks and scenario runs) and a small bar per facade; the finer window sizes in 5% steps have their own block. The status line under Run gives the same in short."],
     ["v16, phase 3.3", "18 Nov 2026", "Facade panel: buttons above the switches for the recommended design, the other packages, the lowest-carbon design and the best design under each priority; each sets all switches, with score gap and carbon on the button. Carbon added to the results beside the switches. Refinement daylight again for every fixed shading type, so the finer window sizes do not favour the shading already picked."],
     ["v16, phase 3.2", "17 Nov 2026", "Faster runs: daylight only for the room types and orientations chosen, refinement daylight only for the fixed shading of the picks, and the search no longer extends the trade-off front from designs far from every target (largest shortfall above 100%). Carbon: the lowest-carbon design that meets every target is searched for after the front and shown with the packages; among designs within 0.01 in score, the one with less whole-life carbon is recommended."],
@@ -4640,7 +4642,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     shading: (v) => ["None", "Interior", "Exterior"][v], dayAch: (v) => ({ 0: "Closed", 1: "Tilt", 2: "Open" })[v], nightAch: (v) => ({ 0: "None", 1: "Tilt", 5: "Across storeys" })[v], fans: (v) => v ? "Fans" : "None", roof: (v) => v === "cool" ? "Cool" : "Standard" };
   // ---- confidence: how many of the 7 priority settings keep a choice best at every facade
   const GREEN = (k) => k >= 7 ? "#1a7f37" : k >= 6 ? "#2f8f4a" : k >= 5 ? "#4f9f63" : k >= 4 ? "#79b689" : k >= 3 ? "#a3ccad" : "#c9dfcf";
-  const robTxt = (k) => k >= 7 ? "Best in all 7 priority settings" : k >= 5 ? `Best in ${k} of 7 priority settings` : `Depends on priorities: best in ${k} of 7`;
+  const robTxt = (k) => k >= 7 ? "Holds whatever the priorities" : k >= 5 ? "Holds for most priorities" : "Depends on the priorities";
   // ---- building option under balanced priorities, for "what changed"
   function balancedOf(sc) {
     if (sameW(st.w, EQW)) return buildResult(sc);
@@ -4780,7 +4782,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   }
   function prioHtml(sc, B) {
     const cur = PRESETS.find((p) => sameW(st.w, normW(p[2])));
-    let h = `<div class="v4h"><h2>What matters most to you?</h2><span class="small">Re-ranks the options already simulated. The like-for-like comparisons for a new design follow within seconds.</span></div><div class="v4pre" role="group" aria-label="Priorities">`;
+    let h = `<div class="v4h"><h2>What matters most to you?</h2></div><div class="v4pre" role="group" aria-label="Priorities">`;
     h += PRESETS.map(([k, lab, w, sub]) => `<button type="button" data-k="${k}" aria-pressed="${cur && cur[0] === k}"><b>${lab}</b><span>${sub}</span></button>`).join("");
     h += `</div>${cur ? "" : `<p class="small">Custom priorities from the triangle: ${wTxt()}.</p>`}`;
     if (B && !sameW(st.w, EQW)) {
@@ -4820,6 +4822,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     c.push(MASSN[dz.mass] + " mass"); if (sc === "corner_top") c.push(SHORT4.roof(dz.roof) + " roof");
     return c;
   }
+  const tk = (ok) => ok ? `<i class="tk ok" aria-label="meets the target">✓</i>` : `<i class="tk no" aria-label="misses the target">✗</i>`;
   function glanceHtml(sc, B) {
     // compact selector: one card per room, in the order of the facades, a small 3D view and the three results
     const A = B.A;
@@ -4832,7 +4835,8 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
         <span class="fch"><b>${orientLabel(sc, a)}</b><span>${Math.round(r.dz.wwr * 100)}% window</span></span>
         <span class="c3wrap">${svg}</span>
         <span class="fcv"><span class="cvd ${v}">${VSHORT[v]}</span>${din}</span>
-        <span class="fm"><span><b class="dl">${dlVal(r.m.S)}</b> daylight</span><span><b class="oh">${fmt(Math.round(r.m.C))}</b> K·h/a</span><span><b class="en">${fmt(r.m.E)}</b> ${UE}</span></span></button>`;
+        <span class="fm"><span>Daylight<b>${tk(r.t.A1 && r.t.S)} ${dlVal(r.m.S)}</b></span><span>Comfort<b>${tk(r.t.C)} ${fmt(Math.round(r.m.C))}</b><small>K·h/a</small></span><span>Energy<b>${tk(r.t.E)} ${fmt(r.m.E)}</b><small>${UE}</small></span></span>
+        <span class="fsc">${SCN().map(([sk, lab]) => { const x = scenOf(sk, sc, a, r); return x ? `<span>${tk(x.share == null || x.share <= st.maxOut)} ${lab}</span>` : `<span class="small">${lab} …</span>`; }).join("")}<span class="small">${fmt(Math.round(carbonOf(r).tot))} kg CO₂e/m²</span></span></button>`;
     }).join("");
     const head = `<div class="v4h"><h2>Rooms</h2><span class="small">Select a room to open its design and alternatives below. Floor shading: ${st.dlm === "S" ? "useful daylight" : "useful daylight (300 to 3,000 lx)"}, darker where it is useful for more hours.</span></div>`;
     return head + `<div class="g4">${cards}</div>`;
@@ -4865,15 +4869,14 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
       const rows = [w, it.nearest && w && it.nearest.level !== w.level ? it.nearest : null].filter(Boolean);
       return `<article class="dcard" style="border-color:${GREEN(k)};border-width:${k >= 5 ? 3 : 2}px">
         <div class="dch"><div><span class="small">${NAME4[it.p]}</span><b>${choice4(it.p, it.lv0)}</b>${it.tie ? `<span class="small">Or as chosen per facade (${(() => { const g = new Map(); B.A.forEach((a, i) => g.set(it.chosen[i], (g.get(it.chosen[i]) || []).concat(orientLabel(sc, a)))); return [...g.entries()].map(([lv, as]) => `${SHORT4[it.p](lv).toLowerCase()} at ${as.join(", ")}`).join("; "); })()}): little difference.</span>` : ""}</div>${FS.SHARED.includes(it.p) ? `<span class="tagb">Building-wide</span>` : ""}</div>
-        <div class="imp"><span>Impact</span><span>${it.maxSev >= BIG ? "High" : it.maxSev >= 2 ? "Medium" : "Low"}</span></div><div class="ibar"><i style="width:${Math.max(4, Math.min(100, it.maxSev / 25 * 100)).toFixed(0)}%"></i></div>
-        <p>${w ? `Instead ${lcF(choice4(it.p, w.level))}: ${deltaTxt(w)}${at(w)}.` : ""}${extra || ""}${nsTxt(it.p)}</p>
+        <p>${w ? `Instead ${lcF(choice4(it.p, w.level))}: ${deltaTxt(w)}${at(w)}.` : ""} <span class="imp2">${it.maxSev >= BIG ? "High" : it.maxSev >= 2 ? "Medium" : "Low"} impact</span></p>
         <div class="dcf"><span class="rob" style="color:${k >= 5 ? GREEN(7) : "var(--mute)"}">${robTxt(it.k)}</span>${rows.length ? `<button type="button" class="why ghost" data-k="${key}">${open ? "Hide" : "Why?"}</button>` : ""}</div>
-        ${open ? `<div class="whyb">${rows.map((c) => `<span class="wt">Instead: ${lcF(choice4(it.p, c.level))}${at(c)}</span>${whyBars(c)}`).join("")}<span class="small">The same design with only this measure changed, simulated${it.est ? "; some values are estimates while the exact runs finish" : ""}. Orange: worse. Blue: better.</span></div>` : ""}</article>`;
+        ${open ? `<div class="whyb">${extra || nsTxt(it.p) ? `<p class="small">${extra || ""}${nsTxt(it.p)}</p>` : ""}${rows.map((c) => `<span class="wt">Instead: ${lcF(choice4(it.p, c.level))}${at(c)}</span>${whyBars(c)}`).join("")}<span class="small">The same design with only this measure changed, simulated${it.est ? "; some values are estimates while the exact runs finish" : ""}. Orange: worse. Blue: better.</span></div>` : ""}</article>`;
     };
     const keep = items.filter((it) => it.same && !it.small && !core.covered.has(it.p)).sort((x, y) => y.maxSev - x.maxSev);
     const adapt = items.filter((it) => !it.same && !it.small && !core.covered.has(it.p));
     const yours = items.filter((it) => it.small && !core.covered.has(it.p));
-    let h = `<div class="v4h"><h2>Recommendations</h2><span class="small">For the priorities chosen above, across all facades of this room type. Green outline: the stronger the green, the more priority settings keep this choice best.</span></div>`;
+    let h = `<div class="v4h"><h2>Recommendations</h2><span class="small">For the whole building, at every facade of this room type. Green: the choice holds whatever the priorities.</span></div>`;
     if (B.global) { const d = SH4.filter((q) => B.own && B.own.shared[q] !== B.best.shared[q]);
       h += `<p class="small">Glass, insulation and mass are chosen once for the whole building, over every room type tested.${d.length ? ` On its own the ${SCLAB[sc].toLowerCase()} would take ${listJoin(d.map((q) => lvWord(q, B.own.shared[q])))} (mean score ${pts(B.own.mean)} against ${pts(B.best.mean)}).` : ""}</p>`; }
     h += `<h3 class="v4k">Keep at every facade</h3><div class="dgrid">${keep.map((it) => card(it, (it.p === "wwr" ? winRangeTxt(sc, B) : it.p === "mass" ? massDep(sc, B) : ventTxt(it, B.best.per[B.A[0]].dz)) + edgeTxt(it.p, it.chosen))).join("")}${core.pairs.map((pr) => `<article class="dcard" style="border-color:${GREEN(7)};border-width:3px"><div class="dch"><div><span class="small">${cap(pr.x.label)}</span><b>At least one of the two</b></div></div><p>Without either: ${deltaTxt(pr.worst)}${at(pr.worst)}. The two stand in for each other here, so the choice between them is free.</p></article>`).join("")}</div>`;
@@ -4884,7 +4887,7 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
           return `<div class="dcf"><span class="rob">${robTxt(it.k)}</span>${per.length ? `<button type="button" class="why ghost" data-k="${key}">${open ? "Hide" : "Why?"}</button>` : ""}</div>${open ? `<div class="whyb">${per.map((c) => `<span class="wt">${orientLabel(sc, c.a)}: instead ${lcF(choice4(it.p, c.level))}</span>${whyBars(c)}`).join("")}<span class="small">At each facade the alternative that changes the result most, with only this measure changed, simulated. Orange: worse. Blue: better.</span></div>` : ""}`; })()}</article>`; }).join("")}</div>`;
     if (yours.length) h += `<h3 class="v4k">Your call: little difference in the simulation</h3><div class="ychips">${yours.map((it) => `<span>${NAME4[it.p]} <small>(the design uses ${SHORT4[it.p](it.lv0)}${(it.p === "dayAch" || it.p === "nightAch") && it.lv0 ? `; ${openTxt(it.p, B.best.per[B.A[0]].dz, sc)}` : ""})</small></span>`).join("")}</div><p class="small">Every alternative tested changes daylight by ${TH.S} percentage points or less, overheating by less than ${TH.C} K·h/a and energy by less than ${TH.E} ${UE}, at every facade. Other criteria, such as price, carbon or appearance, can decide.</p>`;
     if (core.avoid.length) h += `<h3 class="v4k">Avoid</h3><div class="dgrid">${core.avoid.map((x) => `<article class="dcard avoid"><div class="dch"><div><span class="small">${NAME4[x.p]}</span><b>${choice4(x.p, x.lv)}</b></div></div><p>A large difference at every facade, up to ${deltaTxt(x.c)}${at(x.c)}.</p></article>`).join("")}</div>`;
-    if (core.two.length) h += `<h3 class="v4k">What you gain and what you give up</h3><ul class="gain">${core.two.map((x) => `<li><b>${choice4(x.p, x.level)}</b>${at(x)} instead of ${lcF(choice4(x.p, B.best.per[x.a].dz[x.p]))}: ${deltaTxt(x)}.</li>`).join("")}</ul>`;
+    if (false && core.two.length) h += `<h3 class="v4k">What you gain and what you give up</h3><ul class="gain">${core.two.map((x) => `<li><b>${choice4(x.p, x.level)}</b>${at(x)} instead of ${lcF(choice4(x.p, B.best.per[x.a].dz[x.p]))}: ${deltaTxt(x)}.</li>`).join("")}</ul>`;
     return h;
   }
   // ---- the facade panel: what-if switches from the recommended design, results, comparison with the picks
@@ -4911,13 +4914,53 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
   }
   /* v16 phase 3.3 (Giovanni, 18 November 2026): the designs worth comparing at this facade as buttons above the switches.
      Each button sets every switch to that design; changing a switch afterwards makes it your own design. */
+  /* v17 (Giovanni, 21 November 2026): three designs first (recommended, lower carbon, more daylight), then the packages as
+     "More options", each named by what it changes and what that does; the numbers on hover. */
+  const escA = (x) => String(x).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   function designSet(sc, a, rec) {
-    const out = [["rec", "Recommended", rec, "the recommended design"]], seen = new Set([FS.keyOf(rec.dz)]);
-    const add = (id, lab, r, note) => { if (!r) return; const k = FS.keyOf(r.dz); if (seen.has(k)) return; seen.add(k); out.push([id, lab, r, note]); };
-    packagesOf(sc, a, rec).forEach((r, i) => add("p" + i, "Package " + String.fromCharCode(65 + i), r, rec.t.all ? "also meets every target" : "about as close to the targets"));
-    const lc = lowCarbonOf(sc, a); if (lc) add("lc", "Lowest carbon", lc, "least whole-life carbon among the designs that meet every target");
-    const PD = presetDesigns(sc); PRESETS.forEach(([k, nm]) => { const r = PD[k] && PD[k].best.per[a]; add("pr" + k, nm, r, "best with the priority " + nm.toLowerCase()); });
+    const out = [["rec", "Recommended", rec, "the recommended design", 0]], seen = new Set([FS.keyOf(rec.dz)]);
+    const add = (id, lab, r, note, row) => { if (!r) return; const k = FS.keyOf(r.dz); if (seen.has(k)) return; seen.add(k); out.push([id, lab, r, note, row]); };
+    const lc = lowCarbonOf(sc, a); if (lc) add("lc", "Lower carbon", lc, "the least whole-life carbon among the designs that meet every target", 0);
+    const f = facade(sc, a), ok = (f ? f.ok : []).filter((r) => r.t && r.t.all);
+    const md = ok.length ? ok.reduce((b, r) => (pts(r.m.S) > pts(b.m.S) || (pts(r.m.S) === pts(b.m.S) && r.q > b.q) ? r : b), ok[0]) : null;
+    if (md && pts(md.m.S) - pts(rec.m.S) > TH.S) add("md", "More daylight", md, "the most daylight among the designs that meet every target", 0);
+    packagesOf(sc, a, rec).forEach((r, i) => add("p" + i, pkgLabel(sc, rec, r), r, rec.t.all ? "also meets every target" : "about as close to the targets", 1));
     return out;
+  }
+  // what a design changes against the recommended one, in words: the two measures that matter most, then "+n more"
+  const PKORD = ["wwr", "shading", "fixed", "gglass", "mass", "nightAch", "dayAch", "uglass", "opaque", "fans", "roof"];
+  function measWord(p, v, b) {
+    const n = (x) => +String(x).replace(/[^0-9.]/g, "");
+    if (p === "wwr") return `${v > b ? "More" : "Less"} glass (${Math.round(v * 100)}%)`;
+    if (p === "shading") return ["No blinds", "Interior blinds", "Exterior blinds"][v] || SHORT4[p](v);
+    if (p === "fixed") return v === "none" ? "No fixed shading" : SHORT4[p](v);
+    if (p === "gglass") return v > b ? `Clearer glass (g ${v})` : `Solar control glass (g ${v})`;
+    if (p === "uglass") return v > b ? "Double glazing" : "Triple glazing";
+    if (p === "opaque") return `${n(v) > n(b) ? "Less" : "More"} wall insulation`;
+    if (p === "mass") { const o = ["light", "medium", "heavy", "vheavy"]; return o.indexOf(v) > o.indexOf(b) ? "Heavier construction" : "Lighter construction"; }
+    if (p === "dayAch") return v ? `${SHORT4[p](v)} by day` : "Windows closed by day";
+    if (p === "nightAch") return v ? `Night airing (${SHORT4[p](v).toLowerCase()})` : "No night airing";
+    if (p === "fans") return v ? "Ceiling fans" : "No fans";
+    return `${NAME4[p]}: ${SHORT4[p](v)}`;
+  }
+  function pkgLabel(sc, rec, r) {
+    const ch = PKORD.filter((p) => r.dz[p] !== undefined && r.dz[p] !== rec.dz[p]);
+    return ch.slice(0, 2).map((p, i) => { const w = measWord(p, r.dz[p], rec.dz[p]); return i ? w.charAt(0).toLowerCase() + w.slice(1) : w; }).join(" + ") + (ch.length > 2 ? ` +${ch.length - 2} more` : "");
+  }
+  function pkgEffect(rec, r) { // plain words; thresholds as everywhere: 3 daylight points, 100 K·h/a, 1 kWh/m²a
+    if (r === rec) return "best for your priorities";
+    const c = delta(rec, r), w = [];
+    if (c.dS > TH.S) w.push("more daylight"); else if (c.dS < -TH.S) w.push("less daylight");
+    if (c.dC >= BIG * TH.C) w.push("much warmer"); else if (c.dC >= TH.C) w.push("warmer"); else if (c.dC >= TH.C / 2) w.push("a little warmer");
+    else if (c.dC <= -TH.C) w.push("cooler");
+    if (c.dE >= TH.E) w.push("more energy"); else if (c.dE <= -TH.E) w.push("less energy");
+    if (c.dK <= -20) w.push("less carbon"); else if (c.dK >= 20) w.push("more carbon");
+    return w.length ? listJoin(w) : "practically the same results";
+  }
+  function pkgNumbers(rec, r) {
+    const c = delta(rec, r), Y = Register.val("carbon.years"), sg = (x, d) => (x > 0 ? "+" : x < 0 ? "−" : "±") + fmt(Math.round(Math.abs(x) * d) / d);
+    return r === rec ? `Daylight ${dlVal(r.m.S)}, overheating ${fmt(Math.round(r.m.C))} K·h/a, energy ${fmt(r.m.E)} ${UE}, ${fmt(Math.round(carbonOf(r).tot))} kg CO₂e/m² over ${Y} years`
+      : `Against the recommended design: daylight ${sg(c.dS, 1)} points, overheating ${sg(c.dC, 1)} K·h/a, energy ${sg(c.dE, 10)} ${UE}, carbon ${sg(c.dK, 1)} kg CO₂e/m² over ${Y} years`;
   }
   function facPanelHtml(sc, B) {
     const a = st.fa, rec = B.best.per[a]; if (!rec) return "";
@@ -4926,16 +4969,19 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     // v8: a choice that changes the cooling result is marked on its button
     const F = st.fac[sc][a], vNow = cur ? coolVerdict(cur, sc, a).v : null;
     const flipTag = (p, v) => { if (!vNow || vNow === "wait" || v === dz[p] || !F) return ""; const x = F.byKey.get(FS.keyOf(Object.assign({}, dz, { [p]: v }))); if (!x) return "";
-      const v2 = coolVerdict({ dz: x.dz, r: x.r }, sc, a).v; if (v2 === "wait" || v2 === vNow) return ""; return `<span class="flip${RANKV[v2] < RANKV[vNow] ? " gd" : ""}">${VSHORT[v2]}</span>`; };
+      const v2 = coolVerdict({ dz: x.dz, r: x.r }, sc, a).v; if (v2 === "wait" || v2 === vNow) return ""; return `<span class="flip${RANKV[v2] < RANKV[vNow] ? " gd" : ""}">${{ none: "no cooling needed", ceil: "needs a chilled ceiling", sys: "needs air conditioning" }[v2] || VSHORT[v2]}</span>`; };
     let h = `<div class="v4h"><h2>${orientFull(sc, a)} ${sc === "cellular" ? "facade" : "facades"}, ${SCLAB[sc].toLowerCase()}</h2><span class="small">${wi ? "What if: your changes are in blue." : "The recommended design. Pick other choices to see their effect."} A label under a choice shows where it changes the cooling result.</span></div>${cur && cur.t && !cur.t.all ? `<p class="missnote"><b>No design found meets every target here.</b> Shown: the one that comes closest. ${cap(missTxt(cur))}. Change the targets under Reading, or allow more strategies in the inputs.</p>` : ""}${B.mixed ? `<p class="missnote">No single choice of glass, insulation and mass was found that suits every facade of this room type; each facade shows its own best design.</p>` : ""}<div class="fpg">`;
     const DS4 = designSet(sc, a, rec), kNow = FS.keyOf(dz);
-    h += `<div class="dsel" role="group" aria-label="Designs to compare at this facade">${DS4.map(([id, lab, r, note]) => { const on = FS.keyOf(r.dz) === kNow, K = carbonOf(r);
-      return `<button type="button" data-ds="${id}" aria-pressed="${on}" class="${on ? "on" : ""}${r.t && r.t.all ? "" : " miss"}" title="${cap(note)}"><b>${lab}</b><small>${id === "rec" ? r.D.toFixed(2) : (r.D - rec.D >= 0 ? "+" : "−") + Math.abs(r.D - rec.D).toFixed(2)} score · ${fmt(Math.round(K.tot))} kg</small></button>`; }).join("")}${DS4.some(([, , r]) => FS.keyOf(r.dz) === kNow) ? "" : `<button type="button" class="on wi" aria-pressed="true" disabled><b>Your design</b><small>changed by hand</small></button>`}</div>
-      <p class="small">Score: overall score from 0 to 1, against the recommended design. kg: whole-life carbon, kg CO₂e/m² over ${Register.val("carbon.years")} years. A design that does not meet every target is marked with a dashed border. Building-wide choices (glass, insulation, mass) of a design apply to every facade.</p>`;
-    h += `<div class="sw">${meas.map((p) => { const L = LVa(p), it = core && core.items[p], k = it ? (it.tie ? 7 : it.k) : 7;
+    const btn = ([id, lab, r, note]) => { const on = FS.keyOf(r.dz) === kNow;
+      return `<button type="button" data-ds="${id}" aria-pressed="${on}" class="${on ? "on" : ""}${r.t && r.t.all ? "" : " miss"}" title="${escA(cap(note) + ". " + pkgNumbers(rec, r) + (r.t && r.t.all ? "." : ". Misses: " + missTxt(r) + "."))}"><b>${lab}</b><small>${pkgEffect(rec, r)}</small></button>`; };
+    const main = DS4.filter((d) => !d[4]), more = DS4.filter((d) => d[4]);
+    h += `<div class="dsel" role="group" aria-label="Designs to compare at this facade">${main.map(btn).join("")}${DS4.some(([, , r]) => FS.keyOf(r.dz) === kNow) ? "" : `<button type="button" class="on wi" aria-pressed="true" disabled><b>Your design</b><small>changed by hand</small></button>`}</div>`;
+    if (more.length) h += `<div class="dmore"><span class="small">More options, each also ${rec.t.all ? "meeting every target" : "about as close to the targets"}:</span><div class="dsel" role="group" aria-label="More designs at this facade">${more.map(btn).join("")}</div></div>`;
+    const measO = meas.filter((p) => !FS.SHARED.includes(p)).concat(meas.filter((p) => FS.SHARED.includes(p))), nOwn = meas.filter((p) => !FS.SHARED.includes(p)).length;
+    h += `<div class="sw">${measO.map((p, iP) => (iP === 0 ? `<div class="swg">This room</div>` : iP === nOwn ? `<div class="swg">Whole building</div>` : "") + (() => { const L = LVa(p), it = core && core.items[p], k = it ? (it.tie ? 7 : it.k) : 7;
       return `<div class="swr"><div class="swh"><b>${NAME4[p]}</b><span class="small">${FS.SHARED.includes(p) ? "building-wide: every facade" : "this facade only"}${p === "wwr" && wwrRange(sc, a) ? `; ${rangeTxt(wwrRange(sc, a))} differ little` : ""}${(p === "dayAch" || p === "nightAch") && dz[p] ? `; ${openTxt(p, dz, sc)}` : ""}</span></div><div class="swo" role="group" aria-label="${NAME4[p]}">${L.map((v) => {
         const isRec = v === rec.dz[p], on = v === dz[p];
-        return `<button type="button" data-p="${p}" data-v="${typeof v === "number" ? "n" + v : v}" aria-pressed="${on}" class="${on ? (isRec ? "on" : "wi") : ""}" style="${isRec ? `box-shadow:0 0 0 ${k >= 5 ? 3 : 2}px ${GREEN(k)}` : ""}">${SHORT4[p](v)}${flipTag(p, v)}</button>`; }).join("")}</div></div>`; }).join("")}</div>`;
+        return `<button type="button" data-p="${p}" data-v="${typeof v === "number" ? "n" + v : v}" aria-pressed="${on}" class="${on ? (isRec ? "on" : "wi") : ""}" style="${isRec ? `box-shadow:0 0 0 ${k >= 5 ? 3 : 2}px ${GREEN(k)}` : ""}">${SHORT4[p](v)}${flipTag(p, v)}</button>`; }).join("")}</div></div>`; })()).join("")}</div>`;
     // results
     const show = cur || rec;
     h += `<div class="fpr"><div class="tohead"><span class="small">Drag to turn</span><span class="xbtn"><button type="button" class="ghost xb" data-x="fp3d|svg">SVG</button><button type="button" class="ghost xb" data-x="fp3d|png">PNG</button></span></div><div id="fp3d" class="fp3d"></div>`;
@@ -4960,13 +5006,6 @@ ${JSON.stringify(digest(true))}${AI.review && AI.review.value ? "\n\nREVIEW:\n" 
     }
     if (wi) h += `<button type="button" class="ghost" id="wireset">Back to the recommended design</button>`;
     h += `</div></div>`;
-    h += `<details class="pkgs" id="pkgdet"${st.pkgOpen ? " open" : ""}><summary>Other packages at this facade</summary>${packagesHtml(sc, a, rec).replace(/^<h3 class="v4k">Other packages at this facade<\/h3>/, "")}</details>`;
-    // comparison with the picks
-    const base = cur || rec, PD = presetDesigns(sc), names = { balanced: "Balanced", daylight: "Daylight first", comfort: "Comfort first", energy: "Energy first" };
-    const cell = (v, ref, d, goodUp, txt) => { if (!ref) return `<td>${v}</td>`; const dv = d, none = Math.abs(dv) < (txt === "dl" ? 1 : txt === "C" ? 1 : 0.1); return `<td>${v} <small style="color:${none ? "var(--mute)" : (dv > 0) === goodUp ? "var(--cool)" : "var(--warm)"}">${none ? "" : txt === "dl" ? dlDelta(dv) : (dv > 0 ? "+" : "−") + fmt(txt === "C" ? Math.round(Math.abs(dv)) : Math.abs(dv))}</small></td>`; };
-    const trow = (nm, r, ref) => `<tr${ref ? "" : ` class="rr"`}><th scope="row">${nm}</th>${cell(dlVal(r.m.S), ref, ref ? pts(r.m.S) - pts(ref.m.S) : 0, true, "dl")}${cell(fmt(Math.round(r.m.C)), ref, ref ? r.m.C - ref.m.C : 0, false, "C")}${cell(fmt(r.m.E), ref, ref ? r.m.E - ref.m.E : 0, false, "E")}<td class="small">${ref ? meas.filter((p) => r.dz[p] !== ref.dz[p]).map((p) => lcF(choice4(p, r.dz[p]))).join("; ") || "same design" : "the design above"}</td></tr>`;
-    h += `<h3 class="v4k">What you gain and what you give up at this facade</h3><div class="tw"><table class="cmp"><thead><tr><th>Design</th><th>Daylight, ${st.dlm === "EN" ? "rating" : "%"}</th><th>Overheating, K·h/a</th><th>Energy, ${UE}</th><th>Differs in</th></tr></thead><tbody>${trow(wi ? "Your design" : "Recommended", base, null)}${Object.keys(names).map((k) => { const d = PD[k] && PD[k].best.per[a]; return d && !(k === "balanced" && !wi && sameW(st.w, EQW)) ? trow(names[k], d, base) : ""; }).join("")}</tbody></table></div>
-      <p class="small">The design each priority button puts on top, at this facade. Building-wide choices (glass, insulation, mass) may differ from the design above. Blue: better than the design above. Orange: worse.</p>`;
     return h;
   }
   function bindFacPanel(sc, B) {

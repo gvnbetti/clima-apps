@@ -8,9 +8,9 @@ original weather file but does not modify it.
 The module provides two ways to adjust a weather file: to account for future global warming and to represent the
 additional heat associated with the urban environment.
 
-Both modifiers are calculated centrally in Macro Clima (`macro/core.js`) and shared with the other apps. Room Clima
-uses a generated version (`room/src/climamods.js`), produced by `shared/mkmods.py`, while Micro Clima carries its own
-copy.
+Both modifiers are calculated centrally in Macro Clima (`macro/core.js`) and shared with the other apps through the
+calculation core `shared/climamods.js`, produced by `shared/mkmods.py`. Room Clima and Micro Clima both embed this
+generated core, so the three apps give identical results.
 
 ## What it is for
 A typical-year weather file describes recent climatic conditions at a particular location, usually an open site such

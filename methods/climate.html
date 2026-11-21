@@ -59,9 +59,9 @@ climate adjustments consistently across all three apps. Clima Map is the excepti
 original weather file but does not modify it.</p>
 <p>The module provides two ways to adjust a weather file: to account for future global warming and to represent the
 additional heat associated with the urban environment.</p>
-<p>Both modifiers are calculated centrally in Macro Clima (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/macro/core.js"><code>macro/core.js</code></a>) and shared with the other apps. Room Clima
-uses a generated version (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/room/src/climamods.js"><code>room/src/climamods.js</code></a>), produced by <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/shared/mkmods.py"><code>shared/mkmods.py</code></a>, while Micro Clima carries its own
-copy.</p>
+<p>Both modifiers are calculated centrally in Macro Clima (<a href="https://github.com/gvnbetti/clima-toolbox/blob/main/macro/core.js"><code>macro/core.js</code></a>) and shared with the other apps through the
+calculation core <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/shared/climamods.js"><code>shared/climamods.js</code></a>, produced by <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/shared/mkmods.py"><code>shared/mkmods.py</code></a>. Room Clima and Micro Clima both embed this
+generated core, so the three apps give identical results.</p>
 <h2>What it is for</h2>
 <p>A typical-year weather file describes recent climatic conditions at a particular location, usually an open site such
 as an airport. But a building designed today will operate in a warmer climate, and most buildings stand within

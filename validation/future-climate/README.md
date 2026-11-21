@@ -1,7 +1,7 @@
 # Future climate (Macro, Micro and Room Clima)
 
 **What is checked.** The future-climate generator shared by the three apps (`macro/core.js` `futureDelta` and
-`morphWeather`, copied to `room/src/climamods.js` and into Micro Clima). It shifts a weather file to a level of global
+`morphWeather`, copied to the shared core `shared/climamods.js` used by Micro and Room Clima). It shifts a weather file to a level of global
 warming: +1.5, +2 or +3 °C above 1850-1900. The check asks whether the calculation follows the open data and method it
 cites. It does not ask whether the morphed files match future observations. Each step is checked against an open,
 independent source:

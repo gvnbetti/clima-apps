@@ -1,64 +1,87 @@
 # Room Clima: how carbon is calculated
 
-Room Clima compares designs by whole-life carbon over 50 years, per m² of floor. It counts only what the options
-change: the embodied carbon of the elements a design adds or removes, with their replacements, and the operational
-carbon of the energy the room uses. The structure, floors, partitions and services that every design shares are left
-out. The figures are therefore for comparing designs of the same room, not a building LCA.
+## What it measures
+Room Clima compares design options by their whole-life carbon over a 50-year study period, expressed per m² of floor
+area.
 
-Code: `carbonOf` in `room/src/core.js`. Values: the `carbon.*` entries of `room/src/register.js`. All are generic
-assumptions, to be replaced by project data or the Build-up LCA datasets (ÖKOBAUDAT).
+It counts only the impacts that change between the options: the embodied carbon of elements added or removed,
+including their replacements, and the operational carbon associated with the energy used by the room.
 
-## Formula
+The structure, floors, partitions and building services shared by all options are excluded. The result is therefore a
+comparative assessment of alternative designs for the same room, not a whole-building LCA.
 
-Whole-life carbon = embodied carbon of the options + delivered energy × grid factor × 50 years
+Code: `carbonOf` in `room/src/core.js`. Data: the `carbon.*` entries in `room/src/register.js`.
 
-- **Study period:** 50 years (BNB and DGNB reference study period).
-- **Replacements:** an element with a service life L is counted ⌈50 / L⌉ times.
-- **Operational carbon:** delivered energy (all electric, through a heat pump) × 0.25 kg CO₂e/kWh × 50. The factor is
-  an assumed mean over 50 years; the German mix was about 0.38 kg/kWh in 2024 (UBA) and is set to fall. It can be
-  changed in the app.
+All embodied-carbon values are generic assumptions. They should be replaced with project-specific data or, where
+available, product and assembly data from the Build-up LCA datasets, including ÖKOBAUDAT.
 
-## Embodied carbon of the options
+## Calculation
+<p align="center">Whole-life carbon = embodied carbon of the design options + operational carbon over 50 years</p>
 
-| Element | Value | Life | Measured on |
+The study period is 50 years, following the reference study period used by BNB and DGNB.
+
+**Replacement cycles.** An element with a service life of L years is counted according to the number of times it is
+installed during the study period: ⌈50 / L⌉.
+
+**Operational carbon.** Delivered energy is multiplied by an assumed electricity-grid factor of 0.25 kg CO₂e/kWh and by
+the 50-year study period.
+
+The factor represents an assumed average over the study period, not today's grid intensity. Germany's electricity mix
+was approximately 0.38 kg CO₂e/kWh in 2024 (UBA). The lower factor reflects the expected decarbonisation of electricity
+generation. It can be changed in the app.
+
+## Embodied carbon of design options
+
+| Element | Embodied carbon | Service life | Measured on |
 |---|---|---|---|
-| Window with frame, double glazing | 55 kg CO₂e/m² | 40 years (counted twice) | window area |
-| Window with frame, triple glazing | 75 kg CO₂e/m² | 40 years | window area |
-| Solar control coating (g 0.3 or less) | +3 kg CO₂e/m² | with the window | window area |
-| Opaque wall | 45 kg CO₂e/m² + 0.42 per cm of insulation (14, 24 or 36 cm by U-value level) | 50 years | wall area without window |
-| Exterior venetian blind with motor | 40 kg CO₂e/m² | 25 years | window area |
-| Interior textile blind | 6 kg CO₂e/m² | 15 years | window area |
-| Overhang, fins, frame | 90 kg CO₂e per m² of projected element | 50 years | depth × length (overhang over the facade width, two fins over the window height) |
-| Thermal mass, against light construction | medium 15, heavy 45, very heavy 60 kg CO₂e per m² of floor | 50 years | floor area |
-| Ceiling fan | 35 kg CO₂e per fan, one per 12 m² of floor | 15 years | number of fans |
-| Night ventilation, tilt restrictors and actuators | 15 kg CO₂e per facade | 20 years | facade |
-| Night ventilation across storeys | 5 kg CO₂e per m² of floor | 20 years | floor area |
+| Window with frame, double glazing | 55 kg CO₂e/m² | 40 years | Window area |
+| Window with frame, triple glazing | 75 kg CO₂e/m² | 40 years | Window area |
+| Solar-control coating (g-value ≤ 0.3) | +3 kg CO₂e/m² | With window | Window area |
+| Opaque wall | 45 kg CO₂e/m² + 0.42 per cm of insulation (14, 24 or 36 cm, depending on U-value level) | 50 years | Wall area excluding windows |
+| Exterior motorised venetian blind | 40 kg CO₂e/m² | 25 years | Window area |
+| Interior textile blind | 6 kg CO₂e/m² | 15 years | Window area |
+| Overhang, fins or frame | 90 kg CO₂e/m² of projected element | 50 years | Depth × length |
+| Thermal mass, relative to light construction | Medium: 15; heavy: 45; very heavy: 60 kg CO₂e/m² | 50 years | Floor area |
+| Ceiling fan | 35 kg CO₂e per fan | 15 years | Number of fans |
+| Night ventilation, tilt restrictors and actuators | 15 kg CO₂e per facade | 20 years | Number of facades |
+| Night ventilation across storeys | 5 kg CO₂e/m² | 20 years | Floor area |
 
-The window area is the window-to-wall ratio times the facade. A corner room counts both facades. The thermal mass
-values are the least certain of the set.
+Window area is calculated from the window-to-wall ratio and facade area. A corner room includes both facades. For
+overhangs, the projected area is depth multiplied by length; for fins, it is their projection multiplied by height.
+
+The thermal-mass values are the least certain in this dataset and should be treated as indicative.
 
 ## Worked example
+An office room with one facade, measuring 3.6 × 5.4 m and 3.0 m high. This gives 19.44 m² of floor area and 10.8 m² of
+facade area.
 
-Office, one facade, 3.6 × 5.4 m, 3.0 m high (19.44 m² floor, 10.8 m² facade). Computed with the current code.
+The following results are calculated using the current code.
 
-| Element | Design A: 50 % window, triple, exterior blind, 0.5 m overhang, medium mass, night tilt, fans | Design B: 30 % window, double, interior blind, heavy mass |
+| Element | Design A: 50% window, triple glazing, exterior blind, 0.5 m overhang, medium thermal mass, night tilt ventilation and fans | Design B: 30% window, double glazing, interior blind and heavy thermal mass |
 |---|---|---|
-| Window | 5.4 m² × 75 × 2 = 810 kg → 41.7 kg/m² | 3.24 m² × 55 × 2 = 356 kg → 18.3 kg/m² |
-| Wall | 5.4 m² × (45 + 0.42 × 24) = 297 kg → 15.3 | 7.56 m² × (45 + 0.42 × 14) = 385 kg → 19.8 |
-| Blinds | 5.4 m² × 40 × 2 = 432 kg → 22.2 | 3.24 m² × 6 × 4 = 78 kg → 4.0 |
-| Overhang | 90 × 0.5 × 3.6 = 162 kg → 8.3 | 0 |
-| Thermal mass | 15.0 | 45.0 |
-| Fans | 35 × 2 × 4 = 280 kg → 14.4 | 0 |
-| Night ventilation | 15 × 3 = 45 kg → 2.3 | 0 |
-| **Embodied, per m² floor** | **119.2 kg CO₂e/m²** | **87.1 kg CO₂e/m²** |
+| Window | 5.4 m² × 75 × 2 = 810 kg (41.7 kg/m² floor) | 3.24 m² × 55 × 2 = 356 kg (18.3 kg/m² floor) |
+| Wall | 5.4 m² × (45 + 0.42 × 24) = 297 kg (15.3 kg/m² floor) | 7.56 m² × (45 + 0.42 × 14) = 385 kg (19.8 kg/m² floor) |
+| Blinds | 5.4 m² × 40 × 2 = 432 kg (22.2 kg/m² floor) | 3.24 m² × 6 × 4 = 78 kg (4.0 kg/m² floor) |
+| Overhang | 90 × 0.5 × 3.6 = 162 kg (8.3 kg/m² floor) | 0 |
+| Thermal mass | 15.0 kg/m² floor | 45.0 kg/m² floor |
+| Fans | 35 × 2 × 4 = 280 kg (14.4 kg/m² floor) | 0 |
+| Night ventilation | 15 × 3 = 45 kg (2.3 kg/m² floor) | 0 |
+| **Embodied carbon** | **119.2 kg CO₂e/m² floor** | **87.1 kg CO₂e/m² floor** |
 
-Operational carbon adds 12.5 kg CO₂e/m² for each kWh/m²a of delivered energy (0.25 × 50). At 10 kWh/m²a that is
-125 kg CO₂e/m²: of the same order as the embodied part. A design that saves 2 kWh/m²a each year therefore justifies
-about 25 kg CO₂e/m² more embodied carbon.
+Operational carbon adds 12.5 kg CO₂e/m² for every 1 kWh/m²a of delivered energy: 0.25 × 50.
 
-## How carbon enters the recommendation
+At 10 kWh/m²a, this amounts to 125 kg CO₂e/m² over 50 years, comparable in magnitude to the embodied carbon of the
+options. A design that saves 2 kWh/m²a therefore avoids approximately 25 kg CO₂e/m² over the study period. This
+provides a useful way to compare additional embodied carbon against operational energy savings.
 
-Carbon is not a target and not part of the score. It decides between designs that are otherwise equal: among designs
-within 0.01 in score and in the same tier, the one with less whole-life carbon is recommended. After the main search, a
-local search looks for the design with the least whole-life carbon among those that meet every target, because carbon
-is not one of the search criteria and the search alone could miss it.
+## How carbon influences the recommendation
+Carbon is not a performance target and does not contribute to the design score. It is used to distinguish between
+designs with otherwise equivalent performance.
+
+Within the same tier, when scores are within 0.01 of each other, the design with lower whole-life carbon is preferred.
+
+A further local search looks for the lowest-carbon design among those meeting every target. This is necessary because
+carbon is not one of the main search criteria, and the initial search could otherwise miss a lower-carbon option.
+
+The recommendation therefore prioritises meeting the comfort, energy and daylight requirements, then uses whole-life
+carbon to identify the better-performing option among eligible designs.

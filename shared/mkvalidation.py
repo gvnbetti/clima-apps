@@ -20,7 +20,7 @@ for model, used, ref, res, folder in body:
             f'<td><a href="{GH}/tree/main/validation/{f}">Report</a></td></tr>')
 lim = re.search(r'## Known limits\n(.*?)\n\n', md, re.S).group(1)
 items = ''.join(f'<li>{inline(" ".join(x.split()))}</li>' for x in re.split(r'\n- ', '\n' + lim.strip())[1:])
-date = re.search(r'produced on ([0-9]+ \w+ [0-9]{4})', md).group(1)
+date = re.findall(r'([0-9]+ \w+\s+[0-9]{4})', md[md.index('All results were produced'):][:200])[-1].replace('\n', ' ')
 res_files = [str(p.relative_to(ROOT)) for p in (ROOT / 'validation').rglob('*') if p.suffix in ('.md', '.json') and '_work' not in p.parts and p.name != 'README.md' and 'history' not in p.parts]
 commit = subprocess.run(['git', 'log', '-1', '--format=%h', '--', *res_files], cwd=ROOT, capture_output=True, text=True).stdout.strip()
 

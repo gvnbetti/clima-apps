@@ -3,7 +3,7 @@ const fs = require('fs'), vm = require('vm');
 const sb = { console, Math, Float32Array, Float64Array, Uint8Array, Uint16Array, Int16Array, JSON, Object, Array, Number, String, Error, Set, Map }; sb.window = sb; vm.createContext(sb);
 for (const f of ['core.js', 'future.js', 'regions.js']) vm.runInContext(fs.readFileSync('' + require('path').join(__dirname, '../../macro/') + '' + f, 'utf8'), sb);
 const MC = sb.Clima || sb.ClimaCore || Object.values(sb).find((v) => v && v.morphWeather && v.parseEPW);
-const CM = require('' + require('path').join(__dirname, '../src/') + 'climamods.js');
+const CM = require(require('path').join(__dirname, '../../shared/climamods.js'));
 const F = sb.CLIMA_FUTURE, R = sb.CLIMA_REGIONS;
 let worst = 0;
 for (const [file, label] of [['/home/claude/rdg/epw/Berlin-Tegel.epw', 'Berlin-Tegel TMYx'], ['/home/claude/rdg/epw/Rome.epw', 'Rome TMYx']]) {

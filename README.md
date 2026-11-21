@@ -23,13 +23,14 @@ macro/        Macro Clima source (index.html, app.js, core.js, sections.js, futu
 micro/        Micro Clima v8 (single built file)
 room/         Room Clima v16
   src/          register.js (every constant with source and status), core.js (engine), shell.html, page.html,
-                climamods.js (generated, see shared/), data/, wxdata.line (bundled weather)
+                wxdata.line (bundled weather)
   build.py      assembles build/index.html and build/worker.js
   build/        built app as published
   edits/        scripted edits used to make each phase (history of changes)
   tests/        Node harness (h16.js) and checks; pw/ browser tests (Playwright, headless Chrome)
-shared/       mkmods.py: generates room/src/climamods.js from Macro Clima, so all three apps share the
-              future-climate and urban-heat-island modifiers; wxrecord.py: turns an EPW file into a bundled
+shared/       climamods.js: the calculation core shared by Macro, Micro and Room Clima (sun, Perez,
+              psychrometrics, SolarCal, UTCI, future climate, urban heat island), generated from Macro Clima by
+              mkmods.py; addcore.py puts it into Micro Clima's engine; wxrecord.py: turns an EPW file into a bundled
               weather record; addbar.py: the Clima Toolbox bar at the top of every app (rerun after
               editing it: map, macro, micro, and room/src/shell.html, then rebuild Room);
               mklanding.py: writes index.html, previews drawn from the repository's data;
@@ -59,8 +60,16 @@ in `docs/methods/`.
 
 ## Shared code
 
-`room/src/climamods.js` is generated: `python3 shared/mkmods.py macro room/src/climamods.js`. Change the
-modifiers in Macro Clima, then regenerate. Do not edit the generated file.
+The three apps compute sun position, sun on surfaces, psychrometrics, SolarCal, UTCI, future climate and the urban
+heat island with the same code: `shared/climamods.js`, copied verbatim from Macro Clima. After changing any of these in
+Macro Clima:
+```
+python3 shared/mkmods.py macro shared/climamods.js     # regenerate the core
+python3 shared/addcore.py micro/index.html             # into Micro Clima's engine
+cd room && python3 build.py                            # into Room Clima
+```
+Do not edit the generated file. The future-climate data (`macro/future.js`, `macro/regions.js`) are also read by
+Micro and Room Clima from Macro Clima's folder.
 
 ## Not in this repository
 

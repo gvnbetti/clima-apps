@@ -2,18 +2,16 @@
 
 **What is checked.** The urban heat island that the apps add to a weather file's air temperature for a chosen
 neighbourhood. Its daily maximum comes from the diagnostic equation of Theeuwes et al. (2017); its spread over the day
-is the apps' own assumption. Three implementations exist:
-- Macro Clima (`macro/core.js` `urbanHeatIsland`);
-- the shared modifiers used by Room Clima (`room/src/climamods.js`, generated from Macro Clima);
-- Micro Clima's engine.
+is the apps' own assumption. One implementation is shared by the three apps: Macro Clima's `urbanHeatIsland`
+(`macro/core.js`), copied verbatim into the shared core `shared/climamods.js`, which Room Clima's build and Micro
+Clima's engine embed. The check confirms that each app, as built, gives the same hours.
 
 **Result in short.**
-- An independent implementation reproduces Macro Clima and Room Clima within 0.0001 K at every hour, for 13 weather
-  files and three neighbourhoods.
-- The equation gives 2.521 K for the worked example both by hand and in the app.
-- Micro Clima agrees at night (within 0.03 K) and in the annual mean (within 0.007 K). Its simpler sun position (within
-  0.85°) moves the switch of the daily profile at sunrise and sunset, so 2 % of its hours differ by more than 0.1 K, by
-  up to 0.77 K.
+- An independent implementation reproduces the apps within 0.0001 K at every hour, for 13 weather files and three
+  neighbourhoods.
+- Macro, Room and Micro Clima give identical hours (largest difference 0.0000 K). Until 21 November 2026 Micro Clima
+  had its own copy with a simpler sun position, which differed by up to 0.77 K in 2 % of hours.
+- The equation gives 2.521 K for the worked example both by hand and in the apps.
 
 ## The model
 **Daily maximum** (Theeuwes et al. 2017, equation 13):
@@ -47,10 +45,6 @@ inputs: S from 100 W/m² daily mean, DTR 8 K, U 3 m/s, SVF 0.5, F_veg 0.2.
 ## Results
 `results.md`, per file and neighbourhood: mean daily maximum, annual and night means, and the largest hourly difference
 between implementations.
-
-## Open point for decision
-Micro Clima could use the shared module (`climamods.js`, with Macro Clima's sun position) for its heat island too, so
-all three apps give identical hours.
 
 ## Limits
 - The equation describes the daily maximum heat island at night in north-western European cities. Elsewhere it is an

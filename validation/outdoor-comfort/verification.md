@@ -6,12 +6,12 @@ Each part of the engine against a reference implementation or an exact solution.
 
 | Climate | Elevation, bias / largest | Azimuth above 5°, RMS / largest | Walls N / E / S / W, annual difference | Hourly RMS, largest wall |
 |---|---|---|---|---|
-| Mannheim | -0.05° / 0.27° | 0.10° / 0.28° | +0.23% / +0.09% / +0.12% / +0.18% | 1.6 W/m² |
-| Bologna | -0.04° / 0.26° | 0.11° / 0.30° | +0.05% / +0.05% / +0.04% / +0.08% | 1.2 W/m² |
-| San Francisco | -0.04° / 0.40° | 0.19° / 0.46° | +0.11% / +0.07% / +0.04% / +0.06% | 0.9 W/m² |
-| Phoenix | -0.04° / 0.40° | 0.21° / 0.54° | +0.15% / +0.05% / +0.04% / +0.05% | 1.0 W/m² |
-| Dubai | -0.04° / 0.22° | 0.16° / 0.68° | +0.03% / +0.03% / +0.01% / +0.01% | 0.9 W/m² |
-| Ho Chi Minh City | -0.02° / 0.20° | 0.17° / 1.20° | +0.03% / +0.06% / +0.04% / +0.05% | 1.1 W/m² |
+| Mannheim | +0.00° / 0.02° | 0.01° / 0.02° | +0.18% / +0.07% / +0.06% / +0.09% | 0.8 W/m² |
+| Bologna | +0.00° / 0.02° | 0.01° / 0.02° | -0.00% / +0.00% / +0.00% / +0.00% | 0.0 W/m² |
+| San Francisco | +0.00° / 0.02° | 0.01° / 0.03° | +0.05% / +0.02% / +0.02% / +0.02% | 0.3 W/m² |
+| Phoenix | +0.00° / 0.02° | 0.01° / 0.05° | +0.11% / +0.04% / +0.04% / +0.04% | 0.5 W/m² |
+| Dubai | +0.00° / 0.02° | 0.02° / 0.14° | +0.00% / +0.00% / -0.00% / -0.00% | 0.0 W/m² |
+| Ho Chi Minh City | +0.00° / 0.02° | 0.02° / 0.13° | +0.00% / -0.00% / -0.00% / +0.00% | 0.1 W/m² |
 
 ## UTCI (pythermalcomfort)
 
@@ -19,7 +19,7 @@ Each part of the engine against a reference implementation or an exact solution.
 
 ## SolarCal, direct sun on the body (pythermalcomfort)
 
-42 cases (sun elevation 5 to 90°, direct sun 100 to 800 W/m², standing and seated): largest difference 1.07e-14 K. The diffuse and reflected terms are the closed formula of SolarCal (0.5 f_eff of the diffuse and reflected light), written out in the engine.
+42 cases (sun elevation 5 to 90°, direct sun 100 to 800 W/m², standing and seated): largest difference 5.86e-02 K. The diffuse and reflected terms are the closed formula of SolarCal (0.5 f_eff of the diffuse and reflected light), written out in the engine. The difference comes from the radiation coefficient: the engine uses ASHRAE 55's 6.012 W/m²K (as Macro Clima and Ladybug), pythermalcomfort rounds it to 6, a 0.2 % difference.
 
 ## Ground conduction (exact solution)
 
@@ -32,8 +32,8 @@ Each part of the engine against a reference implementation or an exact solution.
 
 | Case | Ground surface, RMS / largest | UTCI, RMS |
 |---|---|---|
-| Mannheim|Asphalt, aged | 0.21 / 0.80 K | 0.051 K |
-| Mannheim|White or cool paving | 0.09 / 0.30 K | 0.031 K |
+| Mannheim|Asphalt, aged | 0.21 / 0.80 K | 0.050 K |
+| Mannheim|White or cool paving | 0.09 / 0.30 K | 0.032 K |
 | Mannheim|Grass | 0.14 / 0.50 K | 0.041 K |
 | Phoenix|Asphalt, aged | 0.34 / 1.30 K | 0.064 K |
 | Phoenix|White or cool paving | 0.14 / 0.60 K | 0.040 K |

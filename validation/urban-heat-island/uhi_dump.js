@@ -3,7 +3,7 @@
 // generated from Macro Clima) and Micro Clima's engine (script "engine" in micro/index.html, with its canopy cooling kept
 // separate). Also the sun altitude used, so uhi_check.py recomputes the equation from the same inputs.
 const fs = require('fs'), path = require('path'), { WORK, WX } = require('../lib/paths.js'), ROOT = path.join(__dirname, '..', '..');
-const C = require(path.join(ROOT, 'macro/core.js')), M = require(path.join(ROOT, 'room/src/climamods.js'));
+const C = require(path.join(ROOT, 'macro/core.js')), M = require(path.join(ROOT, 'shared/climamods.js'));
 const html = fs.readFileSync(path.join(ROOT, 'micro/index.html'), 'utf8'), eng = html.match(/<script id="engine">([\s\S]*?)<\/script>/)[1];
 const ef = path.join(WORK, 'micro_engine.js'); fs.writeFileSync(ef, eng); const MC = require(ef);
 const OUT = path.join(WORK, 'uhi'); fs.mkdirSync(OUT, { recursive: true });

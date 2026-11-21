@@ -1,4 +1,4 @@
-const H = require('./h16.js'), CM = require('' + require('path').join(__dirname, '../src/') + 'climamods.js'), fs = require('fs'), vm = require('vm');
+const H = require('./h16.js'), CM = require(require('path').join(__dirname, '../../shared/climamods.js')), fs = require('fs'), vm = require('vm');
 const sb = { window: {} }; vm.createContext(sb); for (const f of ['future.js', 'regions.js']) vm.runInContext(fs.readFileSync('' + require('path').join(__dirname, '../src/') + 'data/' + f, 'utf8'), sb);
 const { S } = H; const c = { scenario: 'cellular', azimuth: 180, wwr: 0.5, opaque: 'u15', uglass: 0.8, gglass: 0.45, mass: 'medium', fixed: 'none', shading: 2, dayAch: 3, nightAch: 2, fans: 0, supply: 'outdoor', roof: 'standard' };
 for (const city of ['Mannheim', 'Bologna']) { const w0 = H.wx(city); const yr = city === 'Bologna' ? 2011 : 2010;

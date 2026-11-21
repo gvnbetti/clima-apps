@@ -12,7 +12,9 @@ conditions, precipitation and energy potential. The same climate can also be exp
 and with adjustments for the urban environment.
 
 ## How it works
-All calculations are performed in `macro/core.js`, hour by hour across the typical meteorological year.
+All calculations are performed in `macro/core.js`, hour by hour across the typical meteorological year. Sun
+position, solar radiation on surfaces, psychrometrics, SolarCal, UTCI and the future and urban climate are copied from
+there into the calculation core shared with Micro and Room Clima (`shared/climamods.js`).
 
 | Topic | Method | Source |
 |---|---|---|

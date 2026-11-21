@@ -19,7 +19,7 @@ md += ["## Sun position and sun on walls (pvlib)", "", "| Climate | Elevation, b
 for name, d in R["sun"].items():
     tz = d["tz"]; times = pd.date_range("2023-01-01 00:30", periods=8760, freq="h", tz=f"Etc/GMT{-int(tz):+d}")
     sp = pvlib.solarposition.get_solarposition(times, d["lat"], d["lon"], method="nrel_numpy")
-    el, az = np.array(d["el"]), np.array(d["az"]); rel, raz = 90 - sp["zenith"].to_numpy(), sp["azimuth"].to_numpy()
+    el, az = np.array(d["el"]), np.array(d["az"]); rel, raz = 90 - sp["apparent_zenith"].to_numpy(), sp["azimuth"].to_numpy()
     m = (rel > 0) | (el > 0); m2 = rel > 5; de = el[m] - rel[m]; da = ((az[m2] - raz[m2] + 540) % 360) - 180
     dni = np.where(el > 0, np.array(d["dni"]), 0.0); dhi = np.array(d["dhi"]); ghi = np.array(d["ghi"])
     extra = pvlib.irradiance.get_extra_radiation(times).to_numpy(); am = pvlib.atmosphere.get_relative_airmass(90 - el)
@@ -38,7 +38,7 @@ for el, dirn, seated, mine in S:
     post = "sitting" if seated else "standing"; sh = np.arange(0, 181, 15); w = np.array([0.5] + [1] * 11 + [0.5]) / 12
     r = solar_gain(sol_altitude=np.full(13, el), sharp=sh, sol_radiation_dir=np.full(13, dirn), sol_transmittance=np.ones(13), f_svv=np.zeros(13), f_bes=np.ones(13), asw=0.7, posture=post, floor_reflectance=0.0, round_output=False)
     dm = np.asarray(r.delta_mrt if hasattr(r, "delta_mrt") else r["delta_mrt"], dtype=float); rows.append(abs(mine - (w * dm).sum()))
-md += ["", "## SolarCal, direct sun on the body (pythermalcomfort)", "", f"{len(S)} cases (sun elevation 5 to 90°, direct sun 100 to 800 W/m², standing and seated): largest difference {max(rows):.2e} K. The diffuse and reflected terms are the closed formula of SolarCal (0.5 f_eff of the diffuse and reflected light), written out in the engine."]
+md += ["", "## SolarCal, direct sun on the body (pythermalcomfort)", "", f"{len(S)} cases (sun elevation 5 to 90°, direct sun 100 to 800 W/m², standing and seated): largest difference {max(rows):.2e} K. The diffuse and reflected terms are the closed formula of SolarCal (0.5 f_eff of the diffuse and reflected light), written out in the engine. The difference comes from the radiation coefficient: the engine uses ASHRAE 55's 6.012 W/m²K (as Macro Clima and Ladybug), pythermalcomfort rounds it to 6, a 0.2 % difference."]
 # conduction
 md += ["", "## Ground conduction (exact solution)", "", "| Wave | Exact amplitude ratio / lag | Default grid, 2 steps per hour | Halved grid, 12 steps per hour |", "|---|---|---|---|"]
 for lab, c in R["cond"].items():

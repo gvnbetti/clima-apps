@@ -8,7 +8,7 @@ against ASHRAE Standard 140.
 - EnergyPlus 24.2 falls within 43 of 44 Standard 140 ranges, so it can serve as the reference.
 - In Room Clima's own rooms, the app follows EnergyPlus within 0.69 K hourly (RMSE). It runs about 0.5 K cooler, so it
   counts 8 % fewer degree-hours above 26 °C. It ranks the designs of each group in the same order: rank correlation
-  0.98; same least-overheating design in 67 of 72 groups.
+  0.98; same least-overheating design in 68 of 72 groups.
 - In the Standard 140 box, which Room Clima does not use, its settings run warm. Cooling is 13 % above the reference
   programmes, and overheating 14 % above EnergyPlus over 14 climates.
 
@@ -52,15 +52,15 @@ cases 600, 620, 650, 900, 920, 950, 600FF and 900FF.
 | Model | Within range, of 44 | Heating | Cooling | Peak heating | Peak cooling |
 |---|---|---|---|---|---|
 | EnergyPlus 24.2 | 43 | 2.6 % | 2.6 % | 1.0 % | 4.4 % |
-| App engine, EN ISO 52016-1 as written | 33 | 14.5 % (+14.5) | 8.0 % (+6.4) | 10.9 % | 6.1 % |
-| App engine, settings of Room Clima | 32 | 4.7 % (+4.6) | 12.7 % (+12.7) | 10.5 % | 6.7 % |
+| App engine, EN ISO 52016-1 as written | 33 | 14.6 % (+14.6) | 8.0 % (+6.4) | 11.0 % | 6.3 % |
+| App engine, settings of Room Clima | 32 | 4.8 % (+4.8) | 12.7 % (+12.7) | 10.6 % | 6.9 % |
 
 The deviations are mean absolute deviations from the median of the six programmes; the signed mean is in brackets. In
 14 climates, against EnergyPlus, Room Clima's settings give these results:
-- heating 4.9 % (+4.6) against 9.2 % for the standard as written;
-- cooling 11.9 % (+11.5) against 7.6 %;
-- overheating degree-hours 13.9 % (+13.9) against 9.5 %;
-- hourly free-floating temperature 1.35 K against 1.39 K RMSE.
+- heating 4.9 % (+4.6) against 9.3 % for the standard as written;
+- cooling 11.8 % (+11.4) against 7.5 %;
+- overheating degree-hours 13.9 % (+13.9) against 9.4 %;
+- hourly free-floating temperature 1.34 K against 1.39 K RMSE.
 
 **What this means.** The wind-driven convection removes most of the heating bias of the standard as written. That bias
 comes from using the rated window U-value at all hours. In this box, Room Clima's settings overestimate cooling and
@@ -104,10 +104,10 @@ exposed part and a part under a suspended ceiling are modelled as two strips.
 **Results** (`room-types/results.md`):
 - **Hourly temperature, free-running:** RMSE 0.69 K, mean bias −0.49 K, annual maximum −0.94 K. The app is cooler.
 - **Occupied degree-hours above 26 °C:** −8 % overall. In mild climates, where the totals are small, the difference is
-  larger in relative terms: Mannheim −23 % and San Francisco −54 %. Elsewhere it is −7 to −14 %.
-- **Heating need:** +6 % overall. Phoenix shows +26 %, of 1.8 kWh/m² a year.
-- **Ranking within each group of six designs:** overheating rank correlation 0.981 on average (lowest 0.829), with the
-  same least-overheating design in 67 of 72 groups. Heating rank correlation 0.978, with the same lowest-heating design
+  larger in relative terms: Mannheim −23 % and San Francisco −53 %. Elsewhere it is −7 to −14 %.
+- **Heating need:** +7 % overall. Phoenix shows +26 %, of 1.8 kWh/m² a year.
+- **Ranking within each group of six designs:** overheating rank correlation 0.982 on average (lowest 0.829), with the
+  same least-overheating design in 68 of 72 groups. Heating rank correlation 0.978, with the same lowest-heating design
   in 69 of 72 groups.
 - **Largest differences:** Bologna dwellings with medium mass and closed windows (RMSE up to 1.47 K, bias about −1 K).
 

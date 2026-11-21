@@ -219,7 +219,7 @@
     let cosAoi = Math.cos(zr) * Math.cos(tr) + Math.sin(zr) * Math.sin(tr) * Math.cos((az - sAz) * D2R);
     const A = Math.max(cosAoi, 0);
     const beam = zen < 90 ? Math.max(0, dni * A) : 0;
-    let sky = 0;
+    let sky = 0, iso = 0, circ = 0, hor = 0;
     const am = airmassKY(zen);
     if (dhi > 0 && isFinite(am)) {
       const eps = perezSkyClearness(dhi, dni, zen);
@@ -227,10 +227,12 @@
       const delta = dhi * am / dniExtra(doy);
       const F1 = Math.max(0, F1C[b][0] + F1C[b][1] * delta + F1C[b][2] * zr), F2 = F2C[b][0] + F2C[b][1] * delta + F2C[b][2] * zr;
       const B = Math.max(Math.cos(zr), Math.cos(85 * D2R));
-      sky = Math.max(0, dhi * (0.5 * (1 - F1) * (1 + Math.cos(tr)) + F1 * A / B + F2 * Math.sin(tr)));
-    } else if (dhi > 0) sky = dhi * 0.5 * (1 + Math.cos(tr));
+      iso = dhi * 0.5 * (1 - F1) * (1 + Math.cos(tr)); circ = dhi * F1 * A / B; hor = dhi * F2 * Math.sin(tr);
+      sky = Math.max(0, iso + circ + hor);
+    } else if (dhi > 0) sky = iso = dhi * 0.5 * (1 + Math.cos(tr));
     const gnd = ghi * albedo * (1 - Math.cos(tr)) * 0.5;
-    return { tot: beam + sky + gnd, beam, sky, gnd };
+    // iso, circ (circumsolar) and hor (horizon band) are the parts of sky; cosAoi the cosine of the angle of incidence
+    return { tot: beam + sky + gnd, beam, sky, gnd, iso, circ, hor, cosAoi };
   }
   const ORIENT = [["N", 0], ["NE", 45], ["E", 90], ["SE", 135], ["S", 180], ["SW", 225], ["W", 270], ["NW", 315]];
   function surfaceIrradiation(W, S, opt) {

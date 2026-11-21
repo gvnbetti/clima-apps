@@ -8,7 +8,7 @@ B.mkdir(exist_ok=True)
 
 shell = (S / 'shell.html').read_text()
 wx = (S / 'wxdata.line').read_text()
-core = (S / 'register.js').read_text() + '\n' + (S / 'core.js').read_text()
+core = (S.parent.parent / 'shared' / 'climamods.js').read_text() + '\n' + (S / 'register.js').read_text() + '\n' + (S / 'core.js').read_text()  # shared core first: the worker needs it too
 page = (S / 'page.html').read_text()
 
 # fonts: IBM Plex (SIL Open Font License 1.1), Latin subset, as data URLs
@@ -37,7 +37,7 @@ m = re.search(r'const WTAIL = `(.*?)`;', page, re.S)
 assert m, 'worker tail not found'
 wtail = m.group(1)
 
-mods = '\n'.join('<script>' + (S / f).read_text().replace('</script', '<\\/script') + '</script>' for f in ('data/future.js', 'data/regions.js', 'climamods.js'))
+mods = '\n'.join('<script>' + (S.parent.parent / 'macro' / f).read_text().replace('</script', '<\\/script') + '</script>' for f in ('future.js', 'regions.js'))  # one copy, in Macro Clima
 html = '\n'.join([shell, wx, '<script>/* JSZip 3.10.1, MIT or GPLv3 */\n' + jszip + '\n</script>', mods,
                   '<script id="core">' + core + '</script>', page])
 for bad in ('fonts.googleapis', 'fonts.gstatic', 'cdnjs.cloudflare'):

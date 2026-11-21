@@ -1,6 +1,7 @@
-"""Writes climamods.js: the urban heat island and future climate modifiers of Macro Clima, copied verbatim from its
-core.js and app.js (line ranges below), wrapped as one module that the three Clima apps can share.
-Usage: python3 mkmods.py <macro dir> <out file>"""
+"""Writes climamods.js, the calculation core shared by Macro, Micro and Room Clima: sun position, sun on surfaces
+(Perez), psychrometrics, SolarCal, sky longwave, UTCI, and the future climate and urban heat island modifiers. The code
+is copied verbatim from Macro Clima's core.js and app.js (blocks below), so the three apps compute these the same way.
+Usage: python3 shared/mkmods.py macro shared/climamods.js"""
 import sys, re, hashlib, pathlib
 M = pathlib.Path(sys.argv[1]); out = pathlib.Path(sys.argv[2])
 core = (M / 'core.js').read_text().split('\n'); app = (M / 'app.js').read_text().split('\n')
@@ -15,8 +16,12 @@ parts += block(core, r'^  const N = 8760, D2R', r'^  const MSTART =')           
 parts += block(core, r'^  function timeArrays\(\)', r'^  const T = timeArrays\(\);')         # month of each hour
 parts += block(core, r'^  function julianDay', r'^  function solarArrays', False)            # NOAA sun position
 parts += block(core, r'^  function solarArrays', r'^  }')
-parts += block(core, r'^  function pws\(t\)', r'^  }')                                        # Hyland-Wexler
-parts += block(core, r'^  function dewFromPw', r'^  }')
+parts += block(core, r'^  function pws\(t\)', r'^  function psychroArrays', False)              # psychrometrics (Hyland-Wexler)
+parts += block(core, r'^  /\* -+ irradiation on surfaces', r'^  const ORIENT', False)            # Perez 1990
+parts += block(core, r'^  /\* -+ SolarCal', r'^  // the original pythermalcomfort form', False)  # SolarCal
+parts += block(core, r'^  /\* -+ longwave exchange', r'^  /\* -+ UTCI', False)                   # sky longwave
+parts += block(core, r'^  /\* -+ UTCI', r'^  const UTCI_CLASSES', False)                          # UTCI
+parts += block(core, r'^  const UTCI_CLASSES', r'\]\];')
 parts += block(core, r'^  /\* ---------- future climate', r'^  const isNWEurope')             # morph and heat island
 appParts = []
 appParts += block(app, r'^  const FUT_LEVELS =', r'^  const regName =')
@@ -27,9 +32,10 @@ src_app = src_app.replace('const futRegion = (W) => (window.CLIMA_REGIONS ? C.re
                           'const futRegion = (W, regions) => (regions ? regionOf(W.meta.lat, W.meta.lon, regions) : null);')
 assert 'regionOf(W.meta.lat, W.meta.lon, regions)' in src_app
 h = hashlib.sha256((src_core + src_app).encode()).hexdigest()[:12]
-js = f'''/* Clima weather modifiers, shared by Macro Clima, Micro Clima and Room Clima.
-   Urban heat island (Theeuwes et al. 2017) and future climate (IPCC AR6 Atlas, morphing to a global warming level).
-   The code below is copied verbatim from Macro Clima (core.js and app.js, version 1794244167-1bb9) by tools/mkmods.py;
+js = f'''/* Clima Toolbox calculation core, shared by Macro Clima, Micro Clima and Room Clima.
+   Sun position (NOAA), sun on surfaces (Perez 1990), psychrometrics (Hyland-Wexler, as psychrolib), SolarCal (ASHRAE 55),
+   sky longwave, UTCI (Broede et al. 2012), urban heat island (Theeuwes et al. 2017) and future climate (IPCC AR6 Atlas).
+   The code below is copied verbatim from Macro Clima (core.js and app.js) by shared/mkmods.py;
    do not edit it here: change Macro Clima and regenerate. Source fingerprint {h}.
    Data: window.CLIMA_FUTURE (future.js) and window.CLIMA_REGIONS (regions.js), as in Macro Clima. */
 (function (root) {{
@@ -55,8 +61,9 @@ js = f'''/* Clima weather modifiers, shared by Macro Clima, Micro Clima and Room
     const S0 = solarArrays(W.meta.lat, W.meta.lon, W.meta.tz), u = urbanHeatIsland(W, S0, opt.uhi.svf, opt.uhi.fveg);
     return {{ W: Object.assign({{}}, W, {{ dbt: u.dbt, rh: u.rh }}), uhi: u, fut }};
   }}
-  const api = {{ FINGERPRINT: "{h}", prepWeather, futureDelta, morphWeather, urbanHeatIsland, regionOf, futRegion, regName, fileYears, isNWEurope, AIRPORT, FUT_LEVELS, futLab, UHI_PRESETS, REG_NAMES, pws, dewFromPw, solarArrays, sunPosition }};
-  if (typeof module !== "undefined" && module.exports) module.exports = api; else root.ClimaMods = api;
+  const api = {{ FINGERPRINT: "{h}", prepWeather, futureDelta, morphWeather, urbanHeatIsland, regionOf, futRegion, regName, fileYears, isNWEurope, AIRPORT, FUT_LEVELS, futLab, UHI_PRESETS, REG_NAMES, pws, dewFromPw, humRatio, pwFromW, enthalpy, wetBulb, solarArrays, sunPosition, T, poa, dniExtra, airmassKY, perezSkyClearness, fpStanding, solarCalDeltaMrt, FP_STANDING, ALT_RANGE, AZ_RANGE, SIGMA, skyTemperature, longwaveDeltaMrt, utci, utciPoly, utciPvap, UTCI_CLASSES }};
+  root.ClimaMods = api; // also global in Node, so code that embeds this core (Micro Clima's engine) finds it there too
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
 }})(typeof window !== "undefined" ? window : globalThis);
 '''
 out.write_text(js); print('wrote', out, len(js), 'bytes, fingerprint', h)

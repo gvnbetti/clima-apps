@@ -1,120 +1,201 @@
 # Room Clima: method
 
 ## What it is for
-Testing a room and its facade at concept stage. The user gives a room type
-(dwelling, office, classroom), its size, orientation and position (one facade, a corner, a corner under the roof), and the options to compare:
-window size, glazing, fixed shading, blinds, thermal mass, insulation, ventilation by windows, ceiling fans and, where
-needed, a chilled ceiling. For each combination Room Clima computes overheating, delivered energy, daylight and
-whole-life carbon, ranks the designs against fixed targets, and reruns the best ones under future warming and poor
-operation. The result is a short list of facades that work, with the reasons.
+Exploring and comparing room and facade designs at concept stage.
 
-Every constant, with its unit, its status and its source, is defined once in `room/src/register.js`. Status is one of
-*standard* (taken from the text of the standard named), *secondary* (from a secondary source, to be replaced by the
-standard text), *decision* (a modelling choice of this app, dated) or *assumption* (a typical value without a binding
-source). The app lists the whole register under "Method and limits". This page explains how the parts fit together.
+The user defines a room type (dwelling, office or classroom), its dimensions, orientation and position in the building
+(single facade, corner or corner beneath the roof), and the design options to compare.
+
+These include window size, glazing, fixed shading, blinds, thermal mass, insulation, natural ventilation, ceiling fans
+and, where needed, a chilled ceiling.
+
+For each combination, Room Clima calculates overheating, delivered energy, daylight and whole-life carbon. It evaluates
+the results against fixed performance targets, ranks the designs and tests the most promising options under future
+warming and less favourable operating conditions.
+
+The result is a shortlist of facade and room configurations that meet the requirements, together with an explanation
+of why they perform as they do.
+
+**A transparent register of assumptions.** Every constant used by the app is defined in one place,
+`room/src/register.js`, with its unit, source and status. Each entry is classified as one of four types:
+
+- **Standard:** taken directly from the text of the named standard.
+- **Secondary:** taken from a secondary source, pending replacement with the original standard text.
+- **Decision:** a documented modelling choice made specifically for this app, with its date.
+- **Assumption:** a typical value without a binding source.
+
+The complete register is available under "Method and limits" in the app. This page explains how the different
+calculation modules work together.
 
 ## Thermal model
+The thermal engine calculates the room's hourly heat balance, taking account of solar gains, internal loads, heat
+transfer through the building elements, ventilation and heating or cooling systems.
 
-| Part | Method | Source | Checked in |
-|---|---|---|---|
-| Room heat balance | EN ISO 52016-1 hourly method, one zone, nodes in each element | EN ISO 52016-1:2017 | `validation/thermal/engine/` (Standard 140, EnergyPlus) |
-| Sun on the facade | Perez 1990, ground albedo 0.2 | shared with Macro Clima | `validation/climate-reading/` |
-| Shading by overhangs, fins, frames and reveals | sunlit share of the glass each hour, same geometry as the daylight model | geometry | `validation/thermal/room-types/` |
-| Room settings | exterior convection from the station's wind (DOE-2 correlation); glazing transmission by angle of incidence; transmitted sun spread over the opaque inner surfaces only | decisions, see `validation/thermal/README.md` | Standard 140 rerun with these settings |
-| Internal gains, schedules | DIN 4108-2, clause 8.4.2 (residential 100, non-residential 144 Wh/m² d) | DIN 4108-2:2013-02 | |
-| Heating and cooling | ideal; heat pump efficiencies for delivered energy | register `score.energy` | |
-
-**Ventilation by windows.** Air flow each hour by the EN 16798-7 single-sided method, from the effective opening, the
-sash height and the indoor-outdoor temperature difference. Wind is not credited, because site wind is not known at
-concept stage; the method underestimates on purpose. The openable sash is half the window area. Day ventilation opens
-when the room air is above 23 °C, the outdoor air at least 1 K cooler and at least 12 °C. Night ventilation runs after
-a warm day (operative above 24 °C in the last presence period), when the room is at least 2 K warmer than outside.
-The flow is reduced so that the room does not fall below the heating setpoint plus 2 K. Workplaces are also checked
-against ASR A3.6 (depth of single-sided rooms, opening per person, purge opening).
-
-**Blinds.** In every run, exterior and interior blinds come down when the sun on the window exceeds the DIN 4108-2
-threshold (8.4.2 j). Their solar factor F_C is from DIN 4108-2 Table 7. The same hours are used for daylight.
-
-**Fans and chilled ceiling.** Fans run in occupied hours from 25 °C operative and raise the upper comfort limit by
-1.8 K (EN 16798-1 air speed allowance at 0.9 m/s). A chilled ceiling is sized from product data (EN 14240 rating,
-up to 75 W/m² of floor at 10 K) with water at 16 °C and a dew point margin of 1 K.
+| Part | Method | Source / validation |
+|---|---|---|
+| Room heat balance | Hourly EN ISO 52016-1 method, with a single thermal zone and calculation nodes for each building element. | EN ISO 52016-1:2017; validation against ASHRAE Standard 140 and EnergyPlus |
+| Sun position | NOAA solar calculator at the middle of each hour, from the calculation core shared with Macro and Micro Clima. Used by the thermal and the daylight model alike. | Shared core; validation/climate-reading/ |
+| Solar radiation on the facade | Perez 1990 transposition model, with ground albedo of 0.2. | Shared core with Macro Clima; validation/climate-reading/ |
+| Shading | Hourly calculation of the sunlit fraction of the glazing, accounting for overhangs, fins, frames and window reveals. Uses the same geometry as the daylight model. | Geometric calculation; validation/thermal/room-types/ |
+| Room settings | Exterior convective heat transfer based on station wind using the DOE-2 correlation; glazing transmission adjusted for angle of incidence; transmitted solar radiation distributed over opaque internal surfaces only. | Modelling decisions; validation/thermal/README.md |
+| Internal gains and schedules | DIN 4108-2, clause 8.4.2: 100 Wh/m² per day for residential spaces and 144 Wh/m² per day for non-residential spaces. | DIN 4108-2:2013-02 |
+| Heating and cooling | Ideal heating and cooling, with heat pump efficiencies used to calculate delivered energy. | Register: score.energy |
+| Ventilation through windows | Hourly airflow calculated using the EN 16798-7 single-sided ventilation method, based on effective opening area, sash height and indoor-outdoor temperature difference. Wind is not credited because site-specific wind conditions are unknown at concept stage. The method is therefore deliberately conservative. The openable sash is assumed to be half the window area. | EN 16798-7 |
+| Window ventilation control | Day ventilation opens when room air temperature exceeds 23 °C, outdoor temperature is at least 1 K lower and at least 12 °C. Night ventilation operates after a warm day, when operative temperature exceeded 24 °C during the last occupied period and the room is at least 2 K warmer than outside. Airflow is reduced to prevent the room from falling below the heating setpoint plus 2 K. | App control rules |
+| Workplace ventilation checks | Office configurations are additionally checked against ASR A3.6, including single-sided room depth, opening area per person and purge ventilation openings. | ASR A3.6 |
+| Blinds | Exterior and interior blinds are lowered whenever solar radiation on the window exceeds the threshold in DIN 4108-2, clause 8.4.2 j. Solar reduction factors (F_C) follow Table 7. The same operating hours are used in the daylight calculation. | DIN 4108-2, Table 7 |
+| Ceiling fans and chilled ceilings | Fans operate during occupied hours above 25 °C operative temperature, increasing the upper comfort limit by 1.8 K, based on the EN 16798-1 air-speed allowance at 0.9 m/s. Chilled ceilings are sized using product performance data (EN 14240 rating), up to 75 W/m² of floor area at a 10 K temperature difference, with 16 °C water and a 1 K dew-point margin. | EN 16798-1; EN 14240; product data |
 
 ## Comfort and the German summer check
+Room Clima evaluates thermal comfort using several approaches. This allows the results to be interpreted against
+international comfort standards as well as the specific requirements of German building regulations.
 
-| Model | Band | Status |
+| Model | Comfort band | Status |
 |---|---|---|
-| EN 16798-1 adaptive | t = 0.33 t_rm + 18.8, categories I to III; exponential running mean, alpha 0.8 | secondary |
-| ASHRAE 55 adaptive | t = 0.31 t_pma + 17.8, 80 % and 90 % acceptability; 7-day prevailing mean | secondary |
-| DIN EN 16798-1/NA (Germany) | 22 to 26 °C, slope 0.25 between 16 and 32 °C outdoor, tolerance by category | secondary |
-| Cooled rooms | fixed upper limits (EN 16798-1 design values; ASHRAE 55 by decision) | secondary and assumption |
+| EN 16798-1 adaptive | t = 0.33 t<sub>rm</sub> + 18.8, categories I to III, using an exponential running mean with alpha 0.8. | Secondary |
+| ASHRAE 55 adaptive | t = 0.31 t<sub>pma</sub> + 17.8, with 80% and 90% acceptability, using a seven-day prevailing mean. | Secondary |
+| DIN EN 16798-1/NA (Germany) | 22 to 26 °C, with a slope of 0.25 between outdoor temperatures of 16 and 32 °C and category-dependent tolerance. | Secondary |
+| Cooled rooms | Fixed upper comfort limits based on EN 16798-1 design values, with ASHRAE 55 limits following an app-specific modelling decision. | Secondary and assumption |
 
-Overheating is counted as degree-hours above the band in occupied hours; up to 5 % of occupied hours above the band
-is accepted without cooling (informative figure of EN 15251). In Germany, the DIN 4108-2 summer check runs with the
-standard's own conditions (schedules, gains, air change, blinds, reference temperature by summer region A, B, C, and
-limits of 1,200 or 500 K·h/a). On any weather file other than the test reference year of the region, the result is
-an estimate, and the app says so. The text of DIN 4108-2 is not part of this repository.
+Overheating is measured as degree-hours above the applicable comfort band during occupied hours. Up to 5% of occupied
+hours above the band is accepted without cooling, following the informative guidance in EN 15251.
+
+For Germany, Room Clima also performs the summer overheating assessment according to DIN 4108-2. This calculation uses
+the standard's prescribed conditions, including schedules, internal gains, air change rates, blind operation,
+reference temperatures for summer climate regions A, B and C, and the applicable limits of 1,200 or 500 K·h/a.
+
+When the assessment uses a weather file other than the official test reference year for the relevant region, the
+result is an estimate rather than a formal compliance assessment. The app identifies this distinction explicitly.
+
+The text of DIN 4108-2 is not included in this repository.
 
 ## Daylight
+Room Clima calculates climate-based daylight in the room directly in the browser. The implementation is in the first
+part of `room/src/core.js`.
 
-Climate-based daylight for the box room, in the browser (`room/src/core.js`, first part):
-- Daylight coefficients from a radiosity solution of the six room surfaces. Sky and ground in Reinhart patches (MF:2),
-  as Radiance.
-- Sky each hour by the Perez all-weather model with Perez 1990 luminous efficacy, replicated from Radiance gendaymtx.
-- Direct sun by an exact ray test from each sensor through the glazing. Glazing by the Radiance glass model.
-- Blinds as a two-part layer (decision of 20 November 2026): a small share of the light passes straight through,
-  the rest is scattered evenly. Exterior blind 0.10 in all, 0.01 of it straight; interior blind 0.25, 0.03 straight,
-  reflectance 0.6. The angle dependence of slats is not modelled.
-- Useful daylight: share of floor and hours between 300 and 3,000 lx (non-residential) or 100 and 2,000 lx
-  (residential). EN 17037 levels are also reported.
-- Electric lighting: 6 W/m² LED to reach 500 lx (office) or 300 lx (classroom) where daylight falls short.
+The method combines a radiosity solution for the six room surfaces with hourly sky conditions, direct solar radiation
+and glazing properties.
 
-Checked against Radiance on 6 rooms × 6 climates × 3 blind states in `validation/daylight/`.
+**Sky and daylight coefficients.** Daylight coefficients are calculated using a radiosity solution of the six room
+surfaces. The sky and ground are represented by Reinhart sky patches (MF:2), following the approach used by Radiance.
 
-## Scores, recommendation and search
+**Sky conditions.** The sky is recalculated for each hour using the Perez all-weather sky model and Perez 1990 luminous
+efficacy. The implementation reproduces the approach of Radiance's gendaymtx; the sun position comes from the shared
+calculation core, as in the thermal model.
 
-- **Scores** are on fixed scales, never relative to the run: daylight is the useful daylight share; comfort is 1 with
-  no overheating, 0.5 at the limit; energy is 1 at or below the target and 0.5 at the limit.
-- **Recommendation:** among the designs that meet every target, the one with the highest score. Ties within 0.01 go to
-  the design with less whole-life carbon. When none meets every target, the closest design, by its largest weighted
-  shortfall. The daylight minimum and DIN 4108-2 are not traded against the rest.
-- **Packages:** up to five other designs per facade that differ from the recommendation in at least two measures.
-- **Search:** the option space is searched with pruning; after that, a local search for the design with the least
-  whole-life carbon among those meeting every target. The search was compared with a full enumeration during
-  development; that benchmark is not yet part of this repository.
+**Direct sunlight.** Direct solar radiation is calculated using an exact ray test from each sensor point through the
+glazing. Glazing transmission follows the Radiance glass model.
+
+**Blinds.** Venetian blinds are represented as a two-part optical layer, following a modelling decision dated
+20 November 2026. A small proportion of light passes directly through, while the remainder is scattered evenly.
+
+- Exterior blinds: total transmission 0.10, of which 0.01 passes directly through.
+- Interior blinds: total transmission 0.25, of which 0.03 passes directly through, with a reflectance of 0.6.
+
+The angular behaviour of individual slats is not modelled.
+
+**Useful daylight.** Useful daylight is expressed as the share of floor area and occupied hours within the following
+illuminance ranges:
+
+- Non-residential: 300 to 3,000 lx.
+- Residential: 100 to 2,000 lx.
+
+The corresponding EN 17037 daylight levels are also reported.
+
+**Electric lighting.** Where daylight falls below the target illuminance, supplementary LED lighting is estimated at
+6 W/m², providing 500 lx in offices and 300 lx in classrooms.
+
+**Validation.** The daylight calculation has been checked against Radiance using six room configurations, six climates
+and three blind conditions. Results are documented in [validation/daylight/](../../validation/daylight/).
+
+## Scores, recommendations and search
+Room Clima evaluates design alternatives against fixed performance targets. Scores are measured against these targets,
+never relative to the best or worst option in a particular run.
+
+**Performance scores.**
+
+- Daylight: based on the share of useful daylight within the specified illuminance range.
+- Comfort: scores 1 when there is no overheating and 0.5 at the overheating limit.
+- Energy: scores 1 at or below the target and 0.5 at the performance limit.
+
+**Recommendation.** Among designs that meet every target, Room Clima recommends the option with the highest overall
+score. Where scores differ by no more than 0.01, the design with lower whole-life carbon takes priority.
+
+If no design meets all targets, the app identifies the closest alternative based on its largest weighted performance
+shortfall.
+
+Two requirements are treated as non-negotiable: the minimum daylight requirement and the DIN 4108-2 summer overheating
+assessment cannot be traded against other performance criteria.
+
+**Design packages.** For each facade, the app can propose up to five additional design packages. These differ from the
+recommended option in at least two design measures, allowing users to explore meaningful alternatives rather than
+minor variations.
+
+**Search strategy.** The design space is searched using pruning to eliminate combinations that cannot meet the
+requirements. A subsequent local search identifies the lowest-carbon design among those meeting all targets.
+
+During development, this search strategy was compared with a full enumeration of the available options. That
+benchmark is not yet included in the repository.
 
 ## Scenarios
+The recommended design and its alternative packages are tested under two additional conditions.
 
-The recommended design and the packages are rerun:
-- **Climate:** +2 °C global warming (+3 °C when the run already uses +2 °C). Morphing as in `validation/future-climate/`.
-- **Poor operation:** blinds down on only every other day, windows shut at night.
+**Future climate.** The designs are evaluated under +2 °C global warming, or +3 °C when the original run already uses
++2 °C. The weather-file adjustment follows the shared [future-climate method](climate-scenarios.md).
 
-A design is robust when it still meets the comfort limit, or stays the best of the shortlist.
+**Poor operation.** The app tests a less favourable pattern of occupant behaviour: blinds are lowered only every other
+day, and windows remain closed at night.
+
+**Robustness.** A design is considered robust when it continues to meet the comfort limit under these scenarios, or
+remains the best-performing option within the shortlist.
 
 ## Carbon
+Whole-life carbon is calculated separately from the thermal and daylight models, using the materials, quantities,
+replacement cycles and operational energy associated with each design.
 
-See `room-clima-carbon.md`.
+See the dedicated [Room Clima carbon method](room-clima-carbon.md) for the system boundaries, data sources,
+calculation approach and assumptions.
 
 ## Assumptions
-- One room, rectangular, empty. Partitions, floor and ceiling are cut at their mid-plane and exchange no heat with the
-  neighbouring rooms, which are taken to be at the same temperature.
-- Occupants act by fixed rules: windows, blinds, fans and night ventilation follow the thresholds above, every day.
-  The poor-operation scenario tests what happens when they do not.
-- Ventilation by windows is driven by temperature difference only. Wind would add air flow; leaving it out keeps the
-  result on the safe side.
-- Heating and cooling are ideal and all electric, through heat pumps, so delivered energy and carbon follow directly.
+**A single, empty room.** The model represents one rectangular room without internal partitions or furniture. Floors,
+ceilings and internal partitions are cut at their mid-plane and do not exchange heat with adjacent rooms. Neighbouring
+spaces are assumed to be at the same temperature.
+
+**Fixed occupant behaviour.** Windows, blinds, ceiling fans and night ventilation operate according to predefined
+thresholds. These rules apply consistently across the simulations. The poor-operation scenario tests the sensitivity
+of the results to less favourable behaviour.
+
+**Conservative natural ventilation.** Window ventilation is driven by temperature differences only. Wind could
+increase airflow, but is not included because reliable site-specific wind conditions are not available at concept
+stage.
+
+**Ideal heating and cooling.** Heating and cooling are assumed to be delivered ideally through all-electric heat pumps.
+Delivered energy and associated operational carbon are calculated from the corresponding system efficiencies.
 
 ## Limits
-- The hourly model is tuned to Room Clima's own rooms. In the Standard 140 test box it reaches 32 of 44 ranges and
-  overestimates cooling by 12.7 %; on its own rooms it agrees with EnergyPlus within 0.7 K per hour.
-- Venetian blinds are modelled for daylight as a diffusing layer, without the angle dependence of the slats.
-- The DIN 4108-2 check on a weather file other than the region's test reference year is an estimate.
-- Glare and views are not assessed.
+**Thermal model accuracy.** The hourly model is calibrated and evaluated using Room Clima's own room configurations
+and reference simulations. In the ASHRAE Standard 140 test box, it falls within 32 of the 44 reported ranges and
+overestimates cooling by 12.7%. For Room Clima's own room configurations, hourly results agree with EnergyPlus within
+0.7 K.
+
+**Blinds.** Venetian blinds are represented as a diffusing optical layer in the daylight calculation. The
+angle-dependent behaviour of individual slats is not modelled.
+
+**German summer assessment.** The DIN 4108-2 assessment is an estimate when performed using a weather file other than
+the official test reference year for the relevant climate region.
+
+**Glare and views.** The daylight assessment does not evaluate visual glare, view quality or the relationship between
+daylight and the outside view.
 
 ## Validation
+The calculation modules have been checked against established simulation tools, reference methods and test cases.
 
-| Part | Folder |
+| Part | Validation reference |
 |---|---|
-| Thermal engine (Standard 140, EnergyPlus, 14 climates) | `validation/thermal/engine/` |
-| Room types against EnergyPlus (432 cases) | `validation/thermal/room-types/` |
-| Daylight and blinds against Radiance | `validation/daylight/` |
-| Future climate and urban heat island | `validation/future-climate/`, `validation/urban-heat-island/` |
+| Thermal engine | ASHRAE Standard 140 and EnergyPlus, across 14 climates. [validation/thermal/engine/](../../validation/thermal/engine/) |
+| Room configurations | Comparison with EnergyPlus across 432 cases. [validation/thermal/room-types/](../../validation/thermal/room-types/) |
+| Daylight and blinds | Comparison with Radiance. [validation/daylight/](../../validation/daylight/) |
+| Future climate and urban heat island | Reference climate data and independent model implementations. [validation/future-climate/](../../validation/future-climate/), [validation/urban-heat-island/](../../validation/urban-heat-island/) |
+
+These comparisons assess the implementation of the models and their agreement with established reference tools. They
+do not replace validation against measured performance in occupied buildings.

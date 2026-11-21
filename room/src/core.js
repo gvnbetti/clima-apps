@@ -254,15 +254,13 @@
      sun direction (world), direct normal illuminance (lux), and the four sun patches with weights for the interreflected path. */
   function skies(wx, S, rotDeg) {
     const rotS = (rotDeg || 0) * D2R; // sky in the frame of a room turned by rotDeg (azimuth of facade A minus 180)
-    const lat = wx.lat * D2R, lonW = -wx.lon * D2R, mer = -15 * wx.tz * D2R, apwc = Math.exp(0.07 * 11 - 0.075);
+    const apwc = Math.exp(0.07 * 11 - 0.075), CMx = root.ClimaMods || globalThis.ClimaMods, SUN = CMx.solarArrays(wx.lat, wx.lon, wx.tz);
     const out = { L: new Float32Array(8760 * S.n), sun: new Float32Array(8760 * 3), Edn: new Float32Array(8760), Edh: new Float32Array(8760), sunP: new Int32Array(8760 * 4), sunW: new Float32Array(8760 * 4) };
     let i = 0;
     for (let mo = 0; mo < 12; mo++) for (let da = 1; da <= MDAYS[mo]; da++) for (let h = 1; h <= 24; h++, i++) {
       const jd = MDA[mo] + da, hr = h - 0.5;
-      const sd = 0.4093 * Math.sin((2 * PI / 365) * (jd - 81));
-      const st = hr + 0.170 * Math.sin((4 * PI / 373) * (jd - 80)) - 0.129 * Math.sin((2 * PI / 355) * (jd - 8)) + (12 / PI) * (mer - lonW);
-      const alt = Math.asin(Math.sin(lat) * Math.sin(sd) - Math.cos(lat) * Math.cos(sd) * Math.cos(st * PI / 12));
-      const azi = -Math.atan2(Math.cos(sd) * Math.sin(st * PI / 12), -Math.cos(lat) * Math.sin(sd) - Math.sin(lat) * Math.cos(sd) * Math.cos(st * PI / 12)) + PI - rotS;
+      // sun from the shared Clima Toolbox core (as the thermal model and the other apps), azimuth from north, clockwise
+      const alt = SUN.alt[i] * D2R, azi = SUN.az[i] * D2R - rotS;
       const sx = Math.cos(alt) * Math.sin(azi), sy = Math.cos(alt) * Math.cos(azi), sz = Math.sin(alt);
       out.sun[3 * i] = sx; out.sun[3 * i + 1] = sy; out.sun[3 * i + 2] = sz;
       const dir = wx.dni[i], dif = wx.dhi[i];
@@ -439,7 +437,7 @@
 })(typeof window !== "undefined" ? window : globalThis);
 
 /* Geometry-based zone engines for Climate Brief.
-   - Solar position and irradiance on any surface after EN ISO 52010-1 (Perez 1990 sky model).
+   - Solar position and irradiance on any surface from the shared Clima Toolbox core (NOAA sun, Perez 1990).
    - EN ISO 13790:2008 simple hourly method (5R1C), complete: opaque solar gains, sky radiation, F_w.
    - EN ISO 52016-1:2017 hourly method: 5 nodes per opaque element, 2 per window, one air node,
      area-weighted internal radiation, solved implicitly each hour.
@@ -451,35 +449,17 @@
   "use strict";
   const D2R = Math.PI / 180, SIGMA = 5.67e-8;
 
-  // ------------------------------------------------------------------ solar position (EN ISO 52010-1, 6.4.1)
+  // ------------------------------------------------------------------ solar position: the shared Clima Toolbox core
+  // (NOAA solar calculator, as Macro and Micro Clima; shared/climamods.js), at the middle of each hour, with refraction.
+  const CM = () => root.ClimaMods || globalThis.ClimaMods;
   function solarPosition(lat, lon, tz) {
-    const el = new Float64Array(8760), az = new Float64Array(8760);
-    const phi = lat * D2R;
-    for (let i = 0; i < 8760; i++) {
-      const n = Math.floor(i / 24) + 1, mid = (i % 24) + 0.5, R = 2 * Math.PI * n / 365;
-      const dec = (0.33281 - 22.984 * Math.cos(R) - 0.3499 * Math.cos(2 * R) - 0.1398 * Math.cos(3 * R)
-        + 3.7872 * Math.sin(R) + 0.03205 * Math.sin(2 * R) + 0.07187 * Math.sin(3 * R)) * D2R;
-      let teq;
-      if (n < 21) teq = 2.6 + 0.44 * n;
-      else if (n < 136) teq = 5.2 + 9 * Math.cos((n - 43) * 0.0357);
-      else if (n < 241) teq = 1.4 - 5 * Math.cos((n - 135) * 0.0449);
-      else if (n < 336) teq = -6.3 - 10 * Math.cos((n - 306) * 0.036);
-      else teq = 0.45 * (n - 359);
-      const tsol = mid - teq / 60 - (tz - lon / 15);
-      const w = 15 * (tsol - 12) * D2R;
-      const sa = Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(w);
-      el[i] = Math.asin(Math.max(-1, Math.min(1, sa))) / D2R;
-      az[i] = (Math.atan2(Math.sin(w), Math.cos(w) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi)) / D2R + 180 + 360) % 360;
-    }
+    const S = CM().solarArrays(lat, lon, tz), el = new Float64Array(8760), az = new Float64Array(8760);
+    for (let i = 0; i < 8760; i++) { el[i] = S.alt[i]; az[i] = S.az[i]; }
     return { el, az };
   }
 
-  // ------------------------------------------------------------------ irradiance on a surface (Perez 1990, as in EN ISO 52010-1)
-  const PEREZ = [
-    [1.065, -0.008, 0.588, -0.062, -0.060, 0.072, -0.022], [1.230, 0.130, 0.683, -0.151, -0.019, 0.066, -0.029],
-    [1.500, 0.330, 0.487, -0.221, 0.055, -0.064, -0.026], [1.950, 0.568, 0.187, -0.295, 0.109, -0.152, -0.014],
-    [2.800, 0.873, -0.392, -0.362, 0.226, -0.462, 0.001], [4.500, 1.132, -1.237, -0.412, 0.288, -0.823, 0.056],
-    [6.200, 1.060, -1.600, -0.359, 0.264, -1.127, 0.131], [Infinity, 0.678, -0.327, -0.250, 0.156, -1.377, 0.251]];
+  // ------------------------------------------------------------------ irradiance on a surface: Perez 1990 from the shared core
+  // (as Macro Clima and pvlib). Global horizontal is rebuilt from direct and diffuse, as the weather data carry no GHI.
   function irradiance(wx, tilt, surfAz) {
     const key = tilt + "|" + surfAz;
     if (wx._irr && wx._irr[key]) return wx._irr[key];
@@ -488,29 +468,15 @@
     return res;
   }
   function irradianceRaw(wx, tilt, surfAz) {
-    const n = 8760, cb = Math.cos(tilt * D2R), sb = Math.sin(tilt * D2R), alb = wx.albedo == null ? 0.2 : wx.albedo;
+    const n = 8760, alb = wx.albedo == null ? 0.2 : wx.albedo, P = CM().poa, doy = CM().T.doy;
     const o = { beam: new Float32Array(n), circ: new Float32Array(n), iso: new Float32Array(n), hor: new Float32Array(n), grd: new Float32Array(n),
       cosT: new Float32Array(n), tot: new Float32Array(n) };
     for (let i = 0; i < n; i++) {
-      const a = wx.el[i], dni = wx.dni[i], dhi = wx.dhi[i];
-      const sa = Math.sin(Math.max(0, a) * D2R), ca = Math.cos(Math.max(0, a) * D2R);
-      const cosT = sa * cb + ca * sb * Math.cos((wx.az[i] - surfAz) * D2R);
-      o.cosT[i] = cosT;
-      const beam = a > 0 ? dni * Math.max(0, cosT) : 0;
-      const ghi = dhi + (a > 0 ? dni * sa : 0);
-      o.beam[i] = beam; o.grd[i] = alb * ghi * (1 - cb) / 2;
-      if (dhi > 0) {
-        const tz = (90 - Math.max(0, a)) * D2R, k = 1.014 * tz * tz * tz;
-        const eps = ((dhi + (a > 0 ? dni : 0)) / dhi + k) / (1 + k);
-        const am = Math.max(0, a), m = am >= 10 ? 1 / sa : 1 / (Math.sin(am * D2R) + 0.15 * Math.pow(am + 3.885, -1.253));
-        const iext = 1370 * (1 + 0.033 * Math.cos(2 * Math.PI * (Math.floor(i / 24) + 1) / 365));
-        const delta = m * dhi / iext;
-        const c = PEREZ.find((r) => eps < r[0]);
-        const F1 = Math.max(0, c[1] + c[2] * delta + c[3] * tz), F2 = c[4] + c[5] * delta + c[6] * tz;
-        const aa = Math.max(0, cosT), bb = Math.max(Math.cos(85 * D2R), Math.cos(tz));
-        o.iso[i] = dhi * (1 - F1) * (1 + cb) / 2; o.circ[i] = a > 0 ? dhi * F1 * aa / bb : 0; o.hor[i] = dhi * F2 * sb;
-      }
-      o.tot[i] = Math.max(0, o.beam[i] + o.circ[i] + o.iso[i] + o.hor[i] + o.grd[i]);
+      const a = wx.el[i], zen = 90 - a, dni = wx.dni[i], dhi = wx.dhi[i], ghi = dhi + (a > 0 ? dni * Math.sin(a * D2R) : 0);
+      const r = P(tilt, surfAz, zen, wx.az[i], dni, dhi, ghi, doy[i], alb);
+      o.cosT[i] = Math.cos(zen * D2R) * Math.cos(tilt * D2R) + Math.sin(zen * D2R) * Math.sin(tilt * D2R) * Math.cos((wx.az[i] - surfAz) * D2R);
+      o.beam[i] = r.beam; o.circ[i] = r.circ || 0; o.iso[i] = r.iso || 0; o.hor[i] = r.hor || 0; o.grd[i] = r.gnd;
+      o.tot[i] = Math.max(0, r.tot);
     }
     return o;
   }
@@ -1212,10 +1178,10 @@
     }
     return { occ, pres };
   }
-  // outdoor humidity ratio (kg/kg) from dew point and pressure
+  // outdoor humidity ratio (kg/kg) from dew point and pressure, with the shared core's psychrometrics (as Macro Clima)
   function humidityRatio(td, p) {
-    const w = new Float32Array(8760);
-    for (let i = 0; i < 8760; i++) { const x = td[i], pv = 611.2 * Math.exp(17.62 * x / (243.12 + x)); w[i] = 0.622 * pv / Math.max(1000, p[i] - pv); }
+    const w = new Float32Array(8760), M = root.ClimaMods || globalThis.ClimaMods;
+    for (let i = 0; i < 8760; i++) { const pv = M.pws(td[i]); w[i] = M.humRatio(pv, Math.max(pv + 1000, p[i])); }
     return w;
   }
   function context(wx, useKey, opt) {

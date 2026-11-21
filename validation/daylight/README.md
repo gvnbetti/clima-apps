@@ -4,14 +4,17 @@
 illuminance (UDI) over the floor and the occupied hours, without blinds and with blinds lowered as the app lowers them.
 The reference is Radiance.
 
-**Result in short.** Over 6 rooms and 6 climates (108 comparisons), the app's useful daylight is within 2.6 points of
+**Result in short.** Over 6 rooms and 6 climates (108 comparisons), the app's useful daylight is within 2.9 points of
 Radiance in every case:
-- without blinds, +0.8 points on average;
+- without blinds, +1.0 points on average;
 - with interior blinds, +0.3 points;
 - with exterior blinds, −0.9 points.
 
-What a blind costs in useful daylight matches too: interior −8.3 points in the app against −7.9 in Radiance, exterior
-−21.1 against −19.4.
+What a blind costs in useful daylight matches too: interior −8.5 points in the app against −7.8 in Radiance, exterior
+−21.2 against −19.4.
+
+Since 21 November 2026 the app takes its sun position from the calculation core shared with Macro and Micro Clima (NOAA
+solar calculator) instead of its replica of gendaymtx's; Radiance keeps its own. The results above are from that code.
 
 ## The model of the app
 - **Daylight coefficients** from a radiosity solution of the room's six surfaces, the wall reveals and the outdoor
@@ -76,9 +79,9 @@ Per room, climate and blind state: `results.md`. Summary:
 
 | Blind | App minus Radiance, mean | Range | Mean absolute |
 |---|---|---|---|
-| none | +0.8 points | 0.0 to +2.0 | 0.8 |
-| interior | +0.3 points | −1.3 to +2.0 | 0.7 |
-| exterior | −0.9 points | −2.6 to +0.2 | 0.9 |
+| none | +1.0 points | +0.2 to +2.1 | 1.0 |
+| interior | +0.3 points | −1.7 to +2.1 | 0.7 |
+| exterior | −0.9 points | −2.9 to +0.4 | 0.9 |
 
 **History.** The run of 19 November 2026 (`history/`) used the earlier model of the app, which scaled the light of a
 window with its blind down by the blind's transmittance. Against a fully diffusing Radiance blind it read 7.7 points

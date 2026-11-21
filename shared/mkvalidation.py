@@ -69,7 +69,7 @@ footer {{ margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line)
   <ul>{items}</ul>
 
   <h2>Methods</h2>
-  <p>What each app computes, with its models, assumptions and sources: <a href="{GH}/tree/main/docs/methods">docs/methods</a>. Full overview of the studies: <a href="{GH}/tree/main/validation">validation</a>.</p>
+  <p>What each app computes, with its models, assumptions and limits: <a href="methods.html">Methods</a>. Full overview of the studies in the repository: <a href="{GH}/tree/main/validation">validation</a>.</p>
 
   <footer><a href="index.html">Clima Toolbox</a> · <a href="about.html">About</a> · <a href="impressum.html">Impressum and privacy</a></footer>
 </main>

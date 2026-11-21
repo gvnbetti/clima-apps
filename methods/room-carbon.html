@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Room Clima: how carbon is calculated · Clima Toolbox</title>
+<meta name="description" content="How Clima Toolbox works: background, principles, models, assumptions and limits.">
+<link rel="icon" href="../shared/icons/toolbox.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../shared/fonts/fonts.css">
+<style>
+:root { --bg: #f1f2ef; --panel: #fbfbf9; --ink: #18201f; --mute: #5b6663; --line: #d6dad5; --accent: #23614f;
+  --f-body: "IBM Plex Sans", system-ui, sans-serif; --f-data: "IBM Plex Mono", ui-monospace, monospace }
+@media (prefers-color-scheme: dark) { :root { --bg: #131817; --panel: #1a201f; --ink: #e7ebe8; --mute: #9aa5a1; --line: #2f3836; --accent: #6cc0a3; color-scheme: dark } }
+* { box-sizing: border-box }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 var(--f-body) }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 48px max(20px, env(safe-area-inset-left, 0px)) 64px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 48px }
+nav.toc { font-size: 14px; position: sticky; top: 16px; align-self: start }
+nav.toc b { display: block; font: 600 11px var(--f-data); text-transform: uppercase; letter-spacing: .08em; color: var(--mute); margin: 0 0 10px }
+nav.toc a { display: block; color: var(--mute); text-decoration: none; padding: 4px 0 4px 10px; border-left: 2px solid var(--line) }
+nav.toc a:hover { color: var(--ink) } nav.toc a[aria-current] { color: var(--ink); border-left-color: var(--accent); font-weight: 600 }
+article { max-width: 780px }
+h1 { font-size: 38px; font-weight: 300; letter-spacing: -.01em; line-height: 1.15; margin: 0 0 28px }
+h2 { font: 600 13px var(--f-data); text-transform: uppercase; letter-spacing: .08em; color: var(--mute); margin: 40px 0 12px }
+h3 { font-size: 17px; margin: 28px 0 8px }
+p { margin: 0 0 14px } a { color: var(--accent) } code { font: 13px var(--f-data); overflow-wrap: anywhere } pre { overflow-x: auto; font-size: 13px }
+ul, ol { margin: 0 0 14px; padding-left: 22px } li { margin: 0 0 6px } li > ul { margin: 6px 0 0 }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; background: var(--panel); border: 1px solid var(--line); margin: 0 0 18px }
+th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-top: 1px solid var(--line) }
+thead th { font: 600 11px var(--f-data); text-transform: uppercase; letter-spacing: .06em; color: var(--mute); border-top: 0 }
+.tw { overflow-x: auto }
+.next { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 14px; display: flex; justify-content: space-between; gap: 16px }
+.next a { text-decoration: none }
+.src { font: 12px var(--f-data); color: var(--mute) } .src a { color: inherit }
+@media (max-width: 820px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-top: 32px } nav.toc { position: static }
+  nav.toc a { display: inline-block; border: 1px solid var(--line); border-radius: 14px; padding: 3px 10px; margin: 0 4px 6px 0 }
+  nav.toc a[aria-current] { border-color: var(--accent) } h1 { font-size: 30px } .tw table { min-width: 620px } td code { overflow-wrap: normal } }
+</style>
+</head>
+<body><!-- clima-studio-bar --><style>
+.csb{--csb-bg:#fbfbf9;--csb-ink:#18201f;--csb-mute:#5b6663;--csb-line:#d6dad5;--csb-on:#e6e9e4;display:flex;align-items:center;gap:4px 18px;flex-wrap:wrap;
+ padding:6px max(16px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px));background:var(--csb-bg);color:var(--csb-ink);border-bottom:1px solid var(--csb-line);
+ font:500 13px/1.2 "IBM Plex Sans",system-ui,-apple-system,sans-serif;position:relative;z-index:50}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .csb{--csb-bg:#1a201f;--csb-ink:#e7ebe8;--csb-mute:#9aa5a1;--csb-line:#2f3836;--csb-on:#232b29}}
+.csb a{color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:7px;border-radius:5px}
+.csb svg{flex:none;display:block}
+.csb-home{font-size:15px;padding:3px 4px}.csb-home b{font-weight:600}.csb-home span{font-weight:300}
+.csb-apps{display:flex;gap:2px;flex-wrap:wrap}
+.csb-apps a{padding:5px 9px;color:var(--csb-mute)}.csb-apps a:hover{color:var(--csb-ink);background:var(--csb-on)}
+.csb-apps a[aria-current]{color:var(--csb-ink);background:var(--csb-on);font-weight:600}
+.csb-right{margin-left:auto;display:flex;gap:2px 14px;flex-wrap:wrap}
+.csb-right a{color:var(--csb-mute);font-size:12px;padding:5px 2px}.csb-right a:hover,.csb-right a[aria-current]{color:var(--csb-ink)}.csb-right a[aria-current]{font-weight:600}
+@media (max-width:720px){.csb-apps a span,.csb .csb-src{display:none}.csb-apps a{padding:5px 7px}.csb-right{gap:10px}}
+</style><nav class="csb" aria-label="Clima Toolbox apps"><a class="csb-home" href="https://gvnbetti.github.io/clima-toolbox/"><svg width="24" height="24" viewBox="0 0 64 64" aria-hidden="true"><path d="M4 44H60M8 44A24 24 0 0 1 56 44M15 44A17 17 0 0 1 49 44M22 44A10 10 0 0 1 42 44" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="44" cy="23.22" r="5" fill="#d9762b"/></svg><b>Clima</b><span>Toolbox</span></a><span class="csb-apps"><a href="https://gvnbetti.github.io/clima-toolbox/map/index.html" title="Clima Map: Find a weather file"><svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="#d9762b"/><path d="M32 58C29 53 24 48 24 43A8 8 0 0 1 40 43C40 48 35 53 32 58Z" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Clima Map</span></a><a href="https://gvnbetti.github.io/clima-toolbox/macro/index.html" title="Macro Clima: Read the climate"><svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="#d9762b"/><path d="M4 34H60M14 43H50M24 52H40" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Macro Clima</span></a><a href="https://gvnbetti.github.io/clima-toolbox/micro/index.html" title="Micro Clima: Outdoor comfort"><svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="#d9762b"/><path d="M6 56H58M24 48V56M42 49V56" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="41" r="7" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="42" cy="45" r="3" fill="currentColor"/></svg><span>Micro Clima</span></a><a href="https://gvnbetti.github.io/clima-toolbox/room/build/index.html" title="Room Clima: Room and facade"><svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 34A22 22 0 0 1 54 34" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/><circle cx="43" cy="14.95" r="5" fill="#d9762b"/><path d="M50 43V38H14V56H50V51" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Room Clima</span></a></span><span class="csb-right"><a href="https://gvnbetti.github.io/clima-toolbox/methods.html" aria-current=page>Methods</a><a href="https://gvnbetti.github.io/clima-toolbox/validation.html">Validation</a><a class="csb-src" href="https://github.com/gvnbetti/clima-toolbox">Source</a><a href="https://gvnbetti.github.io/clima-toolbox/about.html">About</a><a href="https://gvnbetti.github.io/clima-toolbox/impressum.html">Impressum</a></span></nav><script>(function(){if(!/(^|\.)github\.io$/.test(location.hostname))return;var s=document.createElement("script");s.async=true;s.setAttribute("data-goatcounter","https://climatoolbox.goatcounter.com/count");s.src="https://gvnbetti.github.io/clima-toolbox/shared/goatcounter-count.js";document.head.appendChild(s)})();</script><!-- /clima-studio-bar -->
+<div class="wrap"><nav class="toc" aria-label="Method pages"><b>Methods</b><a href="../methods.html">Overview</a><a href="../methods/map.html">Clima Map</a><a href="../methods/macro.html">Macro Clima</a><a href="../methods/climate.html">Future and urban climate</a><a href="../methods/micro.html">Micro Clima</a><a href="../methods/room.html">Room Clima</a><a href="../methods/room-carbon.html" aria-current=page>Room Clima: carbon</a></nav>
+<article><h1>Room Clima: how carbon is calculated</h1>
+<p>Room Clima compares designs by whole-life carbon over 50 years, per m² of floor. It counts only what the options
+change: the embodied carbon of the elements a design adds or removes, with their replacements, and the operational
+carbon of the energy the room uses. The structure, floors, partitions and services that every design shares are left
+out. The figures are therefore for comparing designs of the same room, not a building LCA.</p>
+<p>Code: <code>carbonOf</code> in <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/room/src/core.js"><code>room/src/core.js</code></a>. Values: the <code>carbon.*</code> entries of <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/room/src/register.js"><code>room/src/register.js</code></a>. All are generic
+assumptions, to be replaced by project data or the Build-up LCA datasets (ÖKOBAUDAT).</p>
+<h2>Formula</h2>
+<p>Whole-life carbon = embodied carbon of the options + delivered energy × grid factor × 50 years</p>
+<ul>
+<li><strong>Study period:</strong> 50 years (BNB and DGNB reference study period).</li>
+<li><strong>Replacements:</strong> an element with a service life L is counted ⌈50 / L⌉ times.</li>
+<li><strong>Operational carbon:</strong> delivered energy (all electric, through a heat pump) × 0.25 kg CO₂e/kWh × 50. The factor is
+  an assumed mean over 50 years; the German mix was about 0.38 kg/kWh in 2024 (UBA) and is set to fall. It can be
+  changed in the app.</li>
+</ul>
+<h2>Embodied carbon of the options</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Value</th>
+<th>Life</th>
+<th>Measured on</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Window with frame, double glazing</td>
+<td>55 kg CO₂e/m²</td>
+<td>40 years (counted twice)</td>
+<td>window area</td>
+</tr>
+<tr>
+<td>Window with frame, triple glazing</td>
+<td>75 kg CO₂e/m²</td>
+<td>40 years</td>
+<td>window area</td>
+</tr>
+<tr>
+<td>Solar control coating (g 0.3 or less)</td>
+<td>+3 kg CO₂e/m²</td>
+<td>with the window</td>
+<td>window area</td>
+</tr>
+<tr>
+<td>Opaque wall</td>
+<td>45 kg CO₂e/m² + 0.42 per cm of insulation (14, 24 or 36 cm by U-value level)</td>
+<td>50 years</td>
+<td>wall area without window</td>
+</tr>
+<tr>
+<td>Exterior venetian blind with motor</td>
+<td>40 kg CO₂e/m²</td>
+<td>25 years</td>
+<td>window area</td>
+</tr>
+<tr>
+<td>Interior textile blind</td>
+<td>6 kg CO₂e/m²</td>
+<td>15 years</td>
+<td>window area</td>
+</tr>
+<tr>
+<td>Overhang, fins, frame</td>
+<td>90 kg CO₂e per m² of projected element</td>
+<td>50 years</td>
+<td>depth × length (overhang over the facade width, two fins over the window height)</td>
+</tr>
+<tr>
+<td>Thermal mass, against light construction</td>
+<td>medium 15, heavy 45, very heavy 60 kg CO₂e per m² of floor</td>
+<td>50 years</td>
+<td>floor area</td>
+</tr>
+<tr>
+<td>Ceiling fan</td>
+<td>35 kg CO₂e per fan, one per 12 m² of floor</td>
+<td>15 years</td>
+<td>number of fans</td>
+</tr>
+<tr>
+<td>Night ventilation, tilt restrictors and actuators</td>
+<td>15 kg CO₂e per facade</td>
+<td>20 years</td>
+<td>facade</td>
+</tr>
+<tr>
+<td>Night ventilation across storeys</td>
+<td>5 kg CO₂e per m² of floor</td>
+<td>20 years</td>
+<td>floor area</td>
+</tr>
+</tbody>
+</table></div>
+<p>The window area is the window-to-wall ratio times the facade. A corner room counts both facades. The thermal mass
+values are the least certain of the set.</p>
+<h2>Worked example</h2>
+<p>Office, one facade, 3.6 × 5.4 m, 3.0 m high (19.44 m² floor, 10.8 m² facade). Computed with the current code.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Design A: 50 % window, triple, exterior blind, 0.5 m overhang, medium mass, night tilt, fans</th>
+<th>Design B: 30 % window, double, interior blind, heavy mass</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Window</td>
+<td>5.4 m² × 75 × 2 = 810 kg → 41.7 kg/m²</td>
+<td>3.24 m² × 55 × 2 = 356 kg → 18.3 kg/m²</td>
+</tr>
+<tr>
+<td>Wall</td>
+<td>5.4 m² × (45 + 0.42 × 24) = 297 kg → 15.3</td>
+<td>7.56 m² × (45 + 0.42 × 14) = 385 kg → 19.8</td>
+</tr>
+<tr>
+<td>Blinds</td>
+<td>5.4 m² × 40 × 2 = 432 kg → 22.2</td>
+<td>3.24 m² × 6 × 4 = 78 kg → 4.0</td>
+</tr>
+<tr>
+<td>Overhang</td>
+<td>90 × 0.5 × 3.6 = 162 kg → 8.3</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Thermal mass</td>
+<td>15.0</td>
+<td>45.0</td>
+</tr>
+<tr>
+<td>Fans</td>
+<td>35 × 2 × 4 = 280 kg → 14.4</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Night ventilation</td>
+<td>15 × 3 = 45 kg → 2.3</td>
+<td>0</td>
+</tr>
+<tr>
+<td><strong>Embodied, per m² floor</strong></td>
+<td><strong>119.2 kg CO₂e/m²</strong></td>
+<td><strong>87.1 kg CO₂e/m²</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>Operational carbon adds 12.5 kg CO₂e/m² for each kWh/m²a of delivered energy (0.25 × 50). At 10 kWh/m²a that is
+125 kg CO₂e/m²: of the same order as the embodied part. A design that saves 2 kWh/m²a each year therefore justifies
+about 25 kg CO₂e/m² more embodied carbon.</p>
+<h2>How carbon enters the recommendation</h2>
+<p>Carbon is not a target and not part of the score. It decides between designs that are otherwise equal: among designs
+within 0.01 in score and in the same tier, the one with less whole-life carbon is recommended. After the main search, a
+local search looks for the design with the least whole-life carbon among those that meet every target, because carbon
+is not one of the search criteria and the search alone could miss it.</p>
+<p class="src">Source: <a href="https://github.com/gvnbetti/clima-toolbox/blob/main/docs/methods/room-clima-carbon.md">docs/methods/room-clima-carbon.md</a></p>
+<div class="next"><a href="../methods/room.html">← Room Clima</a><a href="../validation.html">Validation →</a></div></article></div>
+</body>
+</html>

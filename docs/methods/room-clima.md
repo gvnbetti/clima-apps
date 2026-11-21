@@ -1,9 +1,12 @@
 # Room Clima: method
 
-Room Clima tests facade and room options for a single room at concept stage: window size, glazing, shading, blinds,
-thermal mass, ventilation by windows, ceiling fans and, where needed, a chilled ceiling. For each design it computes
-overheating, delivered energy, daylight and whole-life carbon, ranks the designs against fixed targets and reruns the
-best ones in two stress scenarios.
+## What it is for
+Testing a room and its facade at concept stage. The user gives a room type
+(dwelling, office, classroom), its size, orientation and position (one facade, a corner, a corner under the roof), and the options to compare:
+window size, glazing, fixed shading, blinds, thermal mass, insulation, ventilation by windows, ceiling fans and, where
+needed, a chilled ceiling. For each combination Room Clima computes overheating, delivered energy, daylight and
+whole-life carbon, ranks the designs against fixed targets, and reruns the best ones under future warming and poor
+operation. The result is a short list of facades that work, with the reasons.
 
 Every constant, with its unit, its status and its source, is defined once in `room/src/register.js`. Status is one of
 *standard* (taken from the text of the standard named), *secondary* (from a secondary source, to be replaced by the
@@ -90,6 +93,22 @@ A design is robust when it still meets the comfort limit, or stays the best of t
 ## Carbon
 
 See `room-clima-carbon.md`.
+
+## Assumptions
+- One room, rectangular, empty. Partitions, floor and ceiling are cut at their mid-plane and exchange no heat with the
+  neighbouring rooms, which are taken to be at the same temperature.
+- Occupants act by fixed rules: windows, blinds, fans and night ventilation follow the thresholds above, every day.
+  The poor-operation scenario tests what happens when they do not.
+- Ventilation by windows is driven by temperature difference only. Wind would add air flow; leaving it out keeps the
+  result on the safe side.
+- Heating and cooling are ideal and all electric, through heat pumps, so delivered energy and carbon follow directly.
+
+## Limits
+- The hourly model is tuned to Room Clima's own rooms. In the Standard 140 test box it reaches 32 of 44 ranges and
+  overestimates cooling by 12.7 %; on its own rooms it agrees with EnergyPlus within 0.7 K per hour.
+- Venetian blinds are modelled for daylight as a diffusing layer, without the angle dependence of the slats.
+- The DIN 4108-2 check on a weather file other than the region's test reference year is an estimate.
+- Glare and views are not assessed.
 
 ## Validation
 

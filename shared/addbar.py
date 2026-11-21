@@ -1,5 +1,5 @@
 """Inserts (or replaces) the Clima Toolbox bar at the top of an app page: the umbrella mark, the four apps, and links to
-validation, source, about and impressum. The block sits between two marker comments right after <body>, so running this again replaces it.
+methods, validation, source, about and impressum. The block sits between two marker comments right after <body>, so running this again replaces it.
 Links are absolute, so the bar also works where an app runs as a Claude artifact.
 Usage: python3 addbar.py <app id: map|macro|micro|room> <html file> [...more pairs]"""
 import sys, re, pathlib
@@ -31,7 +31,7 @@ CSS = '''<style>
 .csb-apps a{padding:5px 9px;color:var(--csb-mute)}.csb-apps a:hover{color:var(--csb-ink);background:var(--csb-on)}
 .csb-apps a[aria-current]{color:var(--csb-ink);background:var(--csb-on);font-weight:600}
 .csb-right{margin-left:auto;display:flex;gap:2px 14px;flex-wrap:wrap}
-.csb-right a{color:var(--csb-mute);font-size:12px;padding:5px 2px}.csb-right a:hover{color:var(--csb-ink)}
+.csb-right a{color:var(--csb-mute);font-size:12px;padding:5px 2px}.csb-right a:hover,.csb-right a[aria-current]{color:var(--csb-ink)}.csb-right a[aria-current]{font-weight:600}
 @media (max-width:720px){.csb-apps a span,.csb .csb-src{display:none}.csb-apps a{padding:5px 7px}.csb-right{gap:10px}}
 </style>'''
 
@@ -42,7 +42,7 @@ COUNT = ('<script>(function(){if(!/(^|\\.)github\\.io$/.test(location.hostname))
 def bar(cur):
     apps = ''.join(f'<a href="{BASE}{p}" title="{n}: {d}"{" aria-current=page" if k == cur else ""}>{svg(k, 20)}<span>{n}</span></a>' for k, n, p, d in APPS)
     return (f'<!-- clima-studio-bar -->{CSS}<nav class="csb" aria-label="Clima Toolbox apps"><a class="csb-home" href="{BASE}">{svg("studio", 24)}<b>Clima</b><span>Toolbox</span></a>'
-            f'<span class="csb-apps">{apps}</span><span class="csb-right"><a href="{BASE}validation.html"{" aria-current=page" if cur == "validation" else ""}>Validation</a>'
+            f'<span class="csb-apps">{apps}</span><span class="csb-right"><a href="{BASE}methods.html"{" aria-current=page" if cur == "methods" else ""}>Methods</a><a href="{BASE}validation.html"{" aria-current=page" if cur == "validation" else ""}>Validation</a>'
             f'<a class="csb-src" href="https://github.com/gvnbetti/clima-toolbox">Source</a><a href="{BASE}about.html">About</a><a href="{BASE}impressum.html">Impressum</a></span></nav>{COUNT}<!-- /clima-studio-bar -->')
 
 if __name__ == '__main__':

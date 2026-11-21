@@ -1,8 +1,13 @@
 # Micro Clima: method
 
-Micro Clima tests design moves for an outdoor space: shade, ground, wind shelter and enclosure. It counts the hours of
-thermal stress at a point in the centre of the space, using UTCI. The engine is the script `engine` in
-`micro/index.html`.
+## What it is for
+Testing design moves for an outdoor space: a square, a courtyard, a street, a terrace. Micro Clima counts the hours
+of heat and cold stress at a point in the centre of the space, with UTCI, and compares options: trees or a canopy,
+paving or grass, a wall or a courtyard, more or less wind shelter. The weather file describes the open site; the
+model works out how the space changes it.
+
+## How it works
+The engine is the script `engine` in `micro/index.html`. Each hour of the year:
 
 | Part | Method | Source |
 |---|---|---|
@@ -15,7 +20,22 @@ thermal stress at a point in the centre of the space, using UTCI. The engine is 
 | Enclosures | open field, single wall, courtyard and street canyons at H/W 0.5, 1, 2; exact sky view factors and sun access at the centre point | geometry |
 | Wind | 10 m wind times shelter and enclosure factors (placeholders) | |
 | Comfort | UTCI, operational polynomial, with its stress classes | Bröde et al. 2012 |
-| Future climate | shared with Macro Clima | `validation/future-climate/` |
+| Future and urban climate | see [Future and urban climate](climate-scenarios.md) | |
 
-Placeholders, still to be sourced: wind shelter factors, enclosure wind factors and the moisture of permeable paving.
-Code checks and the comparison with Ladybug are in `validation/outdoor-comfort/`.
+## Assumptions
+- One point at the centre of the space. Conditions near a wall or at the edge of a tree's shade differ.
+- Sun and sky are exact for the centre point, but walls do not shade each other: each wall is as warm as if it stood
+  alone in the sun.
+- Placeholders, still to be sourced: the wind shelter factors, the enclosure wind factors, the strength of canopy
+  cooling and the moisture of permeable paving.
+
+## Limits
+- Wind is scaled, not simulated. Gusts, corner winds and channelling are outside the model.
+- Enclosures are a fixed set of shapes. A real space is matched to the nearest one.
+- The heat island uses Micro Clima's own sun position: up to 0.77 K apart from Macro Clima in about 2 % of hours,
+  around sunrise and sunset.
+
+## Validation
+[Outdoor comfort](../../validation/outdoor-comfort/): UTCI and SolarCal identical to pythermalcomfort, sun within 0.4°
+of pvlib, wall and ground balances against exact solutions, and the ranking of 70 designs against Ladybug Tools (rank
+correlation 0.97).

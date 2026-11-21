@@ -135,7 +135,8 @@
     const X = (i) => x0 + w * (i + 0.5) / n, Y = (v) => y0 + h - h * (v - lo) / (hi - lo);
     let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label || "")}">`;
     s += axisY(x0, y0, h, lo, hi, niceTicks(lo, hi, h < 120 ? 3 : 6), o.unit, w);
-    if (o.months !== false) s += axisMonthsX(x0, w, y0 + h, n);
+    if (o.months !== false && n === 12) { s += `<g class="ax"><line x1="${x0}" x2="${x0 + w}" y1="${y0 + h}" y2="${y0 + h}"/>`; for (let i = 0; i < 12; i++) s += `<text x="${X(i)}" y="${y0 + h + 15}" text-anchor="middle">${W < 480 ? C.MONTHS[i][0] : C.MONTHS[i]}</text>`; s += `</g>`; }
+    else if (o.months !== false) s += axisMonthsX(x0, w, y0 + h, n, W < 480);
     else if (o.xTicks) { s += `<g class="ax"><line x1="${x0}" x2="${x0 + w}" y1="${y0 + h}" y2="${y0 + h}"/>`; for (const [i, t] of o.xTicks) s += `<text x="${X(i)}" y="${y0 + h + 15}" text-anchor="middle">${esc(t)}</text>`; s += `</g>`; }
     if (o.band) { let p = ""; for (let i = 0; i < n; i++) p += (i ? "L" : "M") + X(i).toFixed(1) + "," + Y(o.band.hi[i]).toFixed(1); for (let i = n - 1; i >= 0; i--) p += "L" + X(i).toFixed(1) + "," + Y(o.band.lo[i]).toFixed(1); s += `<path d="${p}Z" fill="${o.band.fill || "var(--accent-soft)"}" opacity="${o.band.opacity || 0.9}"/>`; }
     const marksLater = o.marks || [];
@@ -176,14 +177,16 @@
 
   /* ---------- twelve monthly daily profiles ---------- */
   K.profiles = function (o) {
-    const W = 760, H = 230, x0 = 40, y0 = 16, h = 170, gap = 4, pw = (W - x0 - 8 - gap * 11) / 12;
+    // one row of twelve months; on a phone three rows of four, so each panel stays readable
+    const narrow = (K.curW || 760) < 480, cols = narrow ? 4 : 12, nrow = 12 / cols, W = narrow ? K.curW : 760, x0 = 40, gap = 4, h = narrow ? 120 : 170, rowH = h + 34, H = 16 + nrow * rowH, pw = (W - x0 - 8 - gap * (cols - 1)) / cols;
     let lo = o.lo, hi = o.hi; if (axOv(o.unit)) { lo = axOv(o.unit).lo; hi = axOv(o.unit).hi; } const vals = o.vals, mask = o.mask;
     const stats = []; for (let m = 0; m < 12; m++) { const mn = new Array(24).fill(0), cnt = new Array(24).fill(0), mi = new Array(24).fill(Infinity), ma = new Array(24).fill(-Infinity); for (let d = C.MSTART[m]; d < C.MSTART[m] + C.MDAYS[m]; d++) for (let hr = 0; hr < 24; hr++) { const i = d * 24 + hr; if (mask && !mask[i]) continue; const v = vals[i]; if (!isFinite(v)) continue; mn[hr] += v; cnt[hr]++; mi[hr] = Math.min(mi[hr], v); ma[hr] = Math.max(ma[hr], v); } stats.push({ mean: mn.map((s, k) => (cnt[k] ? s / cnt[k] : NaN)), min: mi.map((v) => (isFinite(v) ? v : NaN)), max: ma.map((v) => (isFinite(v) ? v : NaN)) }); }
     if (lo == null || hi == null) { lo = Infinity; hi = -Infinity; for (const s of stats) for (const a of [s.min, s.max]) for (const v of a) if (isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); } const pad = (hi - lo) * 0.05 || 1; lo -= pad; hi += pad; }
-    const Y = (v) => y0 + h - h * (v - lo) / (hi - lo);
-    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label || "")}">` + axisY(x0, y0, h, lo, hi, niceTicks(lo, hi, 5), o.unit, W - x0 - 8);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label || "")}">`;
+    for (let r = 0; r < nrow; r++) s += axisY(x0, 16 + r * rowH, h, lo, hi, niceTicks(lo, hi, narrow ? 4 : 5), o.unit, W - x0 - 8);
     stats.forEach((st, m) => {
-      const px = x0 + m * (pw + gap), X = (k) => px + pw * (k + 0.5) / 24;
+      const y0 = 16 + Math.floor(m / cols) * rowH, Y = (v) => y0 + h - h * (v - lo) / (hi - lo);
+      const px = x0 + (m % cols) * (pw + gap), X = (k) => px + pw * (k + 0.5) / 24;
       let band = "", line = "", pen = false;
       for (let k = 0; k < 24; k++) band += (k ? "L" : "M") + X(k).toFixed(1) + "," + Y(isFinite(st.max[k]) ? st.max[k] : lo).toFixed(1);
       for (let k = 23; k >= 0; k--) band += "L" + X(k).toFixed(1) + "," + Y(isFinite(st.min[k]) ? st.min[k] : lo).toFixed(1);
@@ -194,7 +197,7 @@
       const hid = K.hover((lx) => { const k = Math.max(0, Math.min(23, Math.floor((lx - px) / pw * 24))); return `<b>${C.MONTHS_LONG[m]}, ${String(k).padStart(2, "0")}:00 to ${String(k + 1).padStart(2, "0")}:00</b><br>mean ${fmt(st.mean[k], 1)} ${o.unit}<br>range ${fmt(st.min[k], 1)} to ${fmt(st.max[k], 1)} ${o.unit}`; });
       s += `<rect x="${px}" y="${y0}" width="${pw}" height="${h}" fill="transparent" data-hov="${hid}"/>`;
     });
-    if (o.hline != null) s += `<line x1="${x0}" x2="${W - 8}" y1="${Y(o.hline)}" y2="${Y(o.hline)}" stroke="var(--mute)" stroke-dasharray="4 3"/>`;
+    if (o.hline != null) for (let r = 0; r < nrow; r++) { const yy = 16 + r * rowH + h - h * (o.hline - lo) / (hi - lo); s += `<line x1="${x0}" x2="${W - 8}" y1="${yy}" y2="${yy}" stroke="var(--mute)" stroke-dasharray="4 3"/>`; }
     K._lastProfiles = stats;
     return s + `</svg>`;
   };
@@ -385,7 +388,10 @@
     const W = 340, H = 52, x0 = 10, w = W - 20; const all = o.refs.map((r) => r.v).concat([o.v]); let lo = Math.min(...all), hi = Math.max(...all); const pad = (hi - lo) * 0.04 || 1; lo -= pad; hi += pad;
     const X = (v) => x0 + w * (v - lo) / (hi - lo);
     let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label || "")}"><line x1="${x0}" x2="${x0 + w}" y1="20" y2="20" stroke="var(--line)" stroke-width="2"/>`;
-    let lastX = [-99, -99]; for (const r of [...o.refs].sort((a, b) => a.v - b.v)) { const x = X(r.v), row = x - lastX[0] < 20 && x - lastX[1] >= 20 ? 1 : 0; lastX[row] = x; s += `<line x1="${x}" x2="${x}" y1="13" y2="27" stroke="var(--out)" stroke-width="2" data-tip="${esc(`${r.name}: ${o.fmt(r.v)}`)}"/><text x="${x}" y="${38 + row * 10}" text-anchor="middle" font-size="8.5">${esc(r.short || r.name.slice(0, 3))}</text>`; }
+    // every reference gets a tick; names only where they do not collide, nearest to this file first (the rest on hover)
+    const placed = [[], []], lab = new Map();
+    for (const r of [...o.refs].sort((a, b) => Math.abs(a.v - o.v) - Math.abs(b.v - o.v))) { const x = X(r.v); for (const row of [0, 1]) if (placed[row].every((p) => Math.abs(p - x) >= 24)) { placed[row].push(x); lab.set(r, row); break; } }
+    for (const r of o.refs) { const x = X(r.v), row = lab.get(r); s += `<line x1="${x}" x2="${x}" y1="13" y2="27" stroke="var(--out)" stroke-width="2" data-tip="${esc(`${r.name}: ${o.fmt(r.v)}`)}"/>` + (row === undefined ? "" : `<text x="${x}" y="${38 + row * 10}" text-anchor="middle" font-size="8.5">${esc(r.short || r.name.slice(0, 3))}</text>`); }
     s += `<circle cx="${X(o.v)}" cy="20" r="6.5" fill="var(--accent)" stroke="var(--panel)" stroke-width="2" data-tip="${esc(`This file: ${o.fmt(o.v)}`)}"/><text x="${X(o.v)}" y="9" text-anchor="middle" font-size="9.5" class="ink" font-weight="600">${esc(o.fmt(o.v))}</text>`;
     return s + `</svg>`;
   };

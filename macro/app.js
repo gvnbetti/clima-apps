@@ -743,6 +743,7 @@
     if (t.closest("#guideBtn")) { openGuide(); return; }
     if (t.closest("#guideClose") || t.id === "scrim") { closeGuide(); return; }
     const a = t.closest(".gtoc a"); if (a) { ev.preventDefault(); openGuide(a.getAttribute("href").slice(3)); return; }
+    const mo = t.closest("[data-more]"); if (mo) { const el = $(mo.dataset.more); el.hidden = !el.hidden; mo.setAttribute("aria-expanded", String(!el.hidden)); return; }
     const go = t.closest("[data-goto]"); if (go) { closeGuide(); const el = document.getElementById(go.dataset.goto); if (el) el.scrollIntoView({ block: "start" }); }
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("guide").classList.contains("open")) closeGuide(); });
@@ -753,7 +754,9 @@
     ctx.mask = filterMask();
     $("sitetag").textContent = ctx.siteName + (ctx.period ? `, ${ctx.period.replace("the years ", "")}` : "");
     const fl = filterLabel();
-    let h = `<nav class="toc">${SECTIONS.map((s) => `<a href="#${s.id}">${esc(s.title)}</a>`).join("")}</nav>`;
+    $("toc").innerHTML = GROUPS.map(([t, ids]) => `<a href="#${ids[0]}" title="${esc(ids.map((i) => SECTIONS.find((s) => s.id === i).title).join(", "))}">${esc(t)}</a>`).join("");
+    $("filtsum").textContent = fl ? "on" : "whole year";
+    let h = "";
     if (st.insp && st.insp.overall) h += `<div class="insp"><h4>Claude Inspection, overall</h4>${esc(st.insp.overall)}</div>`;
     for (const s of SECTIONS) {
       h += `<section class="part" id="${s.id}"><h2>${esc(s.title)}</h2>`;
@@ -768,8 +771,22 @@
       h += `</section>`;
     }
     $("main").innerHTML = K.U.text(h);
-    observe();
+    observe(); spy.last = -1; spy();
   }
+  // six groups for the section bar, in page order; the group in view is filled
+  const GROUPS = [["Overview", ["summary", "extremes", "future"]], ["Temperature", ["temperature"]], ["Sun and light", ["sun", "surfaces", "pv", "daylight"]], ["Wind and water", ["wind", "water"]], ["Comfort and strategies", ["outdoor", "psychro"]], ["Data", ["explorer", "quality"]]];
+  function spy() {
+    const nav = $("toc"); if (!nav || !nav.children.length) return;
+    document.documentElement.style.setProperty("--navh", nav.offsetHeight + "px");
+    const off = nav.offsetHeight + 40; let cur = 0;
+    GROUPS.forEach(([, ids], i) => { const el = document.getElementById(ids[0]); if (el && el.getBoundingClientRect().top <= off) cur = i; });
+    if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) cur = GROUPS.length - 1;
+    [...nav.children].forEach((a, i) => { a.classList.toggle("on", i === cur); if (i === cur) a.setAttribute("aria-current", "location"); else a.removeAttribute("aria-current"); });
+    if (cur !== spy.last) { spy.last = cur; const a = nav.children[cur]; if (nav.scrollWidth > nav.clientWidth) nav.scrollTo({ left: a.offsetLeft - (nav.clientWidth - a.offsetWidth) / 2, behavior: "smooth" }); }
+  }
+  addEventListener("scroll", () => { if (!spy.q) { spy.q = 1; requestAnimationFrame(() => { spy.q = 0; spy(); }); } }, { passive: true });
+  let narrowW = innerWidth < 700;
+  addEventListener("resize", () => { spy(); const n = innerWidth < 700; if (n !== narrowW) { narrowW = n; clearTimeout(spy.rt); spy.rt = setTimeout(() => rerenderCards(), 200); } });
   function inspBlock(sec) {
     const I = st.insp; if (!I) return "";
     if (I.pending) return sec === "summary" ? `<div class="insp"><h4>Claude Inspection</h4>Claude is reading the readings…</div>` : "";
@@ -787,7 +804,7 @@
     const c = CARD[id], body = document.querySelector(`[data-body="${id}"]`); if (!c || !body) return;
     const u = {}; (c.tools || []).forEach((t) => (u[t.k] = ui(id, t.k, t.def)));
     const h0 = body.offsetHeight; if (h0) body.style.minHeight = h0 + "px";
-    try { K.curCard = id; K.curW = c.wide ? 760 : 540; const r = c.render(u); rendered[id] = r; body.innerHTML = K.U.text(r.html); } catch (e) { console.error(id, e); body.innerHTML = `<p class="err">This chart could not be drawn: ${esc(e.message)}</p>`; }
+    try { K.curCard = id; const base = c.wide ? 760 : 540, bw = body.clientWidth; K.curW = bw && bw < base ? Math.max(300, Math.round(bw)) : base; const r = c.render(u); rendered[id] = r; body.innerHTML = K.U.text(r.html); } catch (e) { console.error(id, e); body.innerHTML = `<p class="err">This chart could not be drawn: ${esc(e.message)}</p>`; }
     requestAnimationFrame(() => { body.style.minHeight = ""; });
   }
   let io = null;
@@ -906,7 +923,7 @@
   // update readings, notes and drawn charts in place; the page is not rebuilt, so nothing moves
   function refreshSummaries() {
     ctx.R = S.summarise(ctx.W, ctx.X, Object.assign({}, st, { siteTitle: ctx.site ? ctx.site.title : "" })); ctx.mask = filterMask();
-    const fl = filterLabel();
+    const fl = filterLabel(); $("filtsum").textContent = fl ? "on" : "whole year";
     for (const sec of SECTIONS) {
       const el = document.getElementById(sec.id); if (!el) continue;
       if (sec.reading) { const ps = S.readings[sec.reading](ctx); sec._plain = ps.map((p) => p.replace(/<[^>]+>/g, "")); const r = el.querySelector(".reading"); if (r) r.innerHTML = K.U.text(ps.map((p) => `<p>${p}</p>`).join("")); }

@@ -1,10 +1,10 @@
-"""EnergyPlus 24.2 models of the Standard 140 cases (cases.py), run in Denver (all 14 cases, the Standard 140 test) and in
+"""EnergyPlus 25.2 models of the Standard 140 cases (cases.py), run in Denver (all 14 cases, the Standard 140 test) and in
 the 14 validation climates (8 cases). Hourly zone air temperature and ideal loads are kept in WORK/thermal_engine/ep/.
 Usage: python3 ep_run.py [--jobs 2]"""
 import json, os, re, subprocess, sys, glob
 from multiprocessing import Pool
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "lib"))
-from paths import WORK, EPLUS, WX
+from paths import WORK, EPLUS, WX, EP_VERSION
 import climates
 
 D = os.path.join(WORK, "thermal_engine")
@@ -15,7 +15,7 @@ CASES = SPEC["cases"]
 def idf(z):
     Lx, Wy, H = z["dims"]
     A = []; a = A.append
-    a("Version,24.2;")
+    a(f"Version,{EP_VERSION};")
     a("SimulationControl,No,No,No,No,Yes,No,1;")
     a("Building,BESTEST,0,Country,0.04,0.4,FullInteriorAndExterior,25,6;")
     a("Timestep,6;")

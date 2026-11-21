@@ -60,7 +60,7 @@ footer {{ margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line)
   <h1><b>Validation</b></h1>
   <p>Every model in Clima Toolbox is checked against an established simulation tool, an open reference implementation, a published test or an exact solution. The checks compare models with models: they show that each tool computes what it claims and agrees with the tools the field relies on. They do not compare the tools with measured buildings or outdoor spaces.</p>
   <p>Each report in the repository gives the base cases, the assumptions, the reference and the scripts, so every result can be rerun.</p>
-  <p class="stamp">Results of {date}, code at commit <a href="{GH}/commit/{commit}">{commit}</a></p>
+  <p class="stamp">Clima Toolbox {A.VERSION}: results of {date}, code at commit <a href="{GH}/commit/{commit}">{commit}</a></p>
 
   <h2>Results</h2>
   <table><thead><tr><th>Model</th><th>Compared with</th><th>Result</th><th></th></tr></thead><tbody>{trs}</tbody></table>

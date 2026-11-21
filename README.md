@@ -52,6 +52,14 @@ node tests/modcheck.js                # shared modifiers against Macro Clima
 python3 tests/pw/p2.py build          # browser run, Mannheim south office (needs Playwright and Chrome)
 ```
 
+## Versions
+
+One release number covers the whole toolbox: the four apps, the shared calculation core and the validation. It is in
+`VERSION`, shown in the bar and in each app's header (written there by `shared/addbar.py`), in `CITATION.cff`, and
+each release is a git tag (`v0.9.0`). 0.x releases are betas; 1.0.0 will be the first finished release. The minor
+number goes up with new features, the last with fixes. The earlier histories (Room Clima v1 to v17, Micro Clima v1 to
+v8) are kept in the apps' version notes.
+
 ## Validation
 
 `validation/README.md` summarises every study: what is compared, against which reference, on which base cases, and

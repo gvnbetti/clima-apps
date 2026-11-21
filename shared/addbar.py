@@ -3,6 +3,8 @@ methods, validation, source, about and impressum. The block sits between two mar
 Links are absolute, so the bar also works where an app runs as a Claude artifact.
 Usage: python3 addbar.py <app id: map|macro|micro|room> <html file> [...more pairs]"""
 import sys, re, pathlib
+VERSION = (pathlib.Path(__file__).resolve().parent.parent / 'VERSION').read_text().strip()   # Clima Toolbox release, one for all apps
+VLAB = VERSION + (' beta' if VERSION.startswith('0.') else '')
 
 BASE = 'https://gvnbetti.github.io/clima-toolbox/'
 INK, SUN = 'currentColor', '#d9762b'
@@ -27,6 +29,8 @@ CSS = '''<style>
 
 .csb a{color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:7px;border-radius:5px}
 .csb svg{flex:none;display:block}
+.tbver{font:500 12px var(--f-data,ui-monospace,monospace);color:#5b6663;margin-left:8px;vertical-align:middle;letter-spacing:0}
+.csb-ver{font:500 10.5px var(--f-data,ui-monospace,monospace);color:var(--csb-mute);margin-left:-10px}
 .csb-home{font-size:15px;padding:3px 4px}.csb-home b{font-weight:600}.csb-home span{font-weight:300}
 .csb-apps{display:flex;gap:2px;flex-wrap:wrap}
 .csb-apps a{padding:5px 9px;color:var(--csb-mute)}.csb-apps a:hover{color:var(--csb-ink);background:var(--csb-on)}
@@ -42,7 +46,7 @@ COUNT = ('<script>(function(){if(!/(^|\\.)github\\.io$/.test(location.hostname))
 
 def bar(cur):
     apps = ''.join(f'<a href="{BASE}{p}" title="{n}: {d}"{" aria-current=page" if k == cur else ""}>{svg(k, 20)}<span>{n}</span></a>' for k, n, p, d in APPS)
-    return (f'<!-- clima-studio-bar -->{CSS}<nav class="csb" aria-label="Clima Toolbox apps"><a class="csb-home" href="{BASE}">{svg("studio", 24)}<b>Clima</b><span>Toolbox</span></a>'
+    return (f'<!-- clima-studio-bar -->{CSS}<nav class="csb" aria-label="Clima Toolbox apps"><a class="csb-home" href="{BASE}">{svg("studio", 24)}<b>Clima</b><span>Toolbox</span></a><span class="csb-ver" title="Clima Toolbox release">{VLAB}</span>'
             f'<span class="csb-apps">{apps}</span><span class="csb-right"><a href="{BASE}methods.html"{" aria-current=page" if cur == "methods" else ""}>Methods</a><a href="{BASE}validation.html"{" aria-current=page" if cur == "validation" else ""}>Validation</a>'
             f'<a class="csb-src" href="https://github.com/gvnbetti/clima-toolbox">Source</a><a href="{BASE}about.html">About</a><a href="{BASE}impressum.html">Impressum</a></span></nav>{COUNT}<!-- /clima-studio-bar -->')
 
@@ -52,5 +56,7 @@ if __name__ == '__main__':
         p = pathlib.Path(f); s = p.read_text()
         s = re.sub(r'<!-- clima-studio-bar -->.*?<!-- /clima-studio-bar -->', '', s, flags=re.S)
         m = re.search(r'<body[^>]*>', s); assert m, f'no <body> in {f}'
-        p.write_text(s[:m.end()] + bar(cur) + s[m.end():])
+        s = s[:m.end()] + bar(cur) + s[m.end():]
+        s = re.sub(r'<span class="([^"]*\btbver)">[^<]*</span>', lambda m: f'<span class="{m.group(1)}">{VLAB}</span>', s)   # the release in the app's own header
+        p.write_text(s)
         print(f'{f}: bar for {cur}')

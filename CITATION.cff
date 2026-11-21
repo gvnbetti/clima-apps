@@ -1,9 +1,21 @@
 cff-version: 1.2.0
 message: "If you use these tools or their validation, please cite them as below."
-title: "Clima apps: Macro Clima, Micro Clima and Room Clima"
+title: "Clima Toolbox: Clima Map, Macro Clima, Micro Clima and Room Clima"
+abstract: "Free, open browser apps for climate analysis and early-stage design. Clima Map finds a weather file for a site; Macro Clima reads the climate, with future warming and the urban heat island; Micro Clima tests outdoor comfort (UTCI) for design options; Room Clima explores a room and its facade against fixed targets for comfort, energy, daylight and carbon. Every model is checked against an established tool (EnergyPlus and ASHRAE 140, Radiance, pvlib, pythermalcomfort, Ladybug); methods and validation are documented in the repository."
+type: software
 authors:
   - family-names: Betti
     given-names: Giovanni
+    affiliation: "German International University, Berlin"
+keywords:
+  - climate analysis
+  - building design
+  - thermal comfort
+  - UTCI
+  - daylight
+  - future climate
+  - urban heat island
+  - EN ISO 52016-1
 license: MIT
 repository-code: "https://github.com/gvnbetti/clima-toolbox"
 url: "https://gvnbetti.github.io/clima-toolbox/"

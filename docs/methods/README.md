@@ -2,28 +2,42 @@
 
 ## Background
 
-> Draft for Giovanni Betti to rewrite.
+Buildings have always been about protecting people and adapting to climate. Understanding the relation between a
+building and its climate, a city and its climate, anything we build and its climate, should be one of the bases of
+any design. Not the only one, but a fundamental one. It matters even more now: the energy used to heat and cool
+buildings is a major driver of global emissions, and the climate the buildings stand in is changing.
 
-The decisions that fix most of a building's climate performance are taken first: where it sits, which way it faces,
-how much of the facade is glass, what shades it, how heavy it is, how its outdoor spaces are enclosed. They are taken
-with the least information, by people who draw, and usually before anyone runs a simulation. Simulation tools arrive
-later. They ask for detail the design does not yet have, and they answer questions the design has already settled.
+In practice, climate-adaptive and bioclimatic design are still treated as specialist tasks. They often need
+specialised software and specialised knowledge.
 
-CBE Clima, developed at UC Berkeley's Center for the Built Environment, showed that a weather file can be made
-readable for designers: the same hourly data that feeds an energy model can show, in a few charts, what a climate
-asks of a building. Clima Toolbox starts from the same idea and adds a second step: testing design moves against the
-climate, first outdoors, then in a room.
+CBE Clima was born from the idea of making climate data easy to access and easy to read, without specialised tools or
+specialised knowledge: lowering the barrier to entry. Clima Toolbox follows the same ethos, builds on the same
+experience, and goes a step further.
 
-The four apps follow the order in which these questions come up in a project:
+Clima Map and Macro Clima rebuild and extend what CBE Clima does: easy access to weather files and an easy reading of
+them. Three things are part of them from the start:
+- **Future climate.** Every weather file can be read at +1.5, +2 and +3 °C of global warming.
+- **Comparison.** Every reading is set against other climates.
+- **The city.** Weather files are usually recorded at airports or in open country, while many of the buildings we
+  design stand in cities. Urban modifiers bring the reading closer to the place being designed.
+
+Micro Clima and Room Clima act as recommendation systems. They run through thousands of what-if scenarios and suggest
+which combinations of a few parameters, the ones that matter in most projects, create a more comfortable outdoor or
+indoor climate.
+
+Making something easy to access does not mean making it simpler than it needs to be. A lot of mathematics runs
+underneath these apps, and we try to be as transparent about it as we can: that is the role of the methods and
+validation pages. Some assumptions are self-evident; others an expert user may want to challenge. All the tools are
+free to use and free to inspect, in the hope that others will help make them better.
+
+## The four apps
 
 1. **Clima Map** finds the right weather file for a site.
-2. **Macro Clima** reads the climate: comfort, sun, wind, sky, rain, and the strategies that suit it, today and under
-   future warming or in a city.
+2. **Macro Clima** reads the climate: comfort, sun, wind, sky, rain, and the strategies that suit it, today, under
+   future warming and in a city.
 3. **Micro Clima** tests design moves for an outdoor space: shade, ground, wind shelter, enclosure.
 4. **Room Clima** tests a room and its facade: window, glazing, shading, mass, ventilation, and the energy, comfort,
    daylight and carbon that follow.
-
-Each app can be used alone. Together they move from the region to the street to the room.
 
 ## Principles
 
